@@ -1,18 +1,20 @@
 {
   "name": "albino",
   "version": "0.1.0",
-  "description": "Personal productivity plugin — brings Rashad's workflows to Claude Code.",
+  "description": "Personal productivity plugin - brings Rashad's workflows to Codex.",
   "author": {
     "name": "Rashad Ansari",
     "url": "https://github.com/RashadAnsari"
   },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
   "hooks": {
     "UserPromptSubmit": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/agents-reminder.sh\"",
+            "command": "./hooks/agents-reminder.sh",
             "timeout": 5
           }
         ]

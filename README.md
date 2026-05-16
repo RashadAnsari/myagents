@@ -1,6 +1,6 @@
 # myagents
 
-Personal plugin marketplace for Claude Code and Cursor. Brings Rashad's workflows, review agents, and development conventions to any project.
+Personal plugin marketplace for Claude Code, Cursor, and Codex. Brings Rashad's workflows, review agents, and development conventions to any project.
 
 ## Install
 
@@ -11,6 +11,7 @@ curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/instal
 Installs for whichever platforms are detected:
 - **Claude Code** — registers the marketplace and installs the plugin
 - **Cursor** — symlinks the plugin to `~/.cursor/plugins/local/albino`
+- **Codex** — registers the marketplace; install Albino from the myagents marketplace in Codex
 
 Rerun to update. Reload your editor after install.
 

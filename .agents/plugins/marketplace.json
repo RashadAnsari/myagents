@@ -1,0 +1,15 @@
+{
+  "name": "myagents",
+  "interface": {
+    "description": "Rashad Ansari's plugin marketplace for Codex."
+  },
+  "plugins": [
+    {
+      "name": "albino",
+      "source": {
+        "source": "local",
+        "path": "./plugins/albino"
+      }
+    }
+  ]
+}
