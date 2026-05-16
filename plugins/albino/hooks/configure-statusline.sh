@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Claude Code statusline — matches albino zsh theme style.
 input=$(cat)
 
 CWD=$(echo "$input" | python3 -c "
