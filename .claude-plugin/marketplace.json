@@ -1,0 +1,15 @@
+{
+  "name": "myagents",
+  "description": "Rashad Ansari's plugin marketplace for Claude Code.",
+  "owner": {
+    "name": "Rashad Ansari",
+    "url": "https://github.com/RashadAnsari/myagents"
+  },
+  "plugins": [
+    {
+      "name": "albino",
+      "source": "./plugins/albino",
+      "description": "Personal productivity plugin — brings Rashad's workflows to Claude Code."
+    }
+  ]
+}

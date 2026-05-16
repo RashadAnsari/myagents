@@ -1,0 +1,17 @@
+{
+  "name": "myagents",
+  "metadata": {
+    "description": "Rashad Ansari's plugin marketplace for Cursor."
+  },
+  "owner": {
+    "name": "Rashad Ansari",
+    "url": "https://github.com/RashadAnsari/myagents"
+  },
+  "plugins": [
+    {
+      "name": "albino",
+      "source": "./plugins/albino",
+      "description": "Personal productivity plugin — brings Rashad's workflows to Cursor."
+    }
+  ]
+}

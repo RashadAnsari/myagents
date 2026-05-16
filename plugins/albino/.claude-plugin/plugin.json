@@ -1,0 +1,10 @@
+{
+  "name": "albino",
+  "version": "0.1.0",
+  "description": "Albino plugin for Claude Code.",
+  "author": {
+    "name": "Rashad Ansari",
+    "email": "rashad.ansari1996@gmail.com"
+  },
+  "hooks": {}
+}

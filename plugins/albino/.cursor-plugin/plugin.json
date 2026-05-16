@@ -1,0 +1,11 @@
+{
+  "name": "albino",
+  "version": "0.1.0",
+  "displayName": "Albino",
+  "description": "Albino plugin for Cursor.",
+  "author": {
+    "name": "Rashad Ansari",
+    "email": "rashad.ansari1996@gmail.com"
+  },
+  "hooks": {}
+}
