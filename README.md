@@ -29,6 +29,7 @@ Personal productivity plugin.
 | `/ultrareview` | Full codebase audit — runs all review agents in parallel and writes `REVIEW_REPORT.md` |
 | `/ultrafix` | Walk through every issue in `REVIEW_REPORT.md` interactively — explain, fix or skip, one by one |
 | `/agents-md-review` | Review codebase for inconsistencies with `AGENTS.md` rules |
+| `/configure-statusline` | Configure the Claude Code statusline to show git branch, current directory, model, and time *(Claude Code only)* |
 
 #### Agents
 
