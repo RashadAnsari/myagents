@@ -1,0 +1,25 @@
+# Agent Rules & Conventions
+
+Rules for all agents and subagents working in this repository.
+
+---
+
+## Ultra-Reviewer Sync Rule
+
+**When a new review agent is added to `plugins/albino/agents/`, both of the following MUST be updated in the same change:**
+
+1. **`plugins/albino/agents/ultra-reviewer.md`** — add the new agent to the "Spawn All Reviewers in Parallel" list (Step 1) and add its corresponding section to the report structure (Step 3).
+
+2. **`plugins/albino/commands/ultrareview.md`** — update the command description to mention the new review area.
+
+**Failure to update both files when adding a review agent is a violation of this rule.**
+
+Review agents are any agent file whose name ends in `-reviewer.md` inside `plugins/albino/agents/`.
+
+---
+
+## General Rules
+
+- Read this file before doing anything in this repository.
+- When spawning subagents, instruct each one to read `AGENTS.md` itself before acting.
+- Do not create `README.md` or `CLAUDE.md` unless explicitly instructed.
