@@ -38,6 +38,19 @@ Do not silently add or skip skills. Always ask.
 
 ---
 
+## README Sync Rule
+
+After any change that affects the public surface of this project, update `README.md` accordingly. This includes:
+
+- Adding, removing, or renaming an agent, skill, command, or hook
+- Changing what a command or agent does
+- Changing the install process or script
+- Adding or removing a plugin
+
+Do not update README for internal implementation changes that are not visible to users (e.g. rewriting how an agent prompt is worded internally, fixing a bug inside a hook script).
+
+---
+
 ## General Rules
 
 - Read this file before doing anything in this repository.
