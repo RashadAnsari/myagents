@@ -61,7 +61,9 @@ Personal productivity plugin.
 
 #### Hooks
 
-- **Every prompt** — injects mandatory `AGENTS.md` reminder and active skill list
+| Event | Hook | Description |
+|-------|------|-------------|
+| `UserPromptSubmit` | `agents-reminder` | Injects mandatory `AGENTS.md` reminder and active skill list before every prompt |
 
 ---
 
