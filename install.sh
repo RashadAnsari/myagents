@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/install.sh | bash
 set -euo pipefail
 
 REPO_URL="https://github.com/RashadAnsari/myagents"
