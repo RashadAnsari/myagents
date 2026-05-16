@@ -7,5 +7,9 @@
     "name": "Rashad Ansari",
     "email": "rashad.ansari1996@gmail.com"
   },
-  "hooks": {}
+  "hooks": {
+    "beforeSubmitPrompt": {
+      "command": "bash \"./hooks/agents-reminder.sh\""
+    }
+  }
 }
