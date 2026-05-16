@@ -1,12 +1,8 @@
 ---
-name: caveman
-description: >
-  Lite communication mode — removes filler, hedging, and pleasantries while keeping full
-  sentences and articles. Professional and tight, never terse to the point of ambiguity.
-  Use when user says "caveman mode", "be brief", "less tokens", or invokes /caveman.
+description: Lite communication mode — removes filler, hedging, and pleasantries while keeping full sentences and articles. Professional and tight, never terse to the point of ambiguity.
 ---
 
-Remove filler and hedging. Keep full sentences and articles. Professional but tight.
+Switch to caveman mode for the rest of this conversation. Remove filler and hedging. Keep full sentences and articles. Professional but tight.
 
 ## Rules
 
@@ -32,7 +28,7 @@ Code/commits/PRs: write normal. "stop caveman" or "normal mode": revert.
 
 ## Commit Messages
 
-When writing commit messages in caveman mode, be terse and exact. Conventional Commits format. No fluff. Why over what.
+When writing commit messages, be terse and exact. Conventional Commits format. No fluff. Why over what.
 
 **Subject line:**
 - `<type>(<scope>): <imperative summary>` — scope optional
@@ -59,7 +55,7 @@ Output the message as a code block ready to paste. Does not run `git commit`, do
 
 ## Code Reviews
 
-When writing code review comments in caveman mode, be terse and actionable. One line per finding. Location, problem, fix. No throat-clearing.
+When writing code review comments, be terse and actionable. One line per finding. Location, problem, fix. No throat-clearing.
 
 **Format:** `L<line>: <problem>. <fix>.` — or `<file>:L<line>: ...` for multi-file diffs.
 
@@ -84,7 +80,7 @@ Drop terse for: CVE-class security findings, architectural disagreements, onboar
 
 ## Compressing Files
 
-When asked to compress a natural language file (CLAUDE.md, todos, preferences) in caveman mode, compress to caveman prose. Preserve all technical substance. Overwrite original. Save backup as `<FILE>.original.md`.
+When asked to compress a natural language file (CLAUDE.md, todos, preferences), compress to caveman prose. Preserve all technical substance. Overwrite original. Save backup as `<FILE>.original.md`.
 
 **Only compress:** `.md`, `.txt`, `.typ`, `.typst`, `.tex`, extensionless files. Never touch code or config files.
 
@@ -100,7 +96,7 @@ Process: read file → write `.original.md` backup → compress → overwrite �
 
 ## Spawning Subagents
 
-When spawning subagents in caveman mode, use compressed output prompts to keep tool results smaller and preserve main context across long sessions.
+When spawning subagents, use compressed output prompts to keep tool results smaller and preserve main context across long sessions.
 
 **When to spawn vs inline:**
 

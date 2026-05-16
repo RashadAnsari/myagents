@@ -32,6 +32,7 @@ Personal productivity plugin.
 | `/agents-md-review` | Review codebase for inconsistencies with `AGENTS.md` rules |
 | `/configure-statusline` | Configure the Claude Code statusline — asks global or project install, shows git branch, current directory, model, and time *(Claude Code only)* |
 | `/commit` | Stage all changes and create a git commit with an appropriate message |
+| `/caveman` | Switch to lite communication mode — drops filler/hedging/pleasantries for the session. Includes commit format, PR review style, file compression, and subagent delegation guide. |
 
 #### Agents
 
@@ -61,7 +62,6 @@ Personal productivity plugin.
 | `research-first` | Research docs and source before answering or implementing anything non-trivial |
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces — avoids generic AI aesthetics |
-| `caveman` | Lite communication mode — drops filler/hedging/pleasantries, keeps full sentences. Includes commit message format, PR review style, file compression, and subagent delegation guide. |
 
 #### Hooks
 
