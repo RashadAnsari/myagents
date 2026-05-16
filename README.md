@@ -69,20 +69,6 @@ Personal productivity plugin.
 
 ---
 
-## Development
-
-```bash
-# Validate plugin
-make validate-claude
-
-# Install locally (Claude Code + Cursor)
-bash install.sh
-```
-
-CI validates the plugin on every push and pull request.
-
----
-
 ## Rules
 
 See `AGENTS.md` for agent and convention rules that apply to this repository.
