@@ -30,11 +30,9 @@ Code/commits/PRs: write normal. "stop caveman" or "normal mode": revert.
 
 ---
 
-## /caveman-commit — Commit Messages
+## Commit Messages
 
-Activate when user says "write a commit", "commit message", "generate commit", or invokes `/caveman-commit`.
-
-Write commit messages terse and exact. Conventional Commits format. No fluff. Why over what.
+When writing commit messages in caveman mode, be terse and exact. Conventional Commits format. No fluff. Why over what.
 
 **Subject line:**
 - `<type>(<scope>): <imperative summary>` — scope optional
@@ -59,11 +57,9 @@ Output the message as a code block ready to paste. Does not run `git commit`, do
 
 ---
 
-## /caveman-review — Code Review
+## Code Reviews
 
-Activate when user says "review this PR", "code review", "review the diff", or invokes `/caveman-review`.
-
-Write code review comments terse and actionable. One line per finding. Location, problem, fix. No throat-clearing.
+When writing code review comments in caveman mode, be terse and actionable. One line per finding. Location, problem, fix. No throat-clearing.
 
 **Format:** `L<line>: <problem>. <fix>.` — or `<file>:L<line>: ...` for multi-file diffs.
 
@@ -84,15 +80,11 @@ Examples:
 
 Drop terse for: CVE-class security findings, architectural disagreements, onboarding contexts. Write normal paragraph, then resume terse.
 
-Reviews only — does not write the fix, does not approve/request-changes, does not run linters.
-
 ---
 
-## /compress — Compress Memory Files
+## Compressing Files
 
-Activate when user says "compress memory file", "compress this file", or invokes `/compress <filepath>`.
-
-Compress natural language files (CLAUDE.md, todos, preferences) to caveman prose. Preserve all technical substance. Overwrite original. Save backup as `<FILE>.original.md`.
+When asked to compress a natural language file (CLAUDE.md, todos, preferences) in caveman mode, compress to caveman prose. Preserve all technical substance. Overwrite original. Save backup as `<FILE>.original.md`.
 
 **Only compress:** `.md`, `.txt`, `.typ`, `.typst`, `.tex`, extensionless files. Never touch code or config files.
 
@@ -106,29 +98,9 @@ Process: read file → write `.original.md` backup → compress → overwrite �
 
 ---
 
-## /caveman-help — Reference Card
+## Spawning Subagents
 
-Activate when user says "caveman help", "what caveman commands", or invokes `/caveman-help`.
-
-Display this reference card. One-shot — do NOT change mode or persist anything.
-
-| Command | What it does |
-|---------|-------------|
-| `/caveman` | Lite mode — drops filler/hedging, keeps full sentences |
-| `/caveman-commit` | Terse commit messages, Conventional Commits, ≤50 char subject |
-| `/caveman-review` | One-line PR comments: `L42: 🔴 bug: user null. Add guard.` |
-| `/compress <file>` | Compress .md file, save backup as .original.md |
-| `/caveman-help` | This card |
-
-Deactivate: "stop caveman" or "normal mode". Resume: `/caveman`.
-
----
-
-## Cavecrew — Spawning Compressed Subagents
-
-Activate when user says "delegate to subagent", "use cavecrew", "spawn investigator/builder/reviewer", "save context", or invokes `/cavecrew`.
-
-Spawn subagents with caveman-compressed output. Tool-results ~60% smaller → main context lasts longer across long sessions. Use the Agent tool and paste the relevant prompt block below verbatim.
+When spawning subagents in caveman mode, use compressed output prompts to keep tool results smaller and preserve main context across long sessions.
 
 **When to spawn vs inline:**
 
@@ -141,7 +113,7 @@ Spawn subagents with caveman-compressed output. Tool-results ~60% smaller → ma
 | Review diff or file for bugs | Spawn reviewer |
 | Deep review with rationale + alternatives | Inline with full reviewer |
 
-Rule: **want output in 1/3 the tokens → spawn cavecrew. Want prose → inline.**
+Rule: **want output in 1/3 the tokens → spawn compressed subagent. Want prose → inline.**
 
 ### Investigator prompt
 
