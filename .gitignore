@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (if tooling added later)
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+
+# Review output
+REVIEW_REPORT.md
+
+# Temp
+*.tmp
+*.log
