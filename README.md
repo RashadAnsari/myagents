@@ -60,6 +60,7 @@ Personal productivity plugin.
 | `research-first` | Research docs and source before answering or implementing anything non-trivial |
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces — avoids generic AI aesthetics |
+| `caveman` | Lite communication mode — drops filler/hedging/pleasantries, keeps full sentences. Includes commit message format, PR review style, file compression, and subagent delegation guide. |
 
 #### Hooks
 
