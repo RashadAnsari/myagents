@@ -30,6 +30,7 @@ Personal productivity plugin.
 | `/ultrafix` | Walk through every issue in `REVIEW_REPORT.md` interactively — explain, fix or skip, one by one |
 | `/agents-md-review` | Review codebase for inconsistencies with `AGENTS.md` rules |
 | `/configure-statusline` | Configure the Claude Code statusline — asks global or project install, shows git branch, current directory, model, and time *(Claude Code only)* |
+| `/commit` | Stage all changes and create a git commit with an appropriate message |
 
 #### Agents
 
@@ -58,6 +59,7 @@ Personal productivity plugin.
 | `latest-versions` | Always look up and use the latest stable version of any dependency |
 | `research-first` | Research docs and source before answering or implementing anything non-trivial |
 | `humanizer` | Removes signs of AI-generated writing from text |
+| `frontend-design` | Creates distinctive, production-grade frontend interfaces — avoids generic AI aesthetics |
 
 #### Hooks
 

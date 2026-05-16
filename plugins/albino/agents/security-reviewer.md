@@ -131,6 +131,18 @@ Read-only agent. Exhaustive security audit of the codebase.
 - Insecure deserialization — user-supplied data passed to deserialize/unserialize/pickle/eval
 - YAML unsafe load with user input
 
+## Prompt Injection (LLM Applications)
+
+- Direct prompt injection — user input embedded in LLM prompt causes model to ignore system instructions or execute attacker commands
+- Indirect prompt injection — external content fetched by agent (web page, document, email, DB record) contains instructions that hijack model behavior
+- Jailbreak via context — user-controlled data placed in trusted context (system prompt, tool result, retrieval chunk) to bypass safety or authorization
+- Tool call injection — injected instructions cause agent to invoke unintended tools (exfiltrate data, send requests, delete records)
+- Exfiltration via prompt — injected content causes model to leak system prompt, memory, or other users' data in its response
+- Role override — injected text redefines model role ("ignore previous instructions", "you are now…") to bypass access controls
+- Multi-turn injection — benign first message sets up context; injected payload in later turn or tool result activates it
+- RAG poisoning — attacker-controlled documents indexed into retrieval store contain injection payloads that activate when retrieved
+- Missing output sanitization — LLM output rendered as HTML/executed as code without escaping, enabling stored XSS or command injection via model response
+
 ## Second-Order Injection
 
 - Input stored safely (parameterized) but later retrieved and used unsafely in a different context — second-order SQL injection, second-order command injection
