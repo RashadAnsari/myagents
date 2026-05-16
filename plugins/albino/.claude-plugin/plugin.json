@@ -1,7 +1,7 @@
 {
   "name": "albino",
   "version": "0.1.0",
-  "description": "Albino plugin for Claude Code.",
+  "description": "Personal productivity plugin — brings Rashad's workflows to Claude Code.",
   "author": {
     "name": "Rashad Ansari",
     "email": "rashad.ansari1996@gmail.com"

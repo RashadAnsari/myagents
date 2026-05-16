@@ -8,8 +8,7 @@
   "plugins": [
     {
       "name": "albino",
-      "source": "./plugins/albino",
-      "description": "Personal productivity plugin — brings Rashad's workflows to Claude Code."
+      "source": "./plugins/albino"
     }
   ]
 }
