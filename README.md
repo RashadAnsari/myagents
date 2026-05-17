@@ -38,8 +38,6 @@ Personal productivity plugin.
 
 | Agent | Description |
 |-------|-------------|
-| `ultra-reviewer` | Orchestrates all reviewer agents in parallel, writes consolidated report |
-| `ultra-fixer` | Interactively walks `REVIEW_REPORT.md` issues, explains and fixes with user confirmation |
 | `security-reviewer` | Audits for security vulnerabilities — injection, XSS, auth, SSRF, JWT, supply chain, and more |
 | `code-reviewer` | Reviews correctness, style, anti-patterns, performance, memory, and concurrency |
 | `architecture-reviewer` | Reviews structure, coupling, cohesion, SOLID, duplication, and observability |
