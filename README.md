@@ -14,8 +14,6 @@ Installs for whichever platforms are detected:
 
 Rerun to update. Reload your editor after install.
 
-The Project Memory MCP server is launched through `plugins/albino/.mcp.json`. Its launcher script bootstraps [Bun](https://bun.sh/) with the official Bun installer when Bun is missing, then installs the server dependencies before starting the MCP process.
-
 ---
 
 ## Plugins
