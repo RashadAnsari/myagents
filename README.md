@@ -47,6 +47,10 @@ Personal productivity plugin.
 | `dependency-reviewer` | Reviews vulnerable, outdated, unused packages and supply chain risk |
 | `docs-reviewer` | Reviews documentation accuracy, completeness, and staleness |
 | `agents-md-reviewer` | Reviews codebase against `AGENTS.md` rules |
+| `accessibility-reviewer` | Reviews WCAG compliance, ARIA usage, keyboard navigation, and screen reader compatibility |
+| `api-design-reviewer` | Reviews REST/GraphQL naming, HTTP semantics, versioning, error shape, and backward compatibility |
+| `database-reviewer` | Reviews schema design, migration safety, indexing strategy, constraints, and query patterns |
+| `i18n-reviewer` | Reviews hardcoded strings, date/number formatting, pluralization, RTL layout, and locale handling |
 | `humanizer` | Removes AI writing patterns from text |
 
 #### Skills

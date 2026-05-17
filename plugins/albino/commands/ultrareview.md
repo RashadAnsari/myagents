@@ -28,6 +28,10 @@ Agents to spawn in parallel:
 7. **dependency-reviewer** — outdated, vulnerable, unused packages
 8. **docs-reviewer** — accuracy, completeness, staleness
 9. **agents-md-reviewer** — AGENTS.md rule inconsistencies
+10. **accessibility-reviewer** — WCAG compliance, ARIA, keyboard navigation, screen reader compatibility
+11. **api-design-reviewer** — REST/GraphQL naming, HTTP semantics, versioning, error shape, backward compatibility
+12. **database-reviewer** — schema design, migration safety, indexing, constraints, query patterns
+13. **i18n-reviewer** — hardcoded strings, date/number formatting, pluralization, RTL, locale handling
 
 ## Step 2 — Collect All Results
 
@@ -55,6 +59,10 @@ Generated: <current date and time>
 | Dependencies       | N        | N    | N      | N   |
 | Documentation      | N        | N    | N      | N   |
 | AGENTS.md          | N        | N    | N      | N   |
+| Accessibility      | N        | N    | N      | N   |
+| API Design         | N        | N    | N      | N   |
+| Database           | N        | N    | N      | N   |
+| i18n               | N        | N    | N      | N   |
 | **Total**          | **N**    | **N**| **N**  | **N** |
 
 ---
@@ -110,6 +118,30 @@ Generated: <current date and time>
 ## AGENTS.md Consistency Review
 
 <full output from agents-md-reviewer>
+
+---
+
+## Accessibility Review
+
+<full output from accessibility-reviewer>
+
+---
+
+## API Design Review
+
+<full output from api-design-reviewer>
+
+---
+
+## Database Review
+
+<full output from database-reviewer>
+
+---
+
+## i18n Review
+
+<full output from i18n-reviewer>
 ```
 
 ## Rules
