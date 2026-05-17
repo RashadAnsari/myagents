@@ -6,4 +6,5 @@ MANDATORY SKILLS: The following skills MUST be active and followed for every tas
 - code-reusability: Spot and eliminate duplication before writing new code
 - dev-conventions: Follow project conventions for reuse, scope, localization, UI, validation, and data alignment
 - latest-versions: Always look up and use the latest stable version of any library or dependency
-- research-first: Never guess — research docs, source, and specs before answering or implementing anything non-trivial"
+- research-first: Never guess — research docs, source, and specs before answering or implementing anything non-trivial
+- project-memory: Retrieve relevant project memory before non-trivial work and store durable learnings after the task"

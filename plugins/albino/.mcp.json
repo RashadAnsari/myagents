@@ -1,3 +1,11 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "project-memory": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "PLUGIN=$(pwd) && cd mcp-servers/project-memory && \"$PLUGIN/hooks/run-with-bun.sh\" install --frozen-lockfile >&2 && exec \"$PLUGIN/hooks/run-with-bun.sh\" src/index.ts"
+      ]
+    }
+  }
 }

@@ -6,14 +6,11 @@ INSTALL_DIR="$HOME/.myagents"
 PLUGIN_NAME="albino"
 PLUGIN_SRC="$INSTALL_DIR/plugins/$PLUGIN_NAME"
 CURSOR_PLUGINS_DIR="$HOME/.cursor/plugins/local"
-CODEX_APP_CLI="/Applications/Codex.app/Contents/Resources/codex"
 
 installed_claude=false
 installed_cursor=false
-installed_codex=false
 failed_claude=false
 failed_cursor=false
-failed_codex=false
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -21,14 +18,6 @@ need() {
   if ! command -v "$1" &>/dev/null; then
     echo "✗ Required tool not found: $1"
     exit 1
-  fi
-}
-
-find_codex() {
-  if command -v codex &>/dev/null; then
-    command -v codex
-  elif [ -x "$CODEX_APP_CLI" ]; then
-    echo "$CODEX_APP_CLI"
   fi
 }
 
@@ -84,24 +73,6 @@ else
   echo "  – Cursor: ~/.cursor not found, skipping"
 fi
 
-# ── Codex ──────────────────────────────────────────────────────────────────────
-
-CODEX_BIN="$(find_codex || true)"
-
-if [ -n "$CODEX_BIN" ]; then
-  echo "→ Installing for Codex..."
-  if "$CODEX_BIN" plugin marketplace add "$INSTALL_DIR"; then
-    echo "  ✓ Codex: marketplace registered"
-    echo "  ! Open Codex plugins and install Albino from the myagents marketplace"
-    installed_codex=true
-  else
-    echo "  ✗ Codex: marketplace registration failed"
-    failed_codex=true
-  fi
-else
-  echo "  – Codex: CLI not found in PATH or $CODEX_APP_CLI, skipping"
-fi
-
 # ── Summary ────────────────────────────────────────────────────────────────────
 
 echo ""
@@ -110,17 +81,15 @@ echo " myagents — albino plugin"
 echo "────────────────────────────────"
 printf " Claude Code : %s\n" "$( [ "$installed_claude" = true ] && echo "✓ installed" || ( [ "$failed_claude" = true ] && echo "✗ FAILED" || echo "– skipped" ) )"
 printf " Cursor      : %s\n" "$( [ "$installed_cursor" = true ] && echo "✓ installed" || ( [ "$failed_cursor" = true ] && echo "✗ FAILED" || echo "– skipped" ) )"
-printf " Codex       : %s\n" "$( [ "$installed_codex" = true ] && echo "✓ marketplace registered" || ( [ "$failed_codex" = true ] && echo "✗ FAILED" || echo "– skipped" ) )"
 echo "────────────────────────────────"
 
-if [ "$installed_claude" = false ] && [ "$installed_cursor" = false ] && [ "$installed_codex" = false ] && [ "$failed_claude" = false ] && [ "$failed_cursor" = false ] && [ "$failed_codex" = false ]; then
+if [ "$installed_claude" = false ] && [ "$installed_cursor" = false ] && [ "$failed_claude" = false ] && [ "$failed_cursor" = false ]; then
   echo ""
-  echo "Nothing installed — Claude Code, Cursor, and Codex were not detected."
+  echo "Nothing installed — Claude Code and Cursor were not detected."
   echo "Install Claude Code: https://claude.ai/download"
   echo "Install Cursor:      https://cursor.com/download"
-  echo "Install Codex:       https://openai.com/codex/"
 fi
 
-if [ "$failed_claude" = true ] || [ "$failed_cursor" = true ] || [ "$failed_codex" = true ]; then
+if [ "$failed_claude" = true ] || [ "$failed_cursor" = true ]; then
   exit 1
 fi

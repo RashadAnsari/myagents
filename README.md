@@ -1,6 +1,6 @@
 # myagents
 
-Personal plugin marketplace for Claude Code, Cursor, and Codex. Brings Rashad's workflows, review agents, and development conventions to any project.
+Personal plugin marketplace for Claude Code and Cursor. Brings Rashad's workflows, review agents, and development conventions to any project.
 
 ## Install
 
@@ -11,9 +11,10 @@ curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/instal
 Installs for whichever platforms are detected:
 - **Claude Code** — registers the marketplace and installs the plugin
 - **Cursor** — symlinks the plugin to `~/.cursor/plugins/local/albino`
-- **Codex** — registers the marketplace; install Albino from the myagents marketplace in Codex
 
 Rerun to update. Reload your editor after install.
+
+The Project Memory MCP server is launched through `plugins/albino/.mcp.json`. Its launcher script bootstraps [Bun](https://bun.sh/) with the official Bun installer when Bun is missing, then installs the server dependencies before starting the MCP process.
 
 ---
 
@@ -62,8 +63,17 @@ Personal productivity plugin.
 | `dev-conventions` | General conventions — reuse, scope, localization, UI, validation, data |
 | `latest-versions` | Always look up and use the latest stable version of any dependency |
 | `research-first` | Research docs and source before answering or implementing anything non-trivial |
+| `project-memory` | Retrieves relevant project memory before non-trivial work and stores durable learnings after the task |
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces — avoids generic AI aesthetics |
+
+#### MCP Servers
+
+| Server | Description |
+|--------|-------------|
+| `project-memory` | Bun-powered local stdio MCP server for durable project memory with SQLite FTS search, quality gates, secret rejection, export/import, and explicit checkout path linking |
+
+Project memory is stored outside git at `~/.myagents/memory.sqlite` by default. Set `MYAGENTS_MEMORY_DIR` to override the directory. Memories are keyed by project root and can be exported or imported through the MCP tools.
 
 #### Hooks
 

@@ -1,0 +1,46 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.9"
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Install project-memory MCP server dependencies
+        working-directory: plugins/albino/mcp-servers/project-memory
+        run: bun install --frozen-lockfile
+
+      - name: Validate
+        run: make validate
+
+      - name: Check formatting
+        run: |
+          make format
+          git diff --exit-code || (echo "make format produced changes — run 'make format' locally and commit the result." && exit 1)
+
+      - name: Lint
+        run: make lint
+
+      - name: Test
+        run: make test

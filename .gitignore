@@ -19,6 +19,14 @@ __pycache__/
 # Review output
 REVIEW_REPORT.md
 
+# Project memory
+memory.sqlite
+memory.sqlite-shm
+memory.sqlite-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
 # Temp
 *.tmp
 *.log

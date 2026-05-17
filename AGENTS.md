@@ -49,6 +49,18 @@ Do not update README for internal implementation changes that are not visible to
 
 ---
 
+## Verify After Changes Rule
+
+After completing any change in this repository, run:
+
+```
+make local
+```
+
+This runs plugin validation, formatting, linting, typechecking, and tests in sequence. If any step fails, fix the issue and re-run until `make local` passes with no errors. Do not report a task as done until `make local` exits cleanly.
+
+---
+
 ## General Rules
 
 - Read this file before doing anything in this repository.
