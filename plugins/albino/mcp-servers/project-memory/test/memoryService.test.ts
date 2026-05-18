@@ -6,7 +6,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { ProjectMemoryStore } from "../src/db.js";
 import { MemoryQualityError, ProjectMemoryService, UserMemoryService } from "../src/memoryService.js";
-import { defaultDatabasePath, defaultMemoryDir, normalizeProjectRoot } from "../src/paths.js";
+import { defaultDatabasePath, normalizeProjectRoot } from "../src/paths.js";
 
 let tempDir: string;
 let store: ProjectMemoryStore;
@@ -327,24 +327,6 @@ describe("ProjectMemoryService", () => {
 
     expect(result.knownPaths).toContain(path.resolve(tempDir));
     expect(result.knownPaths).toContain(path.resolve(otherRoot));
-  });
-
-  it("uses the installed repo directory by default and supports MYAGENTS_MEMORY_DIR override", () => {
-    const previous = process.env.MYAGENTS_MEMORY_DIR;
-    delete process.env.MYAGENTS_MEMORY_DIR;
-    expect(defaultMemoryDir()).toBe(path.join(process.env.HOME ?? "", ".myagents"));
-
-    process.env.MYAGENTS_MEMORY_DIR = path.join(tempDir, "override-memory");
-
-    try {
-      expect(defaultMemoryDir()).toBe(path.join(tempDir, "override-memory"));
-    } finally {
-      if (previous === undefined) {
-        delete process.env.MYAGENTS_MEMORY_DIR;
-      } else {
-        process.env.MYAGENTS_MEMORY_DIR = previous;
-      }
-    }
   });
 
   it("normalizes project roots", () => {

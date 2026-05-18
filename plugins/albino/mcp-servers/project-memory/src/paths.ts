@@ -4,14 +4,6 @@ import { existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 
-export function defaultMemoryDir(): string {
-  if (process.env.MYAGENTS_MEMORY_DIR) {
-    return path.resolve(process.env.MYAGENTS_MEMORY_DIR);
-  }
-
-  return path.join(homedir(), ".myagents");
-}
-
 export function defaultDatabasePath(): string {
   if (process.env.MYAGENTS_MEMORY_DIR) {
     const dir = path.resolve(process.env.MYAGENTS_MEMORY_DIR);
