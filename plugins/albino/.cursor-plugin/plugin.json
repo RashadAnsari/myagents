@@ -1,15 +1,16 @@
 {
   "name": "albino",
   "version": "0.1.0",
-  "displayName": "Albino",
   "description": "Personal productivity plugin — brings Rashad's workflows to Cursor.",
   "author": {
     "name": "Rashad Ansari",
     "url": "https://github.com/RashadAnsari"
   },
   "hooks": {
-    "beforeSubmitPrompt": {
+    "beforeSubmitPrompt": [
+      {
         "command": "./hooks/agents-reminder.sh"
-    }
+      }
+    ]
   }
 }
