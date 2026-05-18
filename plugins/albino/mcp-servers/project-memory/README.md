@@ -178,6 +178,28 @@ Bad user memory:
 - `user_memory_bootstrap` — Read user memory at the start of a session.
 - `user_memory_update` — Store durable user-level learnings after a session.
 
+## Search
+
+Memory search uses SQLite FTS5 (Full-Text Search version 5) with BM25 ranking. When FTS5 returns no results, the query falls back to a SQL `LIKE` scan.
+
+**Why FTS5?**
+
+FTS5 is a built-in SQLite extension that tokenizes text at write time and builds an inverted index. At query time it scores matches using BM25 — a standard ranking formula that weights term frequency against how rare the term is across all documents. For short factual memories (a few sentences each), this gives fast, relevant results with no external dependencies and no API calls.
+
+**What it cannot do**
+
+FTS5 is keyword-based. It matches the exact tokens in the query after stemming and stop-word removal. It will not find a memory about "prefers concise responses" when you search "dislikes verbose output", because the tokens do not overlap. This is paraphrase or semantic retrieval, which requires embeddings.
+
+**When to switch to vector search**
+
+Consider adding vector/semantic search when:
+
+- Recall becomes a practical problem — agents fail to surface relevant memories because they use different wording than the stored text.
+- The memory corpus grows large enough that keyword search produces too many false negatives.
+- An embedding model is already available in the environment (e.g. a local model or an API already used elsewhere in the stack).
+
+What the switch involves: generate an embedding vector for each memory at write time, store it (e.g. as a BLOB or in a `sqlite-vec` virtual table), and at query time embed the search string and retrieve by cosine similarity instead of BM25. The rest of the stack — quality checks, deduplication, archiving — stays the same.
+
 ## Development
 
 From the repository root:
