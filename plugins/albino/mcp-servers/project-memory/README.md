@@ -9,7 +9,7 @@ Both are local-first:
 
 - Runs over MCP stdio.
 - Stores memory in SQLite at `~/.myagents/project-memory/memory.sqlite`.
-- Uses SQLite FTS5 for ranked full-text search.
+- Uses neural vector search (KNN via `sqlite-vec`) as the primary ranking method, with SQLite FTS5/BM25 as fallback.
 - Rejects noisy, vague, duplicate, and secret-looking memories.
 - Exposes tools, resources, and prompts through MCP.
 
@@ -180,25 +180,23 @@ Bad user memory:
 
 ## Search
 
-Memory search uses SQLite FTS5 (Full-Text Search version 5) with BM25 ranking. When FTS5 returns no results, the query falls back to a SQL `LIKE` scan.
+Memory search uses a two-stage hybrid pipeline:
 
-**Why FTS5?**
+1. **Vector KNN (primary)** — The query and all memories are embedded using `Xenova/all-MiniLM-L6-v2` (a 384-dimension sentence transformer from `@huggingface/transformers`). Embeddings are stored in `sqlite-vec` virtual tables (`memory_vec`, `user_memory_vec`). At query time the nearest neighbours are retrieved by cosine distance using sqlite-vec's `MATCH` operator.
 
-FTS5 is a built-in SQLite extension that tokenizes text at write time and builds an inverted index. At query time it scores matches using BM25 — a standard ranking formula that weights term frequency against how rare the term is across all documents. For short factual memories (a few sentences each), this gives fast, relevant results with no external dependencies and no API calls.
+2. **FTS5/BM25 (fallback)** — If vector search returns no results (e.g. no embeddings have been generated yet), the query falls back to SQLite FTS5 with BM25 ranking, then to a SQL `LIKE` scan.
 
-**What it cannot do**
+**Why vector search?**
 
-FTS5 is keyword-based. It matches the exact tokens in the query after stemming and stop-word removal. It will not find a memory about "prefers concise responses" when you search "dislikes verbose output", because the tokens do not overlap. This is paraphrase or semantic retrieval, which requires embeddings.
+Vector search finds memories by meaning, not word overlap. A query for "login issue" will surface a memory about "authentication problem with tokens" even though the two share no words, because the embedding model places them near each other in the 384-dimensional vector space.
 
-**When to switch to vector search**
+**Model and caching**
 
-Consider adding vector/semantic search when:
+The embedding model (~25 MB) is downloaded once on first use and cached locally by `@huggingface/transformers`. Subsequent starts load from cache with no network access required.
 
-- Recall becomes a practical problem — agents fail to surface relevant memories because they use different wording than the stored text.
-- The memory corpus grows large enough that keyword search produces too many false negatives.
-- An embedding model is already available in the environment (e.g. a local model or an API already used elsewhere in the stack).
+**Backfill**
 
-What the switch involves: generate an embedding vector for each memory at write time, store it (e.g. as a BLOB or in a `sqlite-vec` virtual table), and at query time embed the search string and retrieve by cosine similarity instead of BM25. The rest of the stack — quality checks, deduplication, archiving — stays the same.
+On every startup, `backfillEmbeddings()` runs and generates embeddings for any memories that do not yet have one. This handles memories created before vector search was introduced and any records written during a failed embedding attempt.
 
 ## Development
 

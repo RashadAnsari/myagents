@@ -4,6 +4,7 @@ import { Database } from "bun:sqlite";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+
 import { ProjectMemoryStore } from "../src/db.js";
 import { MemoryQualityError, ProjectMemoryService, UserMemoryService } from "../src/memoryService.js";
 import { defaultDatabasePath, normalizeProjectRoot } from "../src/paths.js";
@@ -24,8 +25,8 @@ afterEach(() => {
 });
 
 describe("ProjectMemoryService", () => {
-  it("stores and searches durable memory", () => {
-    const memory = service.remember({
+  it("stores and searches durable memory", async () => {
+    const memory = await service.remember({
       projectRoot: tempDir,
       kind: "decision",
       content:
@@ -37,15 +38,15 @@ describe("ProjectMemoryService", () => {
       source: "test"
     });
 
-    const results = service.search({ projectRoot: tempDir, query: "durable project decisions", k: 5 });
+    const results = await service.search({ projectRoot: tempDir, query: "durable project decisions", k: 5 });
 
     expect(memory.id).toBeGreaterThan(0);
     expect(results).toHaveLength(1);
     expect(results[0]?.content).toContain("durable project decisions");
   });
 
-  it("filters search results by kind and tag", () => {
-    service.remember({
+  it("filters search results by kind and tag", async () => {
+    await service.remember({
       projectRoot: tempDir,
       kind: "decision",
       content:
@@ -54,7 +55,7 @@ describe("ProjectMemoryService", () => {
       tags: ["architecture", "retrieval"],
       confidence: "high"
     });
-    service.remember({
+    await service.remember({
       projectRoot: tempDir,
       kind: "gotcha",
       content:
@@ -64,7 +65,7 @@ describe("ProjectMemoryService", () => {
       confidence: "medium"
     });
 
-    const results = service.search({
+    const results = await service.search({
       projectRoot: tempDir,
       query: "retrieval",
       kinds: ["decision"],
@@ -76,29 +77,29 @@ describe("ProjectMemoryService", () => {
     expect(results[0]?.tags).toContain("architecture");
   });
 
-  it("rejects vague automatic memory writes", () => {
-    expect(() =>
+  it("rejects vague automatic memory writes", async () => {
+    await expect(
       service.remember({
         projectRoot: tempDir,
         kind: "handoff",
         content: "fixed the issue",
         whyUsefulLater: "Useful later because this says what happened."
       })
-    ).toThrow(MemoryQualityError);
+    ).rejects.toThrow(MemoryQualityError);
   });
 
-  it("rejects secret-looking memory writes", () => {
-    expect(() =>
+  it("rejects secret-looking memory writes", async () => {
+    await expect(
       service.remember({
         projectRoot: tempDir,
         kind: "preference",
         content: "The deployment API key is API_KEY=sk-abcdefghijklmnopqrstuvwxyz1234567890 and should be reused.",
         whyUsefulLater: "Future agents would need this credential to deploy the project later."
       })
-    ).toThrow(MemoryQualityError);
+    ).rejects.toThrow(MemoryQualityError);
   });
 
-  it("rejects command-output memories and duplicate memories", () => {
+  it("rejects command-output memories and duplicate memories", async () => {
     const durableMemory = {
       projectRoot: tempDir,
       kind: "workflow" as const,
@@ -107,21 +108,21 @@ describe("ProjectMemoryService", () => {
       whyUsefulLater: "Future agents need this workflow rule to avoid saving noisy task status as memory."
     };
 
-    service.remember(durableMemory);
+    await service.remember(durableMemory);
 
-    expect(() => service.remember(durableMemory)).toThrow(MemoryQualityError);
-    expect(() =>
+    await expect(service.remember(durableMemory)).rejects.toThrow(MemoryQualityError);
+    await expect(
       service.remember({
         projectRoot: tempDir,
         kind: "handoff",
         content: "npm test\npassed everything and there is no durable project learning here.",
         whyUsefulLater: "Future agents do not need raw command output as durable project knowledge."
       })
-    ).toThrow(MemoryQualityError);
+    ).rejects.toThrow(MemoryQualityError);
   });
 
-  it("archives stale memory by default", () => {
-    const memory = service.remember({
+  it("archives stale memory by default", async () => {
+    const memory = await service.remember({
       projectRoot: tempDir,
       kind: "gotcha",
       content: "Old setup instructions require running the legacy memory worker before using project search.",
@@ -136,15 +137,15 @@ describe("ProjectMemoryService", () => {
     });
 
     expect(result).toEqual({ archived: true, deleted: false });
-    expect(service.search({ projectRoot: tempDir, query: "legacy memory worker" })).toHaveLength(0);
-    expect(service.search({ projectRoot: tempDir, query: "legacy memory worker", includeArchived: true })).toHaveLength(
-      1
-    );
+    expect(await service.search({ projectRoot: tempDir, query: "legacy memory worker" })).toHaveLength(0);
+    expect(
+      await service.search({ projectRoot: tempDir, query: "legacy memory worker", includeArchived: true })
+    ).toHaveLength(1);
     expect(service.exportProject(tempDir, true).events.map((event) => event.action)).toEqual(["created", "forgotten"]);
   });
 
-  it("updates memory content and rejects secret-looking updates", () => {
-    const memory = service.remember({
+  it("updates memory content and rejects secret-looking updates", async () => {
+    const memory = await service.remember({
       projectRoot: tempDir,
       kind: "convention",
       content:
@@ -153,7 +154,7 @@ describe("ProjectMemoryService", () => {
       confidence: "medium"
     });
 
-    const updated = service.update({
+    const updated = await service.update({
       projectRoot: tempDir,
       id: memory.id,
       content:
@@ -164,18 +165,18 @@ describe("ProjectMemoryService", () => {
 
     expect(updated.confidence).toBe("high");
     expect(updated.content).toContain("stale");
-    expect(() =>
+    await expect(
       service.update({
         projectRoot: tempDir,
         id: memory.id,
         content: "The secret token is API_TOKEN=sk-abcdefghijklmnopqrstuvwxyz1234567890.",
         reason: "Bad update."
       })
-    ).toThrow(MemoryQualityError);
+    ).rejects.toThrow(MemoryQualityError);
   });
 
-  it("keeps a project-scoped audit event after hard delete", () => {
-    const memory = service.remember({
+  it("keeps a project-scoped audit event after hard delete", async () => {
+    const memory = await service.remember({
       projectRoot: tempDir,
       kind: "gotcha",
       content: "Temporary memory can be hard deleted when the user explicitly requests permanent removal.",
@@ -194,8 +195,8 @@ describe("ProjectMemoryService", () => {
     expect(service.exportProject(tempDir, true).events.map((event) => event.action)).toContain("hard_deleted");
   });
 
-  it("exports and imports project memory", () => {
-    service.remember({
+  it("exports and imports project memory", async () => {
+    await service.remember({
       projectRoot: tempDir,
       kind: "architecture",
       content:
@@ -206,37 +207,39 @@ describe("ProjectMemoryService", () => {
 
     const exportJson = service.exportProject(tempDir);
     const otherRoot = path.join(tempDir, "other-checkout");
-    const result = service.importProject(otherRoot, exportJson);
+    const result = await service.importProject(otherRoot, exportJson);
 
     expect(result.imported).toBe(1);
-    expect(service.search({ projectRoot: otherRoot, query: "SQLite FTS search" })).toHaveLength(1);
+    expect(await service.search({ projectRoot: otherRoot, query: "SQLite FTS search" })).toHaveLength(1);
   });
 
-  it("rejects malformed imports", () => {
-    expect(() => service.importProject(tempDir, { memories: [] })).toThrow("Invalid project memory export shape.");
+  it("rejects malformed imports", async () => {
+    await expect(service.importProject(tempDir, { memories: [] })).rejects.toThrow(
+      "Invalid project memory export shape."
+    );
   });
 
-  it("rejects imports with invalid memory record fields", () => {
-    expect(() =>
+  it("rejects imports with invalid memory record fields", async () => {
+    await expect(
       service.importProject(tempDir, {
         project: { rootPath: tempDir, name: "test" },
         memories: [{ kind: "bad-kind", content: "some content", whyUsefulLater: "reason" }],
         events: []
       })
-    ).toThrow("Memory record has invalid kind");
+    ).rejects.toThrow("Memory record has invalid kind");
 
-    expect(() =>
+    await expect(
       service.importProject(tempDir, {
         project: { rootPath: tempDir, name: "test" },
         memories: [{ kind: "decision", content: "", whyUsefulLater: "reason" }],
         events: []
       })
-    ).toThrow("Memory record missing required content field");
+    ).rejects.toThrow("Memory record missing required content field");
   });
 
-  it("blocks access to memory from a different project", () => {
+  it("blocks access to memory from a different project", async () => {
     const otherRoot = path.join(tempDir, "other-project");
-    const memory = service.remember({
+    const memory = await service.remember({
       projectRoot: tempDir,
       kind: "decision",
       content: "Project ownership is enforced: memory from one project cannot be accessed by another project.",
@@ -245,14 +248,14 @@ describe("ProjectMemoryService", () => {
     });
 
     expect(() => service.get(otherRoot, memory.id)).toThrow("Memory not found for project");
-    expect(() =>
+    await expect(
       service.update({ projectRoot: otherRoot, id: memory.id, content: "cross-project tamper attempt content here" })
-    ).toThrow("Memory not found for project");
+    ).rejects.toThrow("Memory not found for project");
     expect(() => service.forget({ projectRoot: otherRoot, id: memory.id })).toThrow("Memory not found for project");
   });
 
-  it("normalizes tags to lowercase and drops tags with disallowed characters", () => {
-    const memory = service.remember({
+  it("normalizes tags to lowercase and drops tags with disallowed characters", async () => {
+    const memory = await service.remember({
       projectRoot: tempDir,
       kind: "convention",
       content: "Tag validation normalizes tags to lowercase and drops tags that contain spaces or special characters.",
@@ -269,8 +272,8 @@ describe("ProjectMemoryService", () => {
     expect(memory.tags).not.toContain("has.dot"); // dot not in [a-z0-9_-]
   });
 
-  it("handles non-tokenizable queries gracefully by falling back to LIKE search", () => {
-    service.remember({
+  it("handles non-tokenizable queries gracefully by falling back to LIKE search", async () => {
+    await service.remember({
       projectRoot: tempDir,
       kind: "gotcha",
       content: "Non-tokenizable queries such as emoji-only strings fall back to LIKE search without error.",
@@ -278,14 +281,14 @@ describe("ProjectMemoryService", () => {
       confidence: "medium"
     });
 
-    expect(() => service.search({ projectRoot: tempDir, query: "🔥" })).not.toThrow();
+    await expect(service.search({ projectRoot: tempDir, query: "🔥" })).resolves.toBeDefined();
     // Single-char query produces no FTS terms, so falls back to LIKE and still matches
-    const results = service.search({ projectRoot: tempDir, query: "e" });
+    const results = await service.search({ projectRoot: tempDir, query: "e" });
     expect(results.length).toBeGreaterThan(0);
   });
 
-  it("can update fields of an already-archived memory", () => {
-    const memory = service.remember({
+  it("can update fields of an already-archived memory", async () => {
+    const memory = await service.remember({
       projectRoot: tempDir,
       kind: "gotcha",
       content: "Archived memories remain updatable so their confidence and notes can be corrected before review.",
@@ -294,7 +297,7 @@ describe("ProjectMemoryService", () => {
     });
 
     service.forget({ projectRoot: tempDir, id: memory.id, reason: "Archiving for test." });
-    const updated = service.update({
+    const updated = await service.update({
       projectRoot: tempDir,
       id: memory.id,
       confidence: "high",
@@ -305,8 +308,8 @@ describe("ProjectMemoryService", () => {
     expect(updated.archivedAt).not.toBeNull();
   });
 
-  it("captures task summaries with partial skips", () => {
-    const result = service.captureTaskSummary({
+  it("captures task summaries with partial skips", async () => {
+    const result = await service.captureTaskSummary({
       projectRoot: tempDir,
       taskSummary: "Added project memory feature.",
       durableLearnings: [
@@ -402,7 +405,7 @@ describe("ProjectMemoryService", () => {
     }
   });
 
-  it("finds possible project matches for the same git remote without linking", () => {
+  it("finds possible project matches for the same git remote without linking", async () => {
     const firstRoot = path.join(tempDir, "first");
     const secondRoot = path.join(tempDir, "second");
     execFileSync("git", ["init", firstRoot], { stdio: "ignore" });
@@ -414,7 +417,7 @@ describe("ProjectMemoryService", () => {
       stdio: "ignore"
     });
 
-    service.remember({
+    await service.remember({
       projectRoot: firstRoot,
       kind: "decision",
       content: "Project match detection stores a remote fingerprint without merging checkout paths automatically.",
@@ -441,8 +444,8 @@ afterEach(() => {
 });
 
 describe("UserMemoryService", () => {
-  it("stores and searches user memory", () => {
-    const memory = userService.remember({
+  it("stores and searches user memory", async () => {
+    const memory = await userService.remember({
       kind: "preference",
       content:
         "The user consistently prefers TypeScript strict mode enabled in every project and expects explicit return types on all exported functions.",
@@ -451,7 +454,7 @@ describe("UserMemoryService", () => {
       confidence: "high"
     });
 
-    const results = userService.search({ query: "typescript strict mode" });
+    const results = await userService.search({ query: "typescript strict mode" });
 
     expect(memory.id).toBeGreaterThan(0);
     expect(memory.kind).toBe("preference");
@@ -459,8 +462,8 @@ describe("UserMemoryService", () => {
     expect(results[0]?.content).toContain("strict mode");
   });
 
-  it("filters search by kind and tag", () => {
-    userService.remember({
+  it("filters search by kind and tag", async () => {
+    await userService.remember({
       kind: "preference",
       content:
         "User prefers dark-themed terminal output using ANSI color codes for all CLI tools and development scripts.",
@@ -468,7 +471,7 @@ describe("UserMemoryService", () => {
       tags: ["cli", "colors"],
       confidence: "medium"
     });
-    userService.remember({
+    await userService.remember({
       kind: "behavior",
       content:
         "User habitually runs the full test suite before committing and expects agents to do the same before marking tasks complete.",
@@ -477,44 +480,44 @@ describe("UserMemoryService", () => {
       confidence: "high"
     });
 
-    const results = userService.search({ query: "colors output", kinds: ["preference"], tags: ["cli"] });
+    const results = await userService.search({ query: "colors output", kinds: ["preference"], tags: ["cli"] });
 
     expect(results).toHaveLength(1);
     expect(results[0]?.kind).toBe("preference");
     expect(results[0]?.tags).toContain("cli");
   });
 
-  it("rejects vague user memory content", () => {
-    expect(() =>
+  it("rejects vague user memory content", async () => {
+    await expect(
       userService.remember({
         kind: "behavior",
         content: "fixed the issue",
         whyUsefulLater: "Future agents need this to understand user behavior patterns well enough to act."
       })
-    ).toThrow(MemoryQualityError);
+    ).rejects.toThrow(MemoryQualityError);
   });
 
-  it("rejects secret-looking user memory", () => {
-    expect(() =>
+  it("rejects secret-looking user memory", async () => {
+    await expect(
       userService.remember({
         kind: "preference",
         content: "User prefers API_KEY=sk-abcdefghijklmnopqrstuvwxyz1234567890 to be used for all OpenAI API requests.",
         whyUsefulLater: "Future agents need this credential to make API calls on behalf of the user."
       })
-    ).toThrow(MemoryQualityError);
+    ).rejects.toThrow(MemoryQualityError);
   });
 
-  it("rejects command-output-looking user memory", () => {
-    expect(() =>
+  it("rejects command-output-looking user memory", async () => {
+    await expect(
       userService.remember({
         kind: "workflow",
         content: "npm test\npassed everything and there are no durable workflow learnings here for the user.",
         whyUsefulLater: "Future agents do not need raw command output as durable user knowledge."
       })
-    ).toThrow(MemoryQualityError);
+    ).rejects.toThrow(MemoryQualityError);
   });
 
-  it("rejects duplicate user memory", () => {
+  it("rejects duplicate user memory", async () => {
     const input = {
       kind: "convention" as const,
       content:
@@ -522,13 +525,13 @@ describe("UserMemoryService", () => {
       whyUsefulLater: "Agents should use two-space indentation without asking when editing user files."
     };
 
-    userService.remember(input);
+    await userService.remember(input);
 
-    expect(() => userService.remember(input)).toThrow(MemoryQualityError);
+    await expect(userService.remember(input)).rejects.toThrow(MemoryQualityError);
   });
 
-  it("archives user memory by default", () => {
-    const memory = userService.remember({
+  it("archives user memory by default", async () => {
+    const memory = await userService.remember({
       kind: "tool_preference",
       content:
         "User previously preferred the Yarn package manager for all Node.js projects over npm and pnpm alternatives.",
@@ -539,12 +542,12 @@ describe("UserMemoryService", () => {
     const result = userService.forget({ id: memory.id, reason: "User switched to pnpm." });
 
     expect(result).toEqual({ archived: true, deleted: false });
-    expect(userService.search({ query: "Yarn package manager" })).toHaveLength(0);
-    expect(userService.search({ query: "Yarn package manager", includeArchived: true })).toHaveLength(1);
+    expect(await userService.search({ query: "Yarn package manager" })).toHaveLength(0);
+    expect(await userService.search({ query: "Yarn package manager", includeArchived: true })).toHaveLength(1);
   });
 
-  it("hard-deletes user memory and keeps audit event", () => {
-    const memory = userService.remember({
+  it("hard-deletes user memory and keeps audit event", async () => {
+    const memory = await userService.remember({
       kind: "context",
       content:
         "User is a senior backend engineer at Acme Corp working primarily on distributed systems and data pipelines.",
@@ -560,8 +563,8 @@ describe("UserMemoryService", () => {
     expect(exported.events.map((e) => e.action)).toContain("hard_deleted");
   });
 
-  it("exports and imports user memory", () => {
-    userService.remember({
+  it("exports and imports user memory", async () => {
+    await userService.remember({
       kind: "communication",
       content:
         "User prefers concise, bullet-point explanations rather than long prose paragraphs when receiving technical summaries.",
@@ -573,59 +576,59 @@ describe("UserMemoryService", () => {
     const exported = userService.export();
     const newStore = new ProjectMemoryStore(path.join(tempDir, "user-import-target.sqlite"));
     const newService = new UserMemoryService(newStore);
-    const result = newService.import(exported);
+    const result = await newService.import(exported);
 
     expect(result.imported).toBe(1);
-    expect(newService.search({ query: "bullet-point summaries" })).toHaveLength(1);
+    expect(await newService.search({ query: "bullet-point summaries" })).toHaveLength(1);
     newStore.close();
   });
 
-  it("rejects malformed user memory import", () => {
-    expect(() => userService.import({ memories: [] })).toThrow("Invalid user memory export shape.");
-    expect(() => userService.import({ events: [] })).toThrow("Invalid user memory export shape.");
+  it("rejects malformed user memory import", async () => {
+    await expect(userService.import({ memories: [] })).rejects.toThrow("Invalid user memory export shape.");
+    await expect(userService.import({ events: [] })).rejects.toThrow("Invalid user memory export shape.");
   });
 
-  it("rejects user memory import with invalid kind", () => {
-    expect(() =>
+  it("rejects user memory import with invalid kind", async () => {
+    await expect(
       userService.import({
         memories: [{ kind: "bad-kind", content: "some content", whyUsefulLater: "reason" }],
         events: []
       })
-    ).toThrow("Memory record has invalid kind");
+    ).rejects.toThrow("Memory record has invalid kind");
   });
 
-  it("rejects user memory import with missing required fields", () => {
-    expect(() =>
+  it("rejects user memory import with missing required fields", async () => {
+    await expect(
       userService.import({
         memories: [{ kind: "preference", content: "", whyUsefulLater: "reason" }],
         events: []
       })
-    ).toThrow("Memory record missing required content field");
+    ).rejects.toThrow("Memory record missing required content field");
 
-    expect(() =>
+    await expect(
       userService.import({
         memories: [{ kind: "preference", content: "some valid content here for the test", whyUsefulLater: "" }],
         events: []
       })
-    ).toThrow("Memory record missing required whyUsefulLater field");
+    ).rejects.toThrow("Memory record missing required whyUsefulLater field");
   });
 
-  it("returns brief with correct category groupings", () => {
-    userService.remember({
+  it("returns brief with correct category groupings", async () => {
+    await userService.remember({
       kind: "preference",
       content:
         "User strongly prefers functional programming patterns over object-oriented class hierarchies in all TypeScript code.",
       whyUsefulLater: "Agents should use functional style by default without waiting for the user to request it.",
       confidence: "high"
     });
-    userService.remember({
+    await userService.remember({
       kind: "behavior",
       content:
         "User consistently opens a scratch file to prototype ideas before writing production code in any codebase.",
       whyUsefulLater: "Agents should suggest a scratch file when the user seems to be in exploratory mode.",
       confidence: "medium"
     });
-    userService.remember({
+    await userService.remember({
       kind: "context",
       content:
         "User works as a principal engineer at a fintech startup where correctness and auditability are top priorities.",
@@ -641,8 +644,8 @@ describe("UserMemoryService", () => {
     expect(brief.recent.length).toBeGreaterThan(0);
   });
 
-  it("update corrects content and rejects secret updates", () => {
-    const memory = userService.remember({
+  it("update corrects content and rejects secret updates", async () => {
+    const memory = await userService.remember({
       kind: "workflow",
       content:
         "User always reviews the full diff before merging pull requests and expects agents to summarize changes clearly.",
@@ -650,7 +653,7 @@ describe("UserMemoryService", () => {
       confidence: "medium"
     });
 
-    const updated = userService.update({
+    const updated = await userService.update({
       id: memory.id,
       content:
         "User always reviews the full diff before merging pull requests and expects agents to summarize changes in bullet points.",
@@ -661,23 +664,23 @@ describe("UserMemoryService", () => {
     expect(updated.confidence).toBe("high");
     expect(updated.content).toContain("bullet points");
 
-    expect(() =>
+    await expect(
       userService.update({
         id: memory.id,
         content: "The secret token is API_TOKEN=sk-abcdefghijklmnopqrstuvwxyz1234567890.",
         reason: "Bad update."
       })
-    ).toThrow(MemoryQualityError);
+    ).rejects.toThrow(MemoryQualityError);
   });
 
-  it("throws when getting or updating a non-existent user memory", () => {
+  it("throws when getting or updating a non-existent user memory", async () => {
     expect(() => userService.get(99999)).toThrow("User memory not found");
-    expect(() => userService.update({ id: 99999, reason: "test" })).toThrow("User memory not found");
+    await expect(userService.update({ id: 99999, reason: "test" })).rejects.toThrow("User memory not found");
     expect(() => userService.forget({ id: 99999 })).toThrow("User memory not found");
   });
 
-  it("normalizes tags to lowercase and drops disallowed characters", () => {
-    const memory = userService.remember({
+  it("normalizes tags to lowercase and drops disallowed characters", async () => {
+    const memory = await userService.remember({
       kind: "convention",
       content:
         "User applies kebab-case naming for all CSS class names and file names across every front-end project they work on.",
@@ -693,8 +696,8 @@ describe("UserMemoryService", () => {
     expect(memory.tags).not.toContain("has.dot");
   });
 
-  it("handles non-tokenizable queries without error via LIKE fallback", () => {
-    userService.remember({
+  it("handles non-tokenizable queries without error via LIKE fallback", async () => {
+    await userService.remember({
       kind: "preference",
       content:
         "User prefers emoji-free output in all terminal and chat responses because they use a terminal without proper emoji support.",
@@ -702,13 +705,13 @@ describe("UserMemoryService", () => {
       confidence: "medium"
     });
 
-    expect(() => userService.search({ query: "🔥" })).not.toThrow();
-    const results = userService.search({ query: "e" });
+    await expect(userService.search({ query: "🔥" })).resolves.toBeDefined();
+    const results = await userService.search({ query: "e" });
     expect(results.length).toBeGreaterThan(0);
   });
 
-  it("can update an already-archived user memory", () => {
-    const memory = userService.remember({
+  it("can update an already-archived user memory", async () => {
+    const memory = await userService.remember({
       kind: "behavior",
       content:
         "User sometimes skips writing tests for utility functions but expects tests for all business logic paths.",
@@ -717,13 +720,13 @@ describe("UserMemoryService", () => {
     });
 
     userService.forget({ id: memory.id, reason: "Archiving for test." });
-    const updated = userService.update({ id: memory.id, confidence: "high", reason: "Correcting confidence." });
+    const updated = await userService.update({ id: memory.id, confidence: "high", reason: "Correcting confidence." });
 
     expect(updated.confidence).toBe("high");
     expect(updated.archivedAt).not.toBeNull();
   });
 
-  it("skips low-quality entries during import and counts them as skipped", () => {
+  it("skips low-quality entries during import and counts them as skipped", async () => {
     const exported = {
       exportedAt: new Date().toISOString(),
       memories: [
@@ -764,7 +767,7 @@ describe("UserMemoryService", () => {
       events: []
     };
 
-    const result = userService.import(exported);
+    const result = await userService.import(exported);
 
     expect(result.imported).toBe(1);
     expect(result.skipped).toBe(1);

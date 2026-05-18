@@ -13,6 +13,7 @@ import type {
   UserSearchInput
 } from "./types.js";
 import { ProjectMemoryStore } from "./db.js";
+import { embed, memoryEmbedText } from "./embedding.js";
 
 export class MemoryQualityError extends Error {
   constructor(readonly reasons: string[]) {
@@ -23,7 +24,7 @@ export class MemoryQualityError extends Error {
 export class ProjectMemoryService {
   constructor(private readonly store: ProjectMemoryStore) {}
 
-  remember(input: RememberInput): MemoryRecord {
+  async remember(input: RememberInput): Promise<MemoryRecord> {
     const project = this.store.getOrCreateProject(input.projectRoot);
     const existing = this.store.listActiveMemories(project.id);
     const quality = evaluateMemoryQuality(input, existing);
@@ -31,29 +32,54 @@ export class ProjectMemoryService {
       throw new MemoryQualityError(quality.reasons);
     }
 
-    return this.store.createMemory({
+    const tags = normalizeTags(input.tags);
+    const memory = this.store.createMemory({
       projectId: project.id,
       kind: input.kind,
       content: input.content.trim(),
       summary: cleanOptional(input.summary),
       whyUsefulLater: input.whyUsefulLater?.trim() ?? "",
-      tags: normalizeTags(input.tags),
+      tags,
       confidence: input.confidence ?? "medium",
       source: cleanOptional(input.source),
       sourceRef: cleanOptional(input.sourceRef)
     });
+
+    try {
+      const text = memoryEmbedText(memory.content, memory.summary, memory.tags);
+      const vectors = await embed([text]);
+      if (vectors[0]) {
+        this.store.upsertEmbedding(memory.id, vectors[0]);
+      }
+    } catch {
+      // Embedding failure is non-fatal — search falls back to FTS/LIKE
+    }
+
+    return memory;
   }
 
-  search(input: SearchInput): MemoryRecord[] {
+  async search(input: SearchInput): Promise<MemoryRecord[]> {
     const project = this.store.getOrCreateProject(input.projectRoot);
     const limit = clamp(input.k ?? 8, 1, 25);
     const fetchLimit = input.tags?.length ? limit * 4 : limit * 2;
+
+    let queryVector: Float32Array | undefined;
+    try {
+      const vectors = await embed([input.query]);
+      if (vectors[0]) {
+        queryVector = new Float32Array(vectors[0]);
+      }
+    } catch {
+      // Fall back to text search if embedding fails
+    }
+
     let results = this.store.searchMemories(
       project.id,
       input.query,
       fetchLimit,
       input.includeArchived ?? false,
-      input.kinds?.length ? input.kinds : undefined
+      input.kinds?.length ? input.kinds : undefined,
+      queryVector
     );
 
     if (input.tags?.length) {
@@ -79,7 +105,7 @@ export class ProjectMemoryService {
     return this.store.projectBrief(project.id);
   }
 
-  update(input: {
+  async update(input: {
     projectRoot: string;
     id: number;
     content?: string;
@@ -89,7 +115,7 @@ export class ProjectMemoryService {
     confidence?: Confidence;
     archive?: boolean;
     reason?: string;
-  }): MemoryRecord {
+  }): Promise<MemoryRecord> {
     const project = this.store.getOrCreateProject(input.projectRoot);
     const memory = this.store.getMemory(input.id);
     if (!memory || memory.projectId !== project.id) {
@@ -104,7 +130,7 @@ export class ProjectMemoryService {
       throw new MemoryQualityError(["Updated usefulness rationale looks like it may contain a secret or credential."]);
     }
 
-    return this.store.updateMemory(
+    const updated = this.store.updateMemory(
       input.id,
       {
         content: input.content?.trim(),
@@ -116,6 +142,20 @@ export class ProjectMemoryService {
       },
       input.reason ?? "Memory updated."
     );
+
+    if (!updated.archivedAt) {
+      try {
+        const text = memoryEmbedText(updated.content, updated.summary, updated.tags);
+        const vectors = await embed([text]);
+        if (vectors[0]) {
+          this.store.upsertEmbedding(updated.id, vectors[0]);
+        }
+      } catch {
+        // Non-fatal
+      }
+    }
+
+    return updated;
   }
 
   forget(input: { projectRoot: string; id: number; hardDelete?: boolean; reason?: string }): {
@@ -138,13 +178,13 @@ export class ProjectMemoryService {
     return { archived: true, deleted: false };
   }
 
-  captureTaskSummary(input: {
+  async captureTaskSummary(input: {
     projectRoot: string;
     taskSummary: string;
     durableLearnings: string[];
     testsRun: string[];
     shouldRemember: boolean;
-  }): { stored: MemoryRecord[]; skipped: string[] } {
+  }): Promise<{ stored: MemoryRecord[]; skipped: string[] }> {
     if (!input.shouldRemember) {
       return { stored: [], skipped: ["shouldRemember was false."] };
     }
@@ -155,7 +195,7 @@ export class ProjectMemoryService {
     for (const learning of input.durableLearnings) {
       try {
         stored.push(
-          this.remember({
+          await this.remember({
             projectRoot: input.projectRoot,
             kind: "handoff",
             content: learning,
@@ -176,6 +216,27 @@ export class ProjectMemoryService {
     return { stored, skipped };
   }
 
+  async backfillEmbeddings(): Promise<void> {
+    const unembedded = this.store.getUnembeddedMemoryIds();
+    if (unembedded.length === 0) {
+      return;
+    }
+
+    const texts = unembedded.map((item) => item.text);
+    try {
+      const vectors = await embed(texts);
+      for (let i = 0; i < unembedded.length; i++) {
+        const vec = vectors[i];
+        const item = unembedded[i];
+        if (vec && item) {
+          this.store.upsertEmbedding(item.memoryId, vec);
+        }
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
   exportProject(projectRoot: string, includeArchived = false): ProjectExport {
     const project = this.store.getOrCreateProject(projectRoot);
     return {
@@ -186,14 +247,14 @@ export class ProjectMemoryService {
     };
   }
 
-  importProject(projectRoot: string, exportJson: unknown): { imported: number; skipped: number } {
+  async importProject(projectRoot: string, exportJson: unknown): Promise<{ imported: number; skipped: number }> {
     const projectExport = validateProjectExport(exportJson);
     let imported = 0;
     let skipped = 0;
 
     for (const memory of projectExport.memories) {
       try {
-        this.remember({
+        await this.remember({
           projectRoot,
           kind: memory.kind,
           content: memory.content,
@@ -257,33 +318,58 @@ export class ProjectMemoryService {
 export class UserMemoryService {
   constructor(private readonly store: ProjectMemoryStore) {}
 
-  remember(input: UserRememberInput): UserMemoryRecord {
+  async remember(input: UserRememberInput): Promise<UserMemoryRecord> {
     const existing = this.store.listActiveUserMemories();
     const quality = evaluateUserMemoryQuality(input, existing);
     if (!quality.ok) {
       throw new MemoryQualityError(quality.reasons);
     }
 
-    return this.store.createUserMemory({
+    const tags = normalizeTags(input.tags);
+    const memory = this.store.createUserMemory({
       kind: input.kind,
       content: input.content.trim(),
       summary: cleanOptional(input.summary),
       whyUsefulLater: input.whyUsefulLater.trim(),
-      tags: normalizeTags(input.tags),
+      tags,
       confidence: input.confidence ?? "medium",
       source: cleanOptional(input.source),
       sourceRef: cleanOptional(input.sourceRef)
     });
+
+    try {
+      const text = memoryEmbedText(memory.content, memory.summary, memory.tags);
+      const vectors = await embed([text]);
+      if (vectors[0]) {
+        this.store.upsertUserEmbedding(memory.id, vectors[0]);
+      }
+    } catch {
+      // Non-fatal
+    }
+
+    return memory;
   }
 
-  search(input: UserSearchInput): UserMemoryRecord[] {
+  async search(input: UserSearchInput): Promise<UserMemoryRecord[]> {
     const limit = clamp(input.k ?? 8, 1, 25);
     const fetchLimit = input.tags?.length ? limit * 4 : limit * 2;
+
+    let queryVector: Float32Array | undefined;
+    try {
+      const vectors = await embed([input.query]);
+      if (vectors[0]) {
+        queryVector = new Float32Array(vectors[0]);
+      }
+    } catch {
+      // Fall back to text search
+    }
+
     let results = this.store.searchUserMemories(
       input.query,
       fetchLimit,
       input.includeArchived ?? false,
-      input.kinds?.length ? input.kinds : undefined
+      input.kinds?.length ? input.kinds : undefined,
+      queryVector
     );
 
     if (input.tags?.length) {
@@ -306,7 +392,7 @@ export class UserMemoryService {
     return this.store.userMemoryBrief();
   }
 
-  update(input: {
+  async update(input: {
     id: number;
     content?: string;
     summary?: string;
@@ -315,7 +401,7 @@ export class UserMemoryService {
     confidence?: Confidence;
     archive?: boolean;
     reason?: string;
-  }): UserMemoryRecord {
+  }): Promise<UserMemoryRecord> {
     const memory = this.store.getUserMemory(input.id);
     if (!memory) {
       throw new Error(`User memory not found: ${input.id}`);
@@ -329,7 +415,7 @@ export class UserMemoryService {
       throw new MemoryQualityError(["Updated usefulness rationale looks like it may contain a secret or credential."]);
     }
 
-    return this.store.updateUserMemory(
+    const updated = this.store.updateUserMemory(
       input.id,
       {
         content: input.content?.trim(),
@@ -341,6 +427,20 @@ export class UserMemoryService {
       },
       input.reason ?? "User memory updated."
     );
+
+    if (!updated.archivedAt) {
+      try {
+        const text = memoryEmbedText(updated.content, updated.summary, updated.tags);
+        const vectors = await embed([text]);
+        if (vectors[0]) {
+          this.store.upsertUserEmbedding(updated.id, vectors[0]);
+        }
+      } catch {
+        // Non-fatal
+      }
+    }
+
+    return updated;
   }
 
   forget(input: { id: number; hardDelete?: boolean; reason?: string }): { archived: boolean; deleted: boolean } {
@@ -359,6 +459,27 @@ export class UserMemoryService {
     return { archived: true, deleted: false };
   }
 
+  async backfillEmbeddings(): Promise<void> {
+    const unembedded = this.store.getUnembeddedUserMemoryIds();
+    if (unembedded.length === 0) {
+      return;
+    }
+
+    const texts = unembedded.map((item) => item.text);
+    try {
+      const vectors = await embed(texts);
+      for (let i = 0; i < unembedded.length; i++) {
+        const vec = vectors[i];
+        const item = unembedded[i];
+        if (vec && item) {
+          this.store.upsertUserEmbedding(item.memoryId, vec);
+        }
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
   export(includeArchived = false): UserMemoryExport {
     return {
       exportedAt: new Date().toISOString(),
@@ -367,14 +488,14 @@ export class UserMemoryService {
     };
   }
 
-  import(exportJson: unknown): { imported: number; skipped: number } {
+  async import(exportJson: unknown): Promise<{ imported: number; skipped: number }> {
     const userExport = validateUserMemoryExport(exportJson);
     let imported = 0;
     let skipped = 0;
 
     for (const memory of userExport.memories) {
       try {
-        this.remember({
+        await this.remember({
           kind: memory.kind,
           content: memory.content,
           summary: memory.summary ?? undefined,

@@ -27,6 +27,12 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Cache HuggingFace model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-model-all-minilm-l6-v2
+
       - name: Install project-memory MCP server dependencies
         working-directory: plugins/albino/mcp-servers/project-memory
         run: bun install --frozen-lockfile

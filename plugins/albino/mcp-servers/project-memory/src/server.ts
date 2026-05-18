@@ -72,7 +72,7 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
         sourceRef: z.string().optional().describe("Optional reference such as a file path, PR number, or test command.")
       }
     },
-    async (input) => jsonResult(service.remember(input))
+    async (input) => jsonResult(await service.remember(input))
   );
 
   server.registerTool(
@@ -90,7 +90,7 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
         includeArchived: includeArchivedField
       }
     },
-    async (input) => jsonResult(service.search(input))
+    async (input) => jsonResult(await service.search(input))
   );
 
   server.registerTool(
@@ -138,7 +138,7 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
         reason: reasonField
       }
     },
-    async (input) => jsonResult(service.update(input))
+    async (input) => jsonResult(await service.update(input))
   );
 
   server.registerTool(
@@ -176,7 +176,7 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
         shouldRemember: z.boolean().describe("Set false to skip storage entirely when nothing durable was learned.")
       }
     },
-    async (input) => jsonResult(service.captureTaskSummary(input))
+    async (input) => jsonResult(await service.captureTaskSummary(input))
   );
 
   server.registerTool(
@@ -204,7 +204,7 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
         exportJson: z.unknown().describe("JSON object produced by memory.export_project.")
       }
     },
-    async ({ projectRoot, exportJson }) => jsonResult(service.importProject(projectRoot, exportJson))
+    async ({ projectRoot, exportJson }) => jsonResult(await service.importProject(projectRoot, exportJson))
   );
 
   server.registerTool(
@@ -252,7 +252,7 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
         sourceRef: z.string().optional().describe("Optional contextual reference.")
       }
     },
-    async (input) => jsonResult(userService.remember(input))
+    async (input) => jsonResult(await userService.remember(input))
   );
 
   server.registerTool(
@@ -271,7 +271,7 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
         includeArchived: includeArchivedField
       }
     },
-    async (input) => jsonResult(userService.search(input))
+    async (input) => jsonResult(await userService.search(input))
   );
 
   server.registerTool(
@@ -315,7 +315,7 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
         reason: reasonField
       }
     },
-    async (input) => jsonResult(userService.update(input))
+    async (input) => jsonResult(await userService.update(input))
   );
 
   server.registerTool(
@@ -356,7 +356,7 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
         exportJson: z.unknown().describe("JSON object produced by user.export.")
       }
     },
-    async ({ exportJson }) => jsonResult(userService.import(exportJson))
+    async ({ exportJson }) => jsonResult(await userService.import(exportJson))
   );
 
   registerResource(

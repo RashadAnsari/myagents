@@ -9,14 +9,15 @@
   },
   "scripts": {
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
     "lint": "eslint .",
     "start": "bun src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "bun test"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "@modelcontextprotocol/sdk": "1.29.0",
+    "sqlite-vec": "^0.1.9",
     "zod": "4.4.3"
   },
   "devDependencies": {

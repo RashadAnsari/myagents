@@ -1,7 +1,25 @@
 import { Database } from "bun:sqlite";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
+import { platform } from "node:process";
+import * as sqliteVec from "sqlite-vec";
+
+// On macOS, Bun's bundled SQLite is the Apple-patched build which disables
+// dynamic extension loading. We need to point it at Homebrew's vanilla build.
+if (platform === "darwin") {
+  const HOMEBREW_SQLITE_PATHS = [
+    "/opt/homebrew/opt/sqlite/lib/libsqlite3.dylib", // Apple Silicon
+    "/usr/local/opt/sqlite/lib/libsqlite3.dylib" // Intel
+  ];
+  for (const libPath of HOMEBREW_SQLITE_PATHS) {
+    if (existsSync(libPath)) {
+      Database.setCustomSQLite(libPath);
+      break;
+    }
+  }
+}
 import { fingerprintRemote, getGitRemote, normalizeProjectRoot, projectNameFromRoot } from "./paths.js";
+import { memoryEmbedText } from "./embedding.js";
 import type {
   Confidence,
   MemoryEventRecord,
@@ -76,7 +94,7 @@ interface UserEventRow {
   created_at: string;
 }
 
-export interface CreateMemoryParams {
+interface CreateMemoryParams {
   projectId: number;
   kind: MemoryKind;
   content: string;
@@ -88,7 +106,7 @@ export interface CreateMemoryParams {
   sourceRef: string | null;
 }
 
-export interface CreateUserMemoryParams {
+interface CreateUserMemoryParams {
   kind: UserMemoryKind;
   content: string;
   summary: string | null;
@@ -105,6 +123,7 @@ export class ProjectMemoryStore {
   constructor(dbPath: string) {
     mkdirSync(path.dirname(dbPath), { recursive: true });
     this.db = new Database(dbPath);
+    sqliteVec.load(this.db);
     this.db.exec("PRAGMA journal_mode = WAL;");
     this.db.exec("PRAGMA foreign_keys = ON;");
     this.migrate();
@@ -268,6 +287,8 @@ export class ProjectMemoryStore {
     }
 
     this.upsertFts(memory);
+    // Remove embedding for archived memory
+    this.db.query("DELETE FROM memory_vec WHERE memory_id = ?").run(id);
     this.addEvent(id, "forgotten", reason);
     return memory;
   }
@@ -279,6 +300,7 @@ export class ProjectMemoryStore {
     }
 
     this.db.query("DELETE FROM memory_fts WHERE memory_id = ?").run(id);
+    this.db.query("DELETE FROM memory_vec WHERE memory_id = ?").run(id);
     this.db.query("DELETE FROM memories WHERE id = ?").run(id);
     this.addEvent(id, "hard_deleted", reason, memory.projectId);
   }
@@ -288,8 +310,17 @@ export class ProjectMemoryStore {
     query: string,
     limit: number,
     includeArchived = false,
-    kinds?: MemoryKind[]
+    kinds?: MemoryKind[],
+    queryVector?: Float32Array
   ): MemoryRecord[] {
+    if (queryVector) {
+      const vectorResults = this.vectorSearchMemories(projectId, queryVector, limit, includeArchived, kinds);
+      if (vectorResults.length > 0) {
+        this.markUsed(vectorResults.map((memory) => memory.id));
+        return vectorResults;
+      }
+    }
+
     const matchQuery = buildFtsQuery(query);
     if (!matchQuery) {
       return this.likeSearch(projectId, query, limit, includeArchived, kinds);
@@ -321,6 +352,41 @@ export class ProjectMemoryStore {
       return memories;
     } catch {
       return this.likeSearch(projectId, query, limit, includeArchived, kinds);
+    }
+  }
+
+  vectorSearchMemories(
+    projectId: number,
+    queryVector: Float32Array,
+    limit: number,
+    includeArchived: boolean,
+    kinds?: MemoryKind[]
+  ): MemoryRecord[] {
+    try {
+      const archivedWhere = includeArchived ? "" : "AND memories.archived_at IS NULL";
+      const kindsWhere = kinds?.length ? `AND memories.kind IN (${kinds.map(() => "?").join(", ")})` : "";
+
+      const rows = this.db
+        .query(
+          `WITH knn AS (
+             SELECT memory_id, distance
+             FROM memory_vec
+             WHERE embedding MATCH ?
+               AND k = ?
+           )
+           SELECT memories.*
+           FROM knn
+           JOIN memories ON memories.id = knn.memory_id
+           WHERE memories.project_id = ?
+             ${archivedWhere}
+             ${kindsWhere}
+           ORDER BY knn.distance`
+        )
+        .all(queryVector, limit, projectId, ...(kinds ?? [])) as MemoryRow[];
+
+      return rows.map(mapMemory);
+    } catch {
+      return [];
     }
   }
 
@@ -493,6 +559,8 @@ export class ProjectMemoryStore {
     }
 
     this.upsertUserFts(memory);
+    // Remove embedding for archived user memory
+    this.db.query("DELETE FROM user_memory_vec WHERE memory_id = ?").run(id);
     this.addUserEvent(id, "forgotten", reason);
     return memory;
   }
@@ -504,6 +572,7 @@ export class ProjectMemoryStore {
     }
 
     this.db.query("DELETE FROM user_memory_fts WHERE memory_id = ?").run(id);
+    this.db.query("DELETE FROM user_memory_vec WHERE memory_id = ?").run(id);
     this.db.query("DELETE FROM user_memories WHERE id = ?").run(id);
     this.addUserEvent(id, "hard_deleted", reason);
   }
@@ -512,8 +581,17 @@ export class ProjectMemoryStore {
     query: string,
     limit: number,
     includeArchived = false,
-    kinds?: UserMemoryKind[]
+    kinds?: UserMemoryKind[],
+    queryVector?: Float32Array
   ): UserMemoryRecord[] {
+    if (queryVector) {
+      const vectorResults = this.vectorSearchUserMemories(queryVector, limit, includeArchived, kinds);
+      if (vectorResults.length > 0) {
+        this.markUserMemoriesUsed(vectorResults.map((m) => m.id));
+        return vectorResults;
+      }
+    }
+
     const matchQuery = buildFtsQuery(query);
     if (!matchQuery) {
       return this.likeSearchUserMemories(query, limit, includeArchived, kinds);
@@ -545,6 +623,40 @@ export class ProjectMemoryStore {
       return memories;
     } catch {
       return this.likeSearchUserMemories(query, limit, includeArchived, kinds);
+    }
+  }
+
+  vectorSearchUserMemories(
+    queryVector: Float32Array,
+    limit: number,
+    includeArchived: boolean,
+    kinds?: UserMemoryKind[]
+  ): UserMemoryRecord[] {
+    try {
+      const archivedWhere = includeArchived ? "" : "AND user_memories.archived_at IS NULL";
+      const kindsWhere = kinds?.length ? `AND user_memories.kind IN (${kinds.map(() => "?").join(", ")})` : "";
+
+      const rows = this.db
+        .query(
+          `WITH knn AS (
+             SELECT memory_id, distance
+             FROM user_memory_vec
+             WHERE embedding MATCH ?
+               AND k = ?
+           )
+           SELECT user_memories.*
+           FROM knn
+           JOIN user_memories ON user_memories.id = knn.memory_id
+           WHERE 1=1
+             ${archivedWhere}
+             ${kindsWhere}
+           ORDER BY knn.distance`
+        )
+        .all(queryVector, limit, ...(kinds ?? [])) as UserMemoryRow[];
+
+      return rows.map(mapUserMemory);
+    } catch {
+      return [];
     }
   }
 
@@ -628,6 +740,12 @@ export class ProjectMemoryStore {
       .run(memory.id, memory.content, memory.summary ?? "", memory.tags.join(" "), memory.whyUsefulLater);
   }
 
+  upsertUserEmbedding(memoryId: number, vector: number[]): void {
+    this.db.query("DELETE FROM user_memory_vec WHERE memory_id = ?").run(memoryId);
+    const f32 = new Float32Array(vector);
+    this.db.query("INSERT INTO user_memory_vec (memory_id, embedding) VALUES (?, ?)").run(memoryId, f32);
+  }
+
   private likeSearch(
     projectId: number,
     query: string,
@@ -680,6 +798,12 @@ export class ProjectMemoryStore {
     this.db
       .query("INSERT INTO memory_fts (memory_id, content, summary, tags, why_useful_later) VALUES (?, ?, ?, ?, ?)")
       .run(memory.id, memory.content, memory.summary ?? "", memory.tags.join(" "), memory.whyUsefulLater);
+  }
+
+  upsertEmbedding(memoryId: number, vector: number[]): void {
+    this.db.query("DELETE FROM memory_vec WHERE memory_id = ?").run(memoryId);
+    const f32 = new Float32Array(vector);
+    this.db.query("INSERT INTO memory_vec (memory_id, embedding) VALUES (?, ?)").run(memoryId, f32);
   }
 
   private migrate(): void {
@@ -770,6 +894,16 @@ export class ProjectMemoryStore {
         tags,
         why_useful_later
       );
+
+      CREATE VIRTUAL TABLE IF NOT EXISTS memory_vec USING vec0(
+        memory_id INTEGER PRIMARY KEY,
+        embedding float[384]
+      );
+
+      CREATE VIRTUAL TABLE IF NOT EXISTS user_memory_vec USING vec0(
+        memory_id INTEGER PRIMARY KEY,
+        embedding float[384]
+      );
     `);
 
     this.ensureColumn("memory_events", "project_id", "INTEGER");
@@ -787,6 +921,54 @@ export class ProjectMemoryStore {
           WHERE memories.id = memory_events.memory_id
         );
     `);
+  }
+
+  /**
+   * Returns IDs of active project memories that have no embedding in memory_vec.
+   * Used by memoryService to async-backfill embeddings after startup.
+   */
+  getUnembeddedMemoryIds(): { projectId: number; memoryId: number; text: string }[] {
+    const rows = this.db
+      .query(
+        `SELECT memories.id AS memory_id, memories.project_id, memories.content, memories.summary, memories.tags_json
+         FROM memories
+         LEFT JOIN memory_vec ON memory_vec.memory_id = memories.id
+         WHERE memories.archived_at IS NULL
+           AND memory_vec.memory_id IS NULL`
+      )
+      .all() as Array<{
+      memory_id: number;
+      project_id: number;
+      content: string;
+      summary: string | null;
+      tags_json: string;
+    }>;
+
+    return rows.map((row) => ({
+      projectId: row.project_id,
+      memoryId: row.memory_id,
+      text: memoryEmbedText(row.content, row.summary, JSON.parse(row.tags_json) as string[])
+    }));
+  }
+
+  /**
+   * Returns IDs of active user memories that have no embedding in user_memory_vec.
+   */
+  getUnembeddedUserMemoryIds(): { memoryId: number; text: string }[] {
+    const rows = this.db
+      .query(
+        `SELECT user_memories.id AS memory_id, user_memories.content, user_memories.summary, user_memories.tags_json
+         FROM user_memories
+         LEFT JOIN user_memory_vec ON user_memory_vec.memory_id = user_memories.id
+         WHERE user_memories.archived_at IS NULL
+           AND user_memory_vec.memory_id IS NULL`
+      )
+      .all() as Array<{ memory_id: number; content: string; summary: string | null; tags_json: string }>;
+
+    return rows.map((row) => ({
+      memoryId: row.memory_id,
+      text: memoryEmbedText(row.content, row.summary, JSON.parse(row.tags_json) as string[])
+    }));
   }
 
   private ensureColumn(tableName: string, columnName: string, columnDefinition: string): void {

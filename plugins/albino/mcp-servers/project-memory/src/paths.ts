@@ -46,7 +46,7 @@ export function getGitRemote(rootPath: string): string | null {
   }
 }
 
-export function normalizeGitRemote(remote: string): string {
+function normalizeGitRemote(remote: string): string {
   let normalized = remote.trim();
   normalized = normalized.replace(/^https?:\/\/([^/@]+@)?/i, "https://");
   normalized = normalized.replace(/^git@([^:]+):/, "https://$1/");
