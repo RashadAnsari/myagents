@@ -428,10 +428,6 @@ describe("ProjectMemoryService", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// UserMemoryService
-// ---------------------------------------------------------------------------
-
 let userStore: ProjectMemoryStore;
 let userService: UserMemoryService;
 

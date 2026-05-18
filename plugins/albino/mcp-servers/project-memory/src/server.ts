@@ -54,8 +54,6 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
     version: "0.1.0"
   });
 
-  // ── Project memory tools ──────────────────────────────────────────────────
-
   server.registerTool(
     "memory.remember",
     {
@@ -237,8 +235,6 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
     async ({ projectRoot }) => jsonResult(service.possibleProjectMatches(projectRoot))
   );
 
-  // ── User memory tools ─────────────────────────────────────────────────────
-
   server.registerTool(
     "user.remember",
     {
@@ -363,8 +359,6 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
     async ({ exportJson }) => jsonResult(userService.import(exportJson))
   );
 
-  // ── User memory resources ─────────────────────────────────────────────────
-
   registerResource(
     server,
     "user-memory-brief",
@@ -397,8 +391,6 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
     "Active user memories of kind context — role, team, domain, experience level, and background. Up to 8 entries ranked by confidence and usage.",
     () => userService.brief().context
   );
-
-  // ── User memory prompts ───────────────────────────────────────────────────
 
   server.registerPrompt(
     "user_memory_bootstrap",
@@ -455,8 +447,6 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
     })
   );
 
-  // ── Project memory resources ──────────────────────────────────────────────
-
   registerResource(
     server,
     "project-memory-brief",
@@ -497,8 +487,6 @@ export function createProjectMemoryServer(service: ProjectMemoryService, userSer
     "The 8 most recently updated active memories for the current project across all kinds. Useful for picking up where a previous agent left off.",
     () => service.projectBrief(currentProjectRoot()).recent
   );
-
-  // ── Project memory prompts ────────────────────────────────────────────────
 
   server.registerPrompt(
     "memory_bootstrap",
