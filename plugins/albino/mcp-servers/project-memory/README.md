@@ -52,10 +52,6 @@ When set, the database path becomes:
 /custom/memory/dir/memory.sqlite
 ```
 
-### Backward Compatibility
-
-If you have an existing database at the old location (`~/.myagents/memory.sqlite`) and the new location is empty, the server automatically copies the old database to the new path on first startup. No manual migration is needed.
-
 The database files are ignored by git.
 
 ## Project Memory

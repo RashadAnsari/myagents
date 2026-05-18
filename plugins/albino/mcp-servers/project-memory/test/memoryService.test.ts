@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { Database } from "bun:sqlite";
 import { tmpdir } from "node:os";
@@ -6,7 +6,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { ProjectMemoryStore } from "../src/db.js";
 import { MemoryQualityError, ProjectMemoryService, UserMemoryService } from "../src/memoryService.js";
-import { buildDefaultDatabasePath, defaultDatabasePath, defaultMemoryDir, normalizeProjectRoot } from "../src/paths.js";
+import { defaultDatabasePath, defaultMemoryDir, normalizeProjectRoot } from "../src/paths.js";
 
 let tempDir: string;
 let store: ProjectMemoryStore;
@@ -406,7 +406,7 @@ describe("ProjectMemoryService", () => {
     migratedStore.close();
   });
 
-  it("uses project-memory subdirectory when MYAGENTS_MEMORY_DIR is set", () => {
+  it("MYAGENTS_MEMORY_DIR override places database directly inside the specified directory", () => {
     const previous = process.env.MYAGENTS_MEMORY_DIR;
     process.env.MYAGENTS_MEMORY_DIR = path.join(tempDir, "override-memory");
     try {
@@ -418,42 +418,6 @@ describe("ProjectMemoryService", () => {
         process.env.MYAGENTS_MEMORY_DIR = previous;
       }
     }
-  });
-
-  it("buildDefaultDatabasePath places database in project-memory subdirectory", () => {
-    const fakeHome = path.join(tempDir, "fake-home");
-    const result = buildDefaultDatabasePath(fakeHome);
-    expect(result).toBe(path.join(fakeHome, ".myagents", "project-memory", "memory.sqlite"));
-  });
-
-  it("buildDefaultDatabasePath migrates old database to new location on first access", () => {
-    const fakeHome = path.join(tempDir, "migrate-home");
-    const oldDir = path.join(fakeHome, ".myagents");
-    mkdirSync(oldDir, { recursive: true });
-    const oldPath = path.join(oldDir, "memory.sqlite");
-    writeFileSync(oldPath, "old-db-sentinel");
-
-    const newPath = buildDefaultDatabasePath(fakeHome);
-
-    expect(newPath).toBe(path.join(fakeHome, ".myagents", "project-memory", "memory.sqlite"));
-    expect(existsSync(newPath)).toBe(true);
-    expect(readFileSync(newPath, "utf8")).toBe("old-db-sentinel");
-  });
-
-  it("buildDefaultDatabasePath does not overwrite new database with old one", () => {
-    const fakeHome = path.join(tempDir, "no-overwrite-home");
-    const oldDir = path.join(fakeHome, ".myagents");
-    const newDir = path.join(fakeHome, ".myagents", "project-memory");
-    mkdirSync(oldDir, { recursive: true });
-    mkdirSync(newDir, { recursive: true });
-    const oldPath = path.join(oldDir, "memory.sqlite");
-    const newPath = path.join(newDir, "memory.sqlite");
-    writeFileSync(oldPath, "old-content");
-    writeFileSync(newPath, "new-content");
-
-    buildDefaultDatabasePath(fakeHome);
-
-    expect(readFileSync(newPath, "utf8")).toBe("new-content");
   });
 
   it("finds possible project matches for the same git remote without linking", () => {
