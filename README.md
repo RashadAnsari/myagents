@@ -77,7 +77,7 @@ Project memory is stored outside git at `~/.myagents/memory.sqlite` by default. 
 
 | Event | Hook | Description |
 |-------|------|-------------|
-| `UserPromptSubmit` | `agents-reminder` | Injects mandatory `AGENTS.md` reminder and active skill list before every prompt |
+| `UserPromptSubmit` / `beforeSubmitPrompt` | `agents-reminder` | Injects mandatory `AGENTS.md` reminder and active skill list before every prompt |
 
 ---
 
