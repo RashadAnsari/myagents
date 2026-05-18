@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { ProjectMemoryStore } from "../src/db.js";
-import { ProjectMemoryService } from "../src/memoryService.js";
+import { ProjectMemoryService, UserMemoryService } from "../src/memoryService.js";
 import { createProjectMemoryServer } from "../src/server.js";
 
 let tempDir: string;
@@ -16,7 +16,8 @@ beforeEach(async () => {
   tempDir = mkdtempSync(path.join(tmpdir(), "project-memory-mcp-test-"));
   store = new ProjectMemoryStore(path.join(tempDir, "memory.sqlite"));
   const service = new ProjectMemoryService(store);
-  const server = createProjectMemoryServer(service);
+  const userService = new UserMemoryService(store);
+  const server = createProjectMemoryServer(service, userService);
   client = new Client({ name: "project-memory-test", version: "0.0.0" });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);

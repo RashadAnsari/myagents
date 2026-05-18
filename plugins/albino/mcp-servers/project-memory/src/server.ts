@@ -2,14 +2,18 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { ProjectMemoryStore } from "./db.js";
-import { ProjectMemoryService } from "./memoryService.js";
+import { ProjectMemoryService, UserMemoryService } from "./memoryService.js";
 import { currentProjectRoot, defaultDatabasePath } from "./paths.js";
-import { confidenceValues, memoryKinds } from "./types.js";
+import { confidenceValues, memoryKinds, userMemoryKinds } from "./types.js";
 
 const memoryKindSchema = z.enum(memoryKinds);
+const userMemoryKindSchema = z.enum(userMemoryKinds);
 const confidenceSchema = z.enum(confidenceValues);
 
-export function createProjectMemoryServer(service: ProjectMemoryService): McpServer {
+export function createProjectMemoryServer(
+  service: ProjectMemoryService,
+  userService: UserMemoryService
+): McpServer {
   const server = new McpServer({
     name: "myagents-project-memory",
     version: "0.1.0"
@@ -180,6 +184,185 @@ export function createProjectMemoryServer(service: ProjectMemoryService): McpSer
     async ({ projectRoot }) => jsonResult(service.possibleProjectMatches(projectRoot))
   );
 
+  server.registerTool(
+    "user.remember",
+    {
+      title: "Remember user knowledge",
+      description:
+        "Store durable, cross-project knowledge about the user — preferences, behaviors, context, workflows, conventions, tool choices, and communication style.",
+      inputSchema: {
+        kind: userMemoryKindSchema,
+        content: z.string().describe("Specific durable memory content."),
+        summary: z.string().optional(),
+        whyUsefulLater: z.string().describe("Required by policy: why future agents will need this."),
+        tags: z.array(z.string()).optional(),
+        confidence: confidenceSchema.optional(),
+        source: z.string().optional(),
+        sourceRef: z.string().optional()
+      }
+    },
+    async (input) => jsonResult(userService.remember(input))
+  );
+
+  server.registerTool(
+    "user.search",
+    {
+      title: "Search user memory",
+      description: "Search global user memory with optional kind and tag filters.",
+      inputSchema: {
+        query: z.string(),
+        k: z.number().int().positive().max(25).optional(),
+        kinds: z.array(userMemoryKindSchema).optional(),
+        tags: z.array(z.string()).optional(),
+        includeArchived: z.boolean().optional()
+      }
+    },
+    async (input) => jsonResult(userService.search(input))
+  );
+
+  server.registerTool(
+    "user.get",
+    {
+      title: "Get user memory",
+      description: "Fetch one user memory by id.",
+      inputSchema: {
+        id: z.number().int().positive()
+      }
+    },
+    async ({ id }) => jsonResult(userService.get(id))
+  );
+
+  server.registerTool(
+    "user.brief",
+    {
+      title: "User memory brief",
+      description:
+        "Return compact preferences, behaviors, context, and recent user memories. Read this at session start to understand the user.",
+      inputSchema: {}
+    },
+    async () => jsonResult(userService.brief())
+  );
+
+  server.registerTool(
+    "user.update",
+    {
+      title: "Update user memory",
+      description: "Correct, refine, or archive an existing user memory.",
+      inputSchema: {
+        id: z.number().int().positive(),
+        content: z.string().optional(),
+        summary: z.string().optional(),
+        whyUsefulLater: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+        confidence: confidenceSchema.optional(),
+        archive: z.boolean().optional(),
+        reason: z.string().optional()
+      }
+    },
+    async (input) => jsonResult(userService.update(input))
+  );
+
+  server.registerTool(
+    "user.forget",
+    {
+      title: "Forget user memory",
+      description: "Archive a user memory by default, or hard delete when explicitly requested.",
+      inputSchema: {
+        id: z.number().int().positive(),
+        hardDelete: z.boolean().optional(),
+        reason: z.string().optional()
+      }
+    },
+    async (input) => jsonResult(userService.forget(input))
+  );
+
+  server.registerTool(
+    "user.export",
+    {
+      title: "Export user memory",
+      description: "Export all user memory for backup or migration.",
+      inputSchema: {
+        includeArchived: z.boolean().optional()
+      }
+    },
+    async ({ includeArchived }) => jsonResult(userService.export(includeArchived ?? false))
+  );
+
+  server.registerTool(
+    "user.import",
+    {
+      title: "Import user memory",
+      description: "Import a user memory export with validation and deduplication.",
+      inputSchema: {
+        exportJson: z.unknown()
+      }
+    },
+    async ({ exportJson }) => jsonResult(userService.import(exportJson))
+  );
+
+  registerResource(server, "user-memory-brief", "memory://user/brief", () => userService.brief());
+  registerResource(
+    server,
+    "user-memory-preferences",
+    "memory://user/preferences",
+    () => userService.brief().preferences
+  );
+  registerResource(server, "user-memory-behaviors", "memory://user/behaviors", () => userService.brief().behaviors);
+  registerResource(server, "user-memory-context", "memory://user/context", () => userService.brief().context);
+
+  server.registerPrompt(
+    "user_memory_bootstrap",
+    {
+      title: "Bootstrap user memory",
+      description: "Read user memory at the start of a session to understand preferences and context.",
+      argsSchema: {}
+    },
+    () => ({
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: [
+              "Before starting work, read memory://user/brief to understand the user's preferences, behaviors, and context.",
+              "Apply this knowledge throughout the session: respect stated preferences, adapt to known workflows, and avoid patterns the user dislikes.",
+              "User memory is a guide, not a constraint — current instructions always take precedence."
+            ].join("\n")
+          }
+        }
+      ]
+    })
+  );
+
+  server.registerPrompt(
+    "user_memory_update",
+    {
+      title: "Update user memory",
+      description: "Store durable user-level learnings observed during a session.",
+      argsSchema: {
+        sessionSummary: z.string().optional()
+      }
+    },
+    ({ sessionSummary }) => ({
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: [
+              "Decide whether this session revealed durable knowledge about the user worth storing globally.",
+              "Store only stable facts: consistent preferences, recurring behaviors, background context, tool choices, or communication style.",
+              "Do not store: secrets, one-off task details, temporary opinions, or facts specific to a single project.",
+              sessionSummary ? `Session summary: ${sessionSummary}` : undefined
+            ]
+              .filter(Boolean)
+              .join("\n")
+          }
+        }
+      ]
+    })
+  );
+
   registerResource(server, "project-memory-brief", "memory://project/current/brief", () =>
     service.projectBrief(currentProjectRoot())
   );
@@ -301,7 +484,8 @@ export function createProjectMemoryServer(service: ProjectMemoryService): McpSer
 export async function runServer(): Promise<void> {
   const store = new ProjectMemoryStore(defaultDatabasePath());
   const service = new ProjectMemoryService(store);
-  const server = createProjectMemoryServer(service);
+  const userService = new UserMemoryService(store);
+  const server = createProjectMemoryServer(service, userService);
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

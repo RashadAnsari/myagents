@@ -1,7 +1,17 @@
 import { fingerprintRemote, getGitRemote, normalizeProjectRoot } from "./paths.js";
-import { evaluateMemoryQuality, looksLikeSecret } from "./quality.js";
-import { memoryKinds } from "./types.js";
-import type { Confidence, MemoryRecord, ProjectExport, RememberInput, SearchInput } from "./types.js";
+import { evaluateMemoryQuality, evaluateUserMemoryQuality, looksLikeSecret } from "./quality.js";
+import { memoryKinds, userMemoryKinds } from "./types.js";
+import type {
+  Confidence,
+  MemoryRecord,
+  ProjectExport,
+  RememberInput,
+  SearchInput,
+  UserMemoryExport,
+  UserMemoryRecord,
+  UserRememberInput,
+  UserSearchInput
+} from "./types.js";
 import { ProjectMemoryStore } from "./db.js";
 
 export class MemoryQualityError extends Error {
@@ -244,6 +254,146 @@ export class ProjectMemoryService {
   }
 }
 
+export class UserMemoryService {
+  constructor(private readonly store: ProjectMemoryStore) {}
+
+  remember(input: UserRememberInput): UserMemoryRecord {
+    const existing = this.store.listActiveUserMemories();
+    const quality = evaluateUserMemoryQuality(input, existing);
+    if (!quality.ok) {
+      throw new MemoryQualityError(quality.reasons);
+    }
+
+    return this.store.createUserMemory({
+      kind: input.kind,
+      content: input.content.trim(),
+      summary: cleanOptional(input.summary),
+      whyUsefulLater: input.whyUsefulLater.trim(),
+      tags: normalizeTags(input.tags),
+      confidence: input.confidence ?? "medium",
+      source: cleanOptional(input.source),
+      sourceRef: cleanOptional(input.sourceRef)
+    });
+  }
+
+  search(input: UserSearchInput): UserMemoryRecord[] {
+    const limit = clamp(input.k ?? 8, 1, 25);
+    const fetchLimit = input.tags?.length ? limit * 4 : limit * 2;
+    let results = this.store.searchUserMemories(
+      input.query,
+      fetchLimit,
+      input.includeArchived ?? false,
+      input.kinds?.length ? input.kinds : undefined
+    );
+
+    if (input.tags?.length) {
+      const requiredTags = normalizeTags(input.tags);
+      results = results.filter((memory) => requiredTags.every((tag) => memory.tags.includes(tag)));
+    }
+
+    return results.slice(0, limit);
+  }
+
+  get(id: number): UserMemoryRecord {
+    const memory = this.store.getUserMemory(id);
+    if (!memory) {
+      throw new Error(`User memory not found: ${id}`);
+    }
+    return memory;
+  }
+
+  brief(): Record<string, UserMemoryRecord[]> {
+    return this.store.userMemoryBrief();
+  }
+
+  update(input: {
+    id: number;
+    content?: string;
+    summary?: string;
+    whyUsefulLater?: string;
+    tags?: string[];
+    confidence?: Confidence;
+    archive?: boolean;
+    reason?: string;
+  }): UserMemoryRecord {
+    const memory = this.store.getUserMemory(input.id);
+    if (!memory) {
+      throw new Error(`User memory not found: ${input.id}`);
+    }
+
+    if (input.content && looksLikeSecret(input.content)) {
+      throw new MemoryQualityError(["Updated memory content looks like it may contain a secret or credential."]);
+    }
+
+    if (input.whyUsefulLater && looksLikeSecret(input.whyUsefulLater)) {
+      throw new MemoryQualityError(["Updated usefulness rationale looks like it may contain a secret or credential."]);
+    }
+
+    return this.store.updateUserMemory(
+      input.id,
+      {
+        content: input.content?.trim(),
+        summary: cleanOptional(input.summary),
+        whyUsefulLater: input.whyUsefulLater?.trim(),
+        tags: input.tags ? normalizeTags(input.tags) : undefined,
+        confidence: input.confidence,
+        archivedAt: input.archive ? new Date().toISOString() : undefined
+      },
+      input.reason ?? "User memory updated."
+    );
+  }
+
+  forget(input: { id: number; hardDelete?: boolean; reason?: string }): { archived: boolean; deleted: boolean } {
+    const memory = this.store.getUserMemory(input.id);
+    if (!memory) {
+      throw new Error(`User memory not found: ${input.id}`);
+    }
+
+    const reason = input.reason ?? "User memory forgotten by request.";
+    if (input.hardDelete) {
+      this.store.hardDeleteUserMemory(input.id, reason);
+      return { archived: false, deleted: true };
+    }
+
+    this.store.archiveUserMemory(input.id, reason);
+    return { archived: true, deleted: false };
+  }
+
+  export(includeArchived = false): UserMemoryExport {
+    return {
+      exportedAt: new Date().toISOString(),
+      memories: this.store.listUserMemories(includeArchived),
+      events: this.store.listUserEvents()
+    };
+  }
+
+  import(exportJson: unknown): { imported: number; skipped: number } {
+    const userExport = validateUserMemoryExport(exportJson);
+    let imported = 0;
+    let skipped = 0;
+
+    for (const memory of userExport.memories) {
+      try {
+        this.remember({
+          kind: memory.kind,
+          content: memory.content,
+          summary: memory.summary ?? undefined,
+          whyUsefulLater: memory.whyUsefulLater,
+          tags: memory.tags,
+          confidence: memory.confidence,
+          source: memory.source ?? "import",
+          sourceRef: memory.sourceRef ?? "Imported user memory"
+        });
+        imported += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    return { imported, skipped };
+  }
+}
+
 function normalizeTags(tags: string[] | undefined): string[] {
   return Array.from(
     new Set(
@@ -295,4 +445,34 @@ function validateProjectExport(value: unknown): ProjectExport {
   }
 
   return candidate as unknown as ProjectExport;
+}
+
+function validateUserMemoryExport(value: unknown): UserMemoryExport {
+  if (!value || typeof value !== "object") {
+    throw new Error("Export must be an object.");
+  }
+
+  const candidate = value as Record<string, unknown>;
+  if (!Array.isArray(candidate.memories) || !Array.isArray(candidate.events)) {
+    throw new Error("Invalid user memory export shape.");
+  }
+
+  const validKinds = new Set<string>(userMemoryKinds);
+  for (const memory of candidate.memories) {
+    if (!memory || typeof memory !== "object") {
+      throw new Error("Invalid memory record in export.");
+    }
+    const m = memory as Record<string, unknown>;
+    if (typeof m.content !== "string" || !m.content.trim()) {
+      throw new Error("Memory record missing required content field.");
+    }
+    if (typeof m.kind !== "string" || !validKinds.has(m.kind)) {
+      throw new Error(`Memory record has invalid kind: ${String(m.kind)}.`);
+    }
+    if (typeof m.whyUsefulLater !== "string" || !m.whyUsefulLater.trim()) {
+      throw new Error("Memory record missing required whyUsefulLater field.");
+    }
+  }
+
+  return candidate as unknown as UserMemoryExport;
 }

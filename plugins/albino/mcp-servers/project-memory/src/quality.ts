@@ -1,4 +1,4 @@
-import type { MemoryRecord, QualityResult, RememberInput } from "./types.js";
+import type { MemoryRecord, QualityResult, RememberInput, UserMemoryRecord, UserRememberInput } from "./types.js";
 
 const vaguePhrases = [
   "fixed the issue",
@@ -31,7 +31,7 @@ const secretSignals = [
   /\b[A-Za-z0-9+/]{48,}={0,2}\b/
 ];
 
-export function evaluateMemoryQuality(input: RememberInput, existing: MemoryRecord[] = []): QualityResult {
+export function evaluateMemoryQuality(input: RememberInput, existing: Array<Pick<MemoryRecord, "content">> = []): QualityResult {
   const reasons: string[] = [];
   const content = input.content.trim();
   const whyUsefulLater = input.whyUsefulLater?.trim() ?? "";
@@ -78,7 +78,7 @@ export function looksLikeSecret(value: string): boolean {
     );
 }
 
-function isDuplicate(content: string, existing: MemoryRecord[]): boolean {
+function isDuplicate(content: string, existing: Array<{ content: string }>): boolean {
   const normalized = normalizeForComparison(content);
   return existing.some((memory) => normalizeForComparison(memory.content) === normalized);
 }
@@ -93,4 +93,39 @@ function normalizeForComparison(value: string): string {
 
 function wordCount(value: string): number {
   return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
+export function evaluateUserMemoryQuality(
+  input: UserRememberInput,
+  existing: Array<Pick<UserMemoryRecord, "content">> = []
+): QualityResult {
+  const reasons: string[] = [];
+  const content = input.content.trim();
+  const whyUsefulLater = input.whyUsefulLater?.trim() ?? "";
+
+  if (content.length < 40 || wordCount(content) < 7) {
+    reasons.push("Memory content is too short to be durable.");
+  }
+
+  if (!whyUsefulLater || whyUsefulLater.length < 20 || wordCount(whyUsefulLater) < 4) {
+    reasons.push("Memory must explain why it will be useful later.");
+  }
+
+  if (vaguePhrases.some((phrase) => content.toLowerCase().includes(phrase))) {
+    reasons.push("Memory content is too vague.");
+  }
+
+  if (commandOutputSignals.some((signal) => signal.test(content))) {
+    reasons.push("Memory looks like routine command output or task status.");
+  }
+
+  if (looksLikeSecret(content) || looksLikeSecret(whyUsefulLater)) {
+    reasons.push("Memory looks like it may contain a secret or credential.");
+  }
+
+  if (isDuplicate(content, existing)) {
+    reasons.push("Memory duplicates an existing active user memory.");
+  }
+
+  return { ok: reasons.length === 0, reasons };
 }
