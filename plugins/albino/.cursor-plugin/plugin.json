@@ -8,10 +8,8 @@
     "url": "https://github.com/RashadAnsari"
   },
   "hooks": {
-    "beforeSubmitPrompt": [
-      {
+    "beforeSubmitPrompt": {
         "command": "./hooks/agents-reminder.sh"
-      }
-    ]
+    }
   }
 }
