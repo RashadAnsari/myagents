@@ -69,9 +69,9 @@ Personal productivity plugin.
 
 | Server | Description |
 |--------|-------------|
-| `project-memory` | Bun-powered local stdio MCP server for durable project memory with SQLite FTS search, quality gates, secret rejection, export/import, and explicit checkout path linking |
+| `project-memory` | Bun-powered local stdio MCP server for durable project and user memory with SQLite FTS search, quality gates, secret rejection, export/import, and explicit checkout path linking |
 
-Project memory is stored outside git at `~/.myagents/memory.sqlite` by default. Set `MYAGENTS_MEMORY_DIR` to override the directory. Memories are keyed by project root and can be exported or imported through the MCP tools.
+Project memory is stored outside git at `~/.myagents/project-memory/memory.sqlite` by default. User memory is stored in the same database. Set `MYAGENTS_MEMORY_DIR` to override the storage directory. Memories are keyed by project root (project memory) or stored globally (user memory) and can be exported or imported through the MCP tools.
 
 #### Hooks
 

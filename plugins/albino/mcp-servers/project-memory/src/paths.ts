@@ -4,16 +4,14 @@ import { existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 
-export function defaultMemoryDir(): string {
+export function defaultDatabasePath(): string {
   if (process.env.MYAGENTS_MEMORY_DIR) {
-    return path.resolve(process.env.MYAGENTS_MEMORY_DIR);
+    const dir = path.resolve(process.env.MYAGENTS_MEMORY_DIR);
+    mkdirSync(dir, { recursive: true });
+    return path.join(dir, "memory.sqlite");
   }
 
-  return path.join(homedir(), ".myagents");
-}
-
-export function defaultDatabasePath(): string {
-  const dir = defaultMemoryDir();
+  const dir = path.join(homedir(), ".myagents", "project-memory");
   mkdirSync(dir, { recursive: true });
   return path.join(dir, "memory.sqlite");
 }

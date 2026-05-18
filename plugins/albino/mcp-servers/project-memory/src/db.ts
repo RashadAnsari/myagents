@@ -2,7 +2,16 @@ import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { fingerprintRemote, getGitRemote, normalizeProjectRoot, projectNameFromRoot } from "./paths.js";
-import type { Confidence, MemoryEventRecord, MemoryKind, MemoryRecord, ProjectRecord } from "./types.js";
+import type {
+  Confidence,
+  MemoryEventRecord,
+  MemoryKind,
+  MemoryRecord,
+  ProjectRecord,
+  UserMemoryEventRecord,
+  UserMemoryKind,
+  UserMemoryRecord
+} from "./types.js";
 
 interface ProjectRow {
   id: number;
@@ -42,9 +51,45 @@ interface EventRow {
   created_at: string;
 }
 
+interface UserMemoryRow {
+  id: number;
+  kind: UserMemoryKind;
+  content: string;
+  summary: string | null;
+  why_useful_later: string;
+  tags_json: string;
+  confidence: Confidence;
+  source: string | null;
+  source_ref: string | null;
+  created_at: string;
+  updated_at: string;
+  last_used_at: string | null;
+  use_count: number;
+  archived_at: string | null;
+}
+
+interface UserEventRow {
+  id: number;
+  memory_id: number | null;
+  action: string;
+  reason: string | null;
+  created_at: string;
+}
+
 export interface CreateMemoryParams {
   projectId: number;
   kind: MemoryKind;
+  content: string;
+  summary: string | null;
+  whyUsefulLater: string;
+  tags: string[];
+  confidence: Confidence;
+  source: string | null;
+  sourceRef: string | null;
+}
+
+export interface CreateUserMemoryParams {
+  kind: UserMemoryKind;
   content: string;
   summary: string | null;
   whyUsefulLater: string;
@@ -331,6 +376,258 @@ export class ProjectMemoryStore {
     return this.getProjectById(primary.id);
   }
 
+  listActiveUserMemories(): UserMemoryRecord[] {
+    const rows = this.db
+      .query("SELECT * FROM user_memories WHERE archived_at IS NULL ORDER BY updated_at DESC")
+      .all() as UserMemoryRow[];
+    return rows.map(mapUserMemory);
+  }
+
+  listUserMemories(includeArchived = false): UserMemoryRecord[] {
+    const where = includeArchived ? "" : "WHERE archived_at IS NULL";
+    const rows = this.db
+      .query(`SELECT * FROM user_memories ${where} ORDER BY updated_at DESC`)
+      .all() as UserMemoryRow[];
+    return rows.map(mapUserMemory);
+  }
+
+  getUserMemory(id: number): UserMemoryRecord | null {
+    const row = this.db.query("SELECT * FROM user_memories WHERE id = ?").get(id) as UserMemoryRow | undefined;
+    return row ? mapUserMemory(row) : null;
+  }
+
+  createUserMemory(params: CreateUserMemoryParams): UserMemoryRecord {
+    const now = new Date().toISOString();
+    const result = this.db
+      .query(
+        `INSERT INTO user_memories (
+          kind, content, summary, why_useful_later, tags_json, confidence,
+          source, source_ref, created_at, updated_at, use_count
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`
+      )
+      .run(
+        params.kind,
+        params.content,
+        params.summary,
+        params.whyUsefulLater,
+        JSON.stringify(params.tags),
+        params.confidence,
+        params.source,
+        params.sourceRef,
+        now,
+        now
+      );
+    const memory = this.getUserMemory(Number(result.lastInsertRowid));
+    if (!memory) {
+      throw new Error("Failed to create user memory.");
+    }
+
+    this.upsertUserFts(memory);
+    this.addUserEvent(memory.id, "created", params.whyUsefulLater);
+    return memory;
+  }
+
+  updateUserMemory(
+    id: number,
+    updates: Partial<
+      Pick<UserMemoryRecord, "content" | "summary" | "whyUsefulLater" | "tags" | "confidence" | "archivedAt">
+    >,
+    reason: string
+  ): UserMemoryRecord {
+    const existing = this.getUserMemory(id);
+    if (!existing) {
+      throw new Error(`User memory not found: ${id}`);
+    }
+
+    const next = {
+      content: updates.content ?? existing.content,
+      summary: updates.summary ?? existing.summary,
+      whyUsefulLater: updates.whyUsefulLater ?? existing.whyUsefulLater,
+      tags: updates.tags ?? existing.tags,
+      confidence: updates.confidence ?? existing.confidence,
+      archivedAt: updates.archivedAt ?? existing.archivedAt,
+      updatedAt: new Date().toISOString()
+    };
+
+    this.db
+      .query(
+        `UPDATE user_memories
+         SET content = ?, summary = ?, why_useful_later = ?, tags_json = ?, confidence = ?, archived_at = ?, updated_at = ?
+         WHERE id = ?`
+      )
+      .run(
+        next.content,
+        next.summary,
+        next.whyUsefulLater,
+        JSON.stringify(next.tags),
+        next.confidence,
+        next.archivedAt,
+        next.updatedAt,
+        id
+      );
+
+    const memory = this.getUserMemory(id);
+    if (!memory) {
+      throw new Error(`User memory not found after update: ${id}`);
+    }
+
+    this.upsertUserFts(memory);
+    this.addUserEvent(id, "updated", reason);
+    return memory;
+  }
+
+  archiveUserMemory(id: number, reason: string): UserMemoryRecord {
+    const existing = this.getUserMemory(id);
+    if (!existing) {
+      throw new Error(`User memory not found: ${id}`);
+    }
+
+    const archivedAt = new Date().toISOString();
+    this.db
+      .query("UPDATE user_memories SET archived_at = ?, updated_at = ? WHERE id = ?")
+      .run(archivedAt, archivedAt, id);
+
+    const memory = this.getUserMemory(id);
+    if (!memory) {
+      throw new Error(`User memory not found after archive: ${id}`);
+    }
+
+    this.upsertUserFts(memory);
+    this.addUserEvent(id, "forgotten", reason);
+    return memory;
+  }
+
+  hardDeleteUserMemory(id: number, reason: string): void {
+    const memory = this.getUserMemory(id);
+    if (!memory) {
+      throw new Error(`User memory not found: ${id}`);
+    }
+
+    this.db.query("DELETE FROM user_memory_fts WHERE memory_id = ?").run(id);
+    this.db.query("DELETE FROM user_memories WHERE id = ?").run(id);
+    this.addUserEvent(id, "hard_deleted", reason);
+  }
+
+  searchUserMemories(
+    query: string,
+    limit: number,
+    includeArchived = false,
+    kinds?: UserMemoryKind[]
+  ): UserMemoryRecord[] {
+    const matchQuery = buildFtsQuery(query);
+    if (!matchQuery) {
+      return this.likeSearchUserMemories(query, limit, includeArchived, kinds);
+    }
+
+    try {
+      const archivedWhere = includeArchived ? "" : "AND user_memories.archived_at IS NULL";
+      const kindsWhere = kinds?.length ? `AND user_memories.kind IN (${kinds.map(() => "?").join(", ")})` : "";
+      const rows = this.db
+        .query(
+          `SELECT user_memories.*
+           FROM user_memory_fts
+           JOIN user_memories ON user_memories.id = user_memory_fts.memory_id
+           WHERE 1=1
+             ${archivedWhere}
+             ${kindsWhere}
+             AND user_memory_fts MATCH ?
+           ORDER BY bm25(user_memory_fts), user_memories.confidence DESC, user_memories.updated_at DESC
+           LIMIT ?`
+        )
+        .all(...(kinds ?? []), matchQuery, limit) as UserMemoryRow[];
+
+      const memories = rows.map(mapUserMemory);
+      if (memories.length === 0) {
+        return this.likeSearchUserMemories(query, limit, includeArchived, kinds);
+      }
+
+      this.markUserMemoriesUsed(memories.map((m) => m.id));
+      return memories;
+    } catch {
+      return this.likeSearchUserMemories(query, limit, includeArchived, kinds);
+    }
+  }
+
+  userMemoryBrief(): Record<string, UserMemoryRecord[]> {
+    const active = this.listActiveUserMemories();
+    const byKind = (kinds: UserMemoryKind[], limit: number) =>
+      active
+        .filter((m) => kinds.includes(m.kind))
+        .sort(compareUserBriefPriority)
+        .slice(0, limit);
+
+    return {
+      preferences: byKind(["preference", "convention", "tool_preference"], 8),
+      behaviors: byKind(["behavior", "workflow", "communication"], 8),
+      context: byKind(["context"], 8),
+      recent: active.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 8)
+    };
+  }
+
+  addUserEvent(memoryId: number | null, action: string, reason: string | null): void {
+    this.db
+      .query("INSERT INTO user_memory_events (memory_id, action, reason, created_at) VALUES (?, ?, ?, ?)")
+      .run(memoryId, action, reason, new Date().toISOString());
+  }
+
+  listUserEvents(): UserMemoryEventRecord[] {
+    const rows = this.db.query("SELECT * FROM user_memory_events ORDER BY created_at ASC").all() as UserEventRow[];
+    return rows.map(mapUserEvent);
+  }
+
+  private likeSearchUserMemories(
+    query: string,
+    limit: number,
+    includeArchived: boolean,
+    kinds?: UserMemoryKind[]
+  ): UserMemoryRecord[] {
+    const archivedWhere = includeArchived ? "" : "AND archived_at IS NULL";
+    const kindsWhere = kinds?.length ? `AND kind IN (${kinds.map(() => "?").join(", ")})` : "";
+    const pattern = `%${query.trim().replaceAll("%", "\\%").replaceAll("_", "\\_")}%`;
+    const rows = this.db
+      .query(
+        `SELECT *
+         FROM user_memories
+         WHERE 1=1
+           ${archivedWhere}
+           ${kindsWhere}
+           AND (content LIKE ? ESCAPE '\\' OR summary LIKE ? ESCAPE '\\' OR why_useful_later LIKE ? ESCAPE '\\')
+         ORDER BY confidence DESC, updated_at DESC
+         LIMIT ?`
+      )
+      .all(...(kinds ?? []), pattern, pattern, pattern, limit) as UserMemoryRow[];
+
+    const memories = rows.map(mapUserMemory);
+    this.markUserMemoriesUsed(memories.map((m) => m.id));
+    return memories;
+  }
+
+  private markUserMemoriesUsed(ids: number[]): void {
+    if (ids.length === 0) {
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const update = this.db.query("UPDATE user_memories SET last_used_at = ?, use_count = use_count + 1 WHERE id = ?");
+    const transaction = this.db.transaction((memoryIds: number[]) => {
+      for (const id of memoryIds) {
+        update.run(now, id);
+      }
+    });
+    transaction(ids);
+  }
+
+  private upsertUserFts(memory: UserMemoryRecord): void {
+    this.db.query("DELETE FROM user_memory_fts WHERE memory_id = ?").run(memory.id);
+    if (memory.archivedAt) {
+      return;
+    }
+
+    this.db
+      .query("INSERT INTO user_memory_fts (memory_id, content, summary, tags, why_useful_later) VALUES (?, ?, ?, ?, ?)")
+      .run(memory.id, memory.content, memory.summary ?? "", memory.tags.join(" "), memory.whyUsefulLater);
+  }
+
   private likeSearch(
     projectId: number,
     query: string,
@@ -437,6 +734,42 @@ export class ProjectMemoryStore {
         tags,
         why_useful_later
       );
+
+      CREATE TABLE IF NOT EXISTS user_memories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        kind TEXT NOT NULL,
+        content TEXT NOT NULL,
+        summary TEXT,
+        why_useful_later TEXT NOT NULL,
+        tags_json TEXT NOT NULL DEFAULT '[]',
+        confidence TEXT NOT NULL DEFAULT 'medium',
+        source TEXT,
+        source_ref TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        last_used_at TEXT,
+        use_count INTEGER NOT NULL DEFAULT 0,
+        archived_at TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_user_memories_active ON user_memories(archived_at);
+      CREATE INDEX IF NOT EXISTS idx_user_memories_kind ON user_memories(kind);
+
+      CREATE TABLE IF NOT EXISTS user_memory_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        memory_id INTEGER,
+        action TEXT NOT NULL,
+        reason TEXT,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE VIRTUAL TABLE IF NOT EXISTS user_memory_fts USING fts5(
+        memory_id UNINDEXED,
+        content,
+        summary,
+        tags,
+        why_useful_later
+      );
     `);
 
     this.ensureColumn("memory_events", "project_id", "INTEGER");
@@ -527,6 +860,50 @@ function buildFtsQuery(query: string): string | null {
   }
 
   return terms.map((term) => `${term}*`).join(" OR ");
+}
+
+function mapUserMemory(row: UserMemoryRow): UserMemoryRecord {
+  return {
+    id: row.id,
+    kind: row.kind,
+    content: row.content,
+    summary: row.summary,
+    whyUsefulLater: row.why_useful_later,
+    tags: parseJsonArray(row.tags_json),
+    confidence: row.confidence,
+    source: row.source,
+    sourceRef: row.source_ref,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    lastUsedAt: row.last_used_at,
+    useCount: row.use_count,
+    archivedAt: row.archived_at
+  };
+}
+
+function mapUserEvent(row: UserEventRow): UserMemoryEventRecord {
+  return {
+    id: row.id,
+    memoryId: row.memory_id,
+    action: row.action,
+    reason: row.reason,
+    createdAt: row.created_at
+  };
+}
+
+function compareUserBriefPriority(a: UserMemoryRecord, b: UserMemoryRecord): number {
+  const confidenceScore = (value: Confidence) => (value === "high" ? 3 : value === "medium" ? 2 : 1);
+  const confidenceDelta = confidenceScore(b.confidence) - confidenceScore(a.confidence);
+  if (confidenceDelta !== 0) {
+    return confidenceDelta;
+  }
+
+  const usageDelta = b.useCount - a.useCount;
+  if (usageDelta !== 0) {
+    return usageDelta;
+  }
+
+  return b.updatedAt.localeCompare(a.updatedAt);
 }
 
 function compareBriefPriority(a: MemoryRecord, b: MemoryRecord): number {

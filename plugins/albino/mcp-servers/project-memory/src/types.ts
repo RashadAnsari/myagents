@@ -87,3 +87,65 @@ export interface QualityResult {
   ok: boolean;
   reasons: string[];
 }
+
+export const userMemoryKinds = [
+  "preference",
+  "behavior",
+  "context",
+  "workflow",
+  "convention",
+  "tool_preference",
+  "communication"
+] as const;
+
+export type UserMemoryKind = (typeof userMemoryKinds)[number];
+
+export interface UserMemoryRecord {
+  id: number;
+  kind: UserMemoryKind;
+  content: string;
+  summary: string | null;
+  whyUsefulLater: string;
+  tags: string[];
+  confidence: Confidence;
+  source: string | null;
+  sourceRef: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lastUsedAt: string | null;
+  useCount: number;
+  archivedAt: string | null;
+}
+
+export interface UserRememberInput {
+  kind: UserMemoryKind;
+  content: string;
+  summary?: string;
+  whyUsefulLater: string;
+  tags?: string[];
+  confidence?: Confidence;
+  source?: string;
+  sourceRef?: string;
+}
+
+export interface UserSearchInput {
+  query: string;
+  k?: number;
+  kinds?: UserMemoryKind[];
+  tags?: string[];
+  includeArchived?: boolean;
+}
+
+export interface UserMemoryEventRecord {
+  id: number;
+  memoryId: number | null;
+  action: string;
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface UserMemoryExport {
+  exportedAt: string;
+  memories: UserMemoryRecord[];
+  events: UserMemoryEventRecord[];
+}
