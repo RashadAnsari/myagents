@@ -19,7 +19,7 @@ __pycache__/
 # Review output
 REVIEW_REPORT.md
 
-# Project memory
+# Memory databases (default: ~/.myagents/project-memory/memory.sqlite)
 memory.sqlite
 memory.sqlite-shm
 memory.sqlite-wal

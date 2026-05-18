@@ -1,12 +1,12 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { Database } from "bun:sqlite";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { ProjectMemoryStore } from "../src/db.js";
-import { MemoryQualityError, ProjectMemoryService } from "../src/memoryService.js";
-import { defaultMemoryDir, normalizeProjectRoot } from "../src/paths.js";
+import { MemoryQualityError, ProjectMemoryService, UserMemoryService } from "../src/memoryService.js";
+import { buildDefaultDatabasePath, defaultMemoryDir, normalizeProjectRoot } from "../src/paths.js";
 
 let tempDir: string;
 let store: ProjectMemoryStore;
@@ -406,6 +406,59 @@ describe("ProjectMemoryService", () => {
     migratedStore.close();
   });
 
+  it("uses project-memory subdirectory when MYAGENTS_MEMORY_DIR is set", () => {
+    const previous = process.env.MYAGENTS_MEMORY_DIR;
+    process.env.MYAGENTS_MEMORY_DIR = path.join(tempDir, "override-memory");
+    try {
+      const { defaultDatabasePath } = require("../src/paths.js");
+      expect(defaultDatabasePath()).toBe(path.join(tempDir, "override-memory", "memory.sqlite"));
+    } finally {
+      if (previous === undefined) {
+        delete process.env.MYAGENTS_MEMORY_DIR;
+      } else {
+        process.env.MYAGENTS_MEMORY_DIR = previous;
+      }
+    }
+  });
+
+  it("buildDefaultDatabasePath places database in project-memory subdirectory", () => {
+    const fakeHome = path.join(tempDir, "fake-home");
+    const result = buildDefaultDatabasePath(fakeHome);
+    expect(result).toBe(path.join(fakeHome, ".myagents", "project-memory", "memory.sqlite"));
+  });
+
+  it("buildDefaultDatabasePath migrates old database to new location on first access", () => {
+    const fakeHome = path.join(tempDir, "migrate-home");
+    const oldDir = path.join(fakeHome, ".myagents");
+    mkdirSync(oldDir, { recursive: true });
+    const oldPath = path.join(oldDir, "memory.sqlite");
+    writeFileSync(oldPath, "old-db-sentinel");
+
+    const newPath = buildDefaultDatabasePath(fakeHome);
+
+    expect(newPath).toBe(path.join(fakeHome, ".myagents", "project-memory", "memory.sqlite"));
+    const { existsSync, readFileSync } = require("node:fs");
+    expect(existsSync(newPath)).toBe(true);
+    expect(readFileSync(newPath, "utf8")).toBe("old-db-sentinel");
+  });
+
+  it("buildDefaultDatabasePath does not overwrite new database with old one", () => {
+    const fakeHome = path.join(tempDir, "no-overwrite-home");
+    const oldDir = path.join(fakeHome, ".myagents");
+    const newDir = path.join(fakeHome, ".myagents", "project-memory");
+    mkdirSync(oldDir, { recursive: true });
+    mkdirSync(newDir, { recursive: true });
+    const oldPath = path.join(oldDir, "memory.sqlite");
+    const newPath = path.join(newDir, "memory.sqlite");
+    writeFileSync(oldPath, "old-content");
+    writeFileSync(newPath, "new-content");
+
+    buildDefaultDatabasePath(fakeHome);
+
+    const { readFileSync } = require("node:fs");
+    expect(readFileSync(newPath, "utf8")).toBe("new-content");
+  });
+
   it("finds possible project matches for the same git remote without linking", () => {
     const firstRoot = path.join(tempDir, "first");
     const secondRoot = path.join(tempDir, "second");
@@ -429,5 +482,352 @@ describe("ProjectMemoryService", () => {
     const matches = service.possibleProjectMatches(secondRoot);
 
     expect(matches.matches).toContain(path.resolve(firstRoot));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// UserMemoryService
+// ---------------------------------------------------------------------------
+
+let userStore: ProjectMemoryStore;
+let userService: UserMemoryService;
+
+beforeEach(() => {
+  userStore = new ProjectMemoryStore(path.join(tempDir, "user-memory.sqlite"));
+  userService = new UserMemoryService(userStore);
+});
+
+afterEach(() => {
+  userStore.close();
+});
+
+describe("UserMemoryService", () => {
+  it("stores and searches user memory", () => {
+    const memory = userService.remember({
+      kind: "preference",
+      content:
+        "The user consistently prefers TypeScript strict mode enabled in every project and expects explicit return types on all exported functions.",
+      whyUsefulLater: "Future agents should enable strict mode and add return types without being asked each time.",
+      tags: ["typescript", "style"],
+      confidence: "high"
+    });
+
+    const results = userService.search({ query: "typescript strict mode" });
+
+    expect(memory.id).toBeGreaterThan(0);
+    expect(memory.kind).toBe("preference");
+    expect(results).toHaveLength(1);
+    expect(results[0]?.content).toContain("strict mode");
+  });
+
+  it("filters search by kind and tag", () => {
+    userService.remember({
+      kind: "preference",
+      content:
+        "User prefers dark-themed terminal output using ANSI color codes for all CLI tools and development scripts.",
+      whyUsefulLater: "Agents should use dark-friendly colors when generating CLI output or scripts for this user.",
+      tags: ["cli", "colors"],
+      confidence: "medium"
+    });
+    userService.remember({
+      kind: "behavior",
+      content:
+        "User habitually runs the full test suite before committing and expects agents to do the same before marking tasks complete.",
+      whyUsefulLater: "Agents must run all tests before calling any task done to match the user's quality standard.",
+      tags: ["testing"],
+      confidence: "high"
+    });
+
+    const results = userService.search({ query: "colors output", kinds: ["preference"], tags: ["cli"] });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.kind).toBe("preference");
+    expect(results[0]?.tags).toContain("cli");
+  });
+
+  it("rejects vague user memory content", () => {
+    expect(() =>
+      userService.remember({
+        kind: "behavior",
+        content: "fixed the issue",
+        whyUsefulLater: "Future agents need this to understand user behavior patterns well enough to act."
+      })
+    ).toThrow(MemoryQualityError);
+  });
+
+  it("rejects secret-looking user memory", () => {
+    expect(() =>
+      userService.remember({
+        kind: "preference",
+        content:
+          "User prefers API_KEY=sk-abcdefghijklmnopqrstuvwxyz1234567890 to be used for all OpenAI API requests.",
+        whyUsefulLater: "Future agents need this credential to make API calls on behalf of the user."
+      })
+    ).toThrow(MemoryQualityError);
+  });
+
+  it("rejects command-output-looking user memory", () => {
+    expect(() =>
+      userService.remember({
+        kind: "workflow",
+        content: "npm test\npassed everything and there are no durable workflow learnings here for the user.",
+        whyUsefulLater: "Future agents do not need raw command output as durable user knowledge."
+      })
+    ).toThrow(MemoryQualityError);
+  });
+
+  it("rejects duplicate user memory", () => {
+    const input = {
+      kind: "convention" as const,
+      content:
+        "User applies two-space indentation consistently across all TypeScript and JavaScript projects they work on.",
+      whyUsefulLater: "Agents should use two-space indentation without asking when editing user files."
+    };
+
+    userService.remember(input);
+
+    expect(() => userService.remember(input)).toThrow(MemoryQualityError);
+  });
+
+  it("archives user memory by default", () => {
+    const memory = userService.remember({
+      kind: "tool_preference",
+      content:
+        "User previously preferred the Yarn package manager for all Node.js projects over npm and pnpm alternatives.",
+      whyUsefulLater: "Agents can check this when suggesting package manager commands for the user's projects.",
+      confidence: "medium"
+    });
+
+    const result = userService.forget({ id: memory.id, reason: "User switched to pnpm." });
+
+    expect(result).toEqual({ archived: true, deleted: false });
+    expect(userService.search({ query: "Yarn package manager" })).toHaveLength(0);
+    expect(userService.search({ query: "Yarn package manager", includeArchived: true })).toHaveLength(1);
+  });
+
+  it("hard-deletes user memory and keeps audit event", () => {
+    const memory = userService.remember({
+      kind: "context",
+      content:
+        "User is a senior backend engineer at Acme Corp working primarily on distributed systems and data pipelines.",
+      whyUsefulLater: "Agents can use this context to calibrate explanation depth and domain-specific terminology.",
+      confidence: "high"
+    });
+
+    const result = userService.forget({ id: memory.id, hardDelete: true, reason: "Privacy request." });
+    const exported = userService.export(true);
+
+    expect(result).toEqual({ archived: false, deleted: true });
+    expect(exported.memories).toHaveLength(0);
+    expect(exported.events.map((e) => e.action)).toContain("hard_deleted");
+  });
+
+  it("exports and imports user memory", () => {
+    userService.remember({
+      kind: "communication",
+      content:
+        "User prefers concise, bullet-point explanations rather than long prose paragraphs when receiving technical summaries.",
+      whyUsefulLater: "Agents should default to bullet points for technical summaries to match user communication style.",
+      confidence: "high"
+    });
+
+    const exported = userService.export();
+    const newStore = new ProjectMemoryStore(path.join(tempDir, "user-import-target.sqlite"));
+    const newService = new UserMemoryService(newStore);
+    const result = newService.import(exported);
+
+    expect(result.imported).toBe(1);
+    expect(newService.search({ query: "bullet-point summaries" })).toHaveLength(1);
+    newStore.close();
+  });
+
+  it("rejects malformed user memory import", () => {
+    expect(() => userService.import({ memories: [] })).toThrow("Invalid user memory export shape.");
+    expect(() => userService.import({ events: [] })).toThrow("Invalid user memory export shape.");
+  });
+
+  it("rejects user memory import with invalid kind", () => {
+    expect(() =>
+      userService.import({
+        memories: [{ kind: "bad-kind", content: "some content", whyUsefulLater: "reason" }],
+        events: []
+      })
+    ).toThrow("Memory record has invalid kind");
+  });
+
+  it("rejects user memory import with missing required fields", () => {
+    expect(() =>
+      userService.import({
+        memories: [{ kind: "preference", content: "", whyUsefulLater: "reason" }],
+        events: []
+      })
+    ).toThrow("Memory record missing required content field");
+
+    expect(() =>
+      userService.import({
+        memories: [{ kind: "preference", content: "some valid content here for the test", whyUsefulLater: "" }],
+        events: []
+      })
+    ).toThrow("Memory record missing required whyUsefulLater field");
+  });
+
+  it("returns brief with correct category groupings", () => {
+    userService.remember({
+      kind: "preference",
+      content:
+        "User strongly prefers functional programming patterns over object-oriented class hierarchies in all TypeScript code.",
+      whyUsefulLater: "Agents should use functional style by default without waiting for the user to request it.",
+      confidence: "high"
+    });
+    userService.remember({
+      kind: "behavior",
+      content:
+        "User consistently opens a scratch file to prototype ideas before writing production code in any codebase.",
+      whyUsefulLater: "Agents should suggest a scratch file when the user seems to be in exploratory mode.",
+      confidence: "medium"
+    });
+    userService.remember({
+      kind: "context",
+      content:
+        "User works as a principal engineer at a fintech startup where correctness and auditability are top priorities.",
+      whyUsefulLater: "Agents should emphasize correctness, testing, and audit trails when advising this user.",
+      confidence: "high"
+    });
+
+    const brief = userService.brief();
+
+    expect(brief.preferences.map((m) => m.kind)).toContain("preference");
+    expect(brief.behaviors.map((m) => m.kind)).toContain("behavior");
+    expect(brief.context.map((m) => m.kind)).toContain("context");
+    expect(brief.recent.length).toBeGreaterThan(0);
+  });
+
+  it("update corrects content and rejects secret updates", () => {
+    const memory = userService.remember({
+      kind: "workflow",
+      content:
+        "User always reviews the full diff before merging pull requests and expects agents to summarize changes clearly.",
+      whyUsefulLater: "Agents should surface clear change summaries so the user can review them before merging.",
+      confidence: "medium"
+    });
+
+    const updated = userService.update({
+      id: memory.id,
+      content:
+        "User always reviews the full diff before merging pull requests and expects agents to summarize changes in bullet points.",
+      confidence: "high",
+      reason: "More specific about format."
+    });
+
+    expect(updated.confidence).toBe("high");
+    expect(updated.content).toContain("bullet points");
+
+    expect(() =>
+      userService.update({
+        id: memory.id,
+        content: "The secret token is API_TOKEN=sk-abcdefghijklmnopqrstuvwxyz1234567890.",
+        reason: "Bad update."
+      })
+    ).toThrow(MemoryQualityError);
+  });
+
+  it("throws when getting or updating a non-existent user memory", () => {
+    expect(() => userService.get(99999)).toThrow("User memory not found");
+    expect(() => userService.update({ id: 99999, reason: "test" })).toThrow("User memory not found");
+    expect(() => userService.forget({ id: 99999 })).toThrow("User memory not found");
+  });
+
+  it("normalizes tags to lowercase and drops disallowed characters", () => {
+    const memory = userService.remember({
+      kind: "convention",
+      content:
+        "User applies kebab-case naming for all CSS class names and file names across every front-end project they work on.",
+      whyUsefulLater: "Agents should use kebab-case without asking when creating CSS or naming front-end files.",
+      tags: ["CSS", "naming-conv", "FRONTEND", "has space", "has.dot"]
+    });
+
+    expect(memory.tags).toContain("css");
+    expect(memory.tags).toContain("naming-conv");
+    expect(memory.tags).toContain("frontend");
+    expect(memory.tags).not.toContain("CSS");
+    expect(memory.tags).not.toContain("has space");
+    expect(memory.tags).not.toContain("has.dot");
+  });
+
+  it("handles non-tokenizable queries without error via LIKE fallback", () => {
+    userService.remember({
+      kind: "preference",
+      content:
+        "User prefers emoji-free output in all terminal and chat responses because they use a terminal without proper emoji support.",
+      whyUsefulLater: "Agents should avoid emojis in terminal output and chat responses for this user.",
+      confidence: "medium"
+    });
+
+    expect(() => userService.search({ query: "🔥" })).not.toThrow();
+    const results = userService.search({ query: "e" });
+    expect(results.length).toBeGreaterThan(0);
+  });
+
+  it("can update an already-archived user memory", () => {
+    const memory = userService.remember({
+      kind: "behavior",
+      content:
+        "User sometimes skips writing tests for utility functions but expects tests for all business logic paths.",
+      whyUsefulLater: "Agents can prioritize test coverage for business logic and deprioritize pure utilities.",
+      confidence: "low"
+    });
+
+    userService.forget({ id: memory.id, reason: "Archiving for test." });
+    const updated = userService.update({ id: memory.id, confidence: "high", reason: "Correcting confidence." });
+
+    expect(updated.confidence).toBe("high");
+    expect(updated.archivedAt).not.toBeNull();
+  });
+
+  it("skips low-quality entries during import and counts them as skipped", () => {
+    const exported = {
+      exportedAt: new Date().toISOString(),
+      memories: [
+        {
+          id: 1,
+          kind: "preference",
+          content:
+            "User prefers TypeScript over JavaScript for all new projects due to the type safety and IDE support it provides.",
+          whyUsefulLater: "Agents should default to TypeScript without asking for this user.",
+          tags: [],
+          confidence: "high",
+          summary: null,
+          source: null,
+          sourceRef: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          lastUsedAt: null,
+          useCount: 0,
+          archivedAt: null
+        },
+        {
+          id: 2,
+          kind: "behavior",
+          content: "fixed the issue",
+          whyUsefulLater: "something",
+          tags: [],
+          confidence: "low",
+          summary: null,
+          source: null,
+          sourceRef: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          lastUsedAt: null,
+          useCount: 0,
+          archivedAt: null
+        }
+      ],
+      events: []
+    };
+
+    const result = userService.import(exported);
+
+    expect(result.imported).toBe(1);
+    expect(result.skipped).toBe(1);
   });
 });

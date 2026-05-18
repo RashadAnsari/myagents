@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 
@@ -12,10 +12,38 @@ export function defaultMemoryDir(): string {
   return path.join(homedir(), ".myagents");
 }
 
+/**
+ * Builds the default database path under a given home directory and migrates
+ * any existing database from the old ~/.myagents/memory.sqlite location.
+ * Exported so it can be called with a temp home dir in tests.
+ */
+export function buildDefaultDatabasePath(homeDir: string): string {
+  const newDir = path.join(homeDir, ".myagents", "project-memory");
+  mkdirSync(newDir, { recursive: true });
+  const newPath = path.join(newDir, "memory.sqlite");
+
+  // One-time migration from the old flat location.
+  const oldPath = path.join(homeDir, ".myagents", "memory.sqlite");
+  if (!existsSync(newPath) && existsSync(oldPath)) {
+    copyFileSync(oldPath, newPath);
+    for (const suffix of ["-wal", "-shm"]) {
+      if (existsSync(oldPath + suffix)) {
+        copyFileSync(oldPath + suffix, newPath + suffix);
+      }
+    }
+  }
+
+  return newPath;
+}
+
 export function defaultDatabasePath(): string {
-  const dir = defaultMemoryDir();
-  mkdirSync(dir, { recursive: true });
-  return path.join(dir, "memory.sqlite");
+  if (process.env.MYAGENTS_MEMORY_DIR) {
+    const dir = path.resolve(process.env.MYAGENTS_MEMORY_DIR);
+    mkdirSync(dir, { recursive: true });
+    return path.join(dir, "memory.sqlite");
+  }
+
+  return buildDefaultDatabasePath(homedir());
 }
 
 export function normalizeProjectRoot(projectRoot: string): string {
