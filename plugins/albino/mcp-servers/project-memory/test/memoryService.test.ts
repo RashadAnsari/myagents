@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { Database } from "bun:sqlite";
 import { tmpdir } from "node:os";
@@ -6,7 +6,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { ProjectMemoryStore } from "../src/db.js";
 import { MemoryQualityError, ProjectMemoryService, UserMemoryService } from "../src/memoryService.js";
-import { buildDefaultDatabasePath, defaultMemoryDir, normalizeProjectRoot } from "../src/paths.js";
+import { buildDefaultDatabasePath, defaultDatabasePath, defaultMemoryDir, normalizeProjectRoot } from "../src/paths.js";
 
 let tempDir: string;
 let store: ProjectMemoryStore;
@@ -410,7 +410,6 @@ describe("ProjectMemoryService", () => {
     const previous = process.env.MYAGENTS_MEMORY_DIR;
     process.env.MYAGENTS_MEMORY_DIR = path.join(tempDir, "override-memory");
     try {
-      const { defaultDatabasePath } = require("../src/paths.js");
       expect(defaultDatabasePath()).toBe(path.join(tempDir, "override-memory", "memory.sqlite"));
     } finally {
       if (previous === undefined) {
@@ -437,7 +436,6 @@ describe("ProjectMemoryService", () => {
     const newPath = buildDefaultDatabasePath(fakeHome);
 
     expect(newPath).toBe(path.join(fakeHome, ".myagents", "project-memory", "memory.sqlite"));
-    const { existsSync, readFileSync } = require("node:fs");
     expect(existsSync(newPath)).toBe(true);
     expect(readFileSync(newPath, "utf8")).toBe("old-db-sentinel");
   });
@@ -455,7 +453,6 @@ describe("ProjectMemoryService", () => {
 
     buildDefaultDatabasePath(fakeHome);
 
-    const { readFileSync } = require("node:fs");
     expect(readFileSync(newPath, "utf8")).toBe("new-content");
   });
 
@@ -559,8 +556,7 @@ describe("UserMemoryService", () => {
     expect(() =>
       userService.remember({
         kind: "preference",
-        content:
-          "User prefers API_KEY=sk-abcdefghijklmnopqrstuvwxyz1234567890 to be used for all OpenAI API requests.",
+        content: "User prefers API_KEY=sk-abcdefghijklmnopqrstuvwxyz1234567890 to be used for all OpenAI API requests.",
         whyUsefulLater: "Future agents need this credential to make API calls on behalf of the user."
       })
     ).toThrow(MemoryQualityError);
@@ -627,7 +623,8 @@ describe("UserMemoryService", () => {
       kind: "communication",
       content:
         "User prefers concise, bullet-point explanations rather than long prose paragraphs when receiving technical summaries.",
-      whyUsefulLater: "Agents should default to bullet points for technical summaries to match user communication style.",
+      whyUsefulLater:
+        "Agents should default to bullet points for technical summaries to match user communication style.",
       confidence: "high"
     });
 
