@@ -10,7 +10,7 @@
   "hooks": {
     "beforeSubmitPrompt": [
       {
-        "command": "bash \"./hooks/agents-reminder.sh\""
+        "command": "./hooks/agents-reminder.sh"
       }
     ]
   }
