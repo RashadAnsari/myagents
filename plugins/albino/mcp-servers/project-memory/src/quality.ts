@@ -31,7 +31,10 @@ const secretSignals = [
   /\b[A-Za-z0-9+/]{48,}={0,2}\b/
 ];
 
-export function evaluateMemoryQuality(input: RememberInput, existing: Array<Pick<MemoryRecord, "content">> = []): QualityResult {
+export function evaluateMemoryQuality(
+  input: RememberInput,
+  existing: Array<Pick<MemoryRecord, "content">> = []
+): QualityResult {
   const reasons: string[] = [];
   const content = input.content.trim();
   const whyUsefulLater = input.whyUsefulLater?.trim() ?? "";

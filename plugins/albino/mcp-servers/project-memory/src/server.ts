@@ -10,10 +10,7 @@ const memoryKindSchema = z.enum(memoryKinds);
 const userMemoryKindSchema = z.enum(userMemoryKinds);
 const confidenceSchema = z.enum(confidenceValues);
 
-export function createProjectMemoryServer(
-  service: ProjectMemoryService,
-  userService: UserMemoryService
-): McpServer {
+export function createProjectMemoryServer(service: ProjectMemoryService, userService: UserMemoryService): McpServer {
   const server = new McpServer({
     name: "myagents-project-memory",
     version: "0.1.0"

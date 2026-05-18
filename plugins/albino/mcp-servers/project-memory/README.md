@@ -84,18 +84,18 @@ Bad project memory:
 
 ### Project Memory Kinds
 
-| Kind | Use |
-|---|---|
-| `decision` | Architecture or design decisions with rationale |
-| `convention` | Coding style or naming rules for this project |
+| Kind           | Use                                                |
+| -------------- | -------------------------------------------------- |
+| `decision`     | Architecture or design decisions with rationale    |
+| `convention`   | Coding style or naming rules for this project      |
 | `architecture` | Structure, boundaries, or key module relationships |
-| `workflow` | Non-obvious build, test, or deploy steps |
-| `preference` | User preferences specific to this project |
-| `gotcha` | Surprising behavior or common pitfalls |
-| `bug` | Root causes of recurring bugs |
-| `dependency` | Important dependency constraints or quirks |
-| `testing` | Test patterns or coverage requirements |
-| `handoff` | End-of-task learnings for the next agent |
+| `workflow`     | Non-obvious build, test, or deploy steps           |
+| `preference`   | User preferences specific to this project          |
+| `gotcha`       | Surprising behavior or common pitfalls             |
+| `bug`          | Root causes of recurring bugs                      |
+| `dependency`   | Important dependency constraints or quirks         |
+| `testing`      | Test patterns or coverage requirements             |
+| `handoff`      | End-of-task learnings for the next agent           |
 
 ### Project Memory Tools
 
@@ -149,15 +149,15 @@ Bad user memory:
 
 ### User Memory Kinds
 
-| Kind | Use |
-|---|---|
-| `preference` | Coding style, language, formatting, output preferences |
-| `behavior` | Recurring habits and patterns the user exhibits |
-| `context` | Role, team, domain, experience level, background |
-| `workflow` | How the user structures their work processes |
-| `convention` | Global standards applied across all projects |
-| `tool_preference` | Preferred tools, frameworks, CLIs, and configurations |
-| `communication` | How the user prefers explanations and responses |
+| Kind              | Use                                                    |
+| ----------------- | ------------------------------------------------------ |
+| `preference`      | Coding style, language, formatting, output preferences |
+| `behavior`        | Recurring habits and patterns the user exhibits        |
+| `context`         | Role, team, domain, experience level, background       |
+| `workflow`        | How the user structures their work processes           |
+| `convention`      | Global standards applied across all projects           |
+| `tool_preference` | Preferred tools, frameworks, CLIs, and configurations  |
+| `communication`   | How the user prefers explanations and responses        |
 
 ### User Memory Tools
 

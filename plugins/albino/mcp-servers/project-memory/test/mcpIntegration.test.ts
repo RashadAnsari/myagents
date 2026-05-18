@@ -167,7 +167,8 @@ describe("Project memory MCP integration", () => {
         kind: "preference",
         content:
           "User prefers verbose commit messages that explain the why behind changes rather than just the what was done.",
-        whyUsefulLater: "Agents should write detailed commit messages explaining reasoning rather than just listing changes.",
+        whyUsefulLater:
+          "Agents should write detailed commit messages explaining reasoning rather than just listing changes.",
         tags: ["git", "commits"],
         confidence: "high"
       }
@@ -279,15 +280,17 @@ describe("Project memory MCP integration", () => {
 
     const resource = await client.readResource({ uri: "memory://user/brief" });
     const bootstrap = await client.getPrompt({ name: "user_memory_bootstrap", arguments: {} });
-    const update = await client.getPrompt({ name: "user_memory_update", arguments: { sessionSummary: "Helped user refactor auth module." } });
+    const update = await client.getPrompt({
+      name: "user_memory_update",
+      arguments: { sessionSummary: "Helped user refactor auth module." }
+    });
 
     expect(resource.contents[0]).toHaveProperty("text");
     const briefText = "text" in resource.contents[0] ? resource.contents[0].text : "";
     expect(briefText).toContain("preferences");
 
     expect(bootstrap.messages[0]?.content.type).toBe("text");
-    const bootstrapText =
-      bootstrap.messages[0]?.content.type === "text" ? bootstrap.messages[0].content.text : "";
+    const bootstrapText = bootstrap.messages[0]?.content.type === "text" ? bootstrap.messages[0].content.text : "";
     expect(bootstrapText).toContain("memory://user/brief");
 
     expect(update.messages[0]?.content.type).toBe("text");
@@ -302,7 +305,8 @@ describe("Project memory MCP integration", () => {
         kind: "convention",
         content:
           "User applies the single responsibility principle strictly and prefers small composable functions over large monolithic implementations.",
-        whyUsefulLater: "Agents should suggest breaking down large functions when reviewing or writing code for this user.",
+        whyUsefulLater:
+          "Agents should suggest breaking down large functions when reviewing or writing code for this user.",
         confidence: "high"
       }
     });

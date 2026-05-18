@@ -429,7 +429,9 @@ export class ProjectMemoryStore {
 
   updateUserMemory(
     id: number,
-    updates: Partial<Pick<UserMemoryRecord, "content" | "summary" | "whyUsefulLater" | "tags" | "confidence" | "archivedAt">>,
+    updates: Partial<
+      Pick<UserMemoryRecord, "content" | "summary" | "whyUsefulLater" | "tags" | "confidence" | "archivedAt">
+    >,
     reason: string
   ): UserMemoryRecord {
     const existing = this.getUserMemory(id);
@@ -569,9 +571,7 @@ export class ProjectMemoryStore {
   }
 
   listUserEvents(): UserMemoryEventRecord[] {
-    const rows = this.db
-      .query("SELECT * FROM user_memory_events ORDER BY created_at ASC")
-      .all() as UserEventRow[];
+    const rows = this.db.query("SELECT * FROM user_memory_events ORDER BY created_at ASC").all() as UserEventRow[];
     return rows.map(mapUserEvent);
   }
 
@@ -608,9 +608,7 @@ export class ProjectMemoryStore {
     }
 
     const now = new Date().toISOString();
-    const update = this.db.query(
-      "UPDATE user_memories SET last_used_at = ?, use_count = use_count + 1 WHERE id = ?"
-    );
+    const update = this.db.query("UPDATE user_memories SET last_used_at = ?, use_count = use_count + 1 WHERE id = ?");
     const transaction = this.db.transaction((memoryIds: number[]) => {
       for (const id of memoryIds) {
         update.run(now, id);
@@ -626,9 +624,7 @@ export class ProjectMemoryStore {
     }
 
     this.db
-      .query(
-        "INSERT INTO user_memory_fts (memory_id, content, summary, tags, why_useful_later) VALUES (?, ?, ?, ?, ?)"
-      )
+      .query("INSERT INTO user_memory_fts (memory_id, content, summary, tags, why_useful_later) VALUES (?, ?, ?, ?, ?)")
       .run(memory.id, memory.content, memory.summary ?? "", memory.tags.join(" "), memory.whyUsefulLater);
   }
 
