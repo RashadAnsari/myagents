@@ -28,8 +28,7 @@ Personal productivity plugin.
 |---------|-------------|
 | `/reviewcrew` | Full codebase audit — runs all review agents in parallel and writes `REVIEW_REPORT.md` |
 | `/reportloop` | Walk through every issue in `REVIEW_REPORT.md` interactively — explain, fix or skip, one by one |
-| `/agents-md-review` | Review codebase for inconsistencies with `AGENTS.md` rules |
-| `/configure-statusline` | Configure the Claude Code statusline — asks global or project install, shows git branch, current directory, model, and time *(Claude Code only)* |
+| `/statusline` | Configure the Claude Code statusline — asks global or project install, shows git branch, current directory, model, and time *(Claude Code only)* |
 | `/commit` | Stage all changes and create a git commit with an appropriate message |
 | `/caveman` | Switch to lite communication mode — drops filler/hedging/pleasantries for the session. Includes commit format, PR review style, file compression, and subagent delegation guide. |
 

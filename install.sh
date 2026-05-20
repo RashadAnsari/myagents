@@ -13,6 +13,9 @@ INSTALLED_PLUGINS_JSON="$CLAUDE_PLUGINS_DIR/installed_plugins.json"
 KNOWN_MARKETPLACES_JSON="$CLAUDE_PLUGINS_DIR/known_marketplaces.json"
 CLAUDE_SETTINGS_JSON="$HOME/.claude/settings.json"
 
+CURSOR_PLUGINS_DIR="$HOME/.cursor/plugins/local"
+CURSOR_PLUGIN_LINK="$CURSOR_PLUGINS_DIR/$PLUGIN_NAME"
+
 registered=false
 claude_detected=false
 cursor_detected=false
@@ -131,6 +134,9 @@ fi
 
 if [ -d "$HOME/.cursor" ]; then
   cursor_detected=true
+  mkdir -p "$CURSOR_PLUGINS_DIR"
+  ln -sf "$PLUGIN_SRC" "$CURSOR_PLUGIN_LINK"
+  echo "  ✓ Cursor symlink → $CURSOR_PLUGIN_LINK"
   echo "  • Cursor detected — reload Cursor window (Developer: Reload Window)"
 fi
 
@@ -142,7 +148,7 @@ echo " myagents — $PLUGIN_NAME plugin"
 echo "────────────────────────────────"
 printf " Registry    : %s\n" "$( [ "$registered" = true ] && echo "✓ written" || echo "✗ FAILED" )"
 printf " Claude Code : %s\n" "$( [ "$claude_detected" = true ] && echo "✓ detected" || echo "– not detected" )"
-printf " Cursor      : %s\n" "$( [ "$cursor_detected" = true ] && echo "✓ detected" || echo "– not detected" )"
+printf " Cursor      : %s\n" "$( [ "$cursor_detected" = true ] && echo "✓ symlinked" || echo "– not detected" )"
 echo "────────────────────────────────"
 
 if [ "$claude_detected" = false ] && [ "$cursor_detected" = false ]; then

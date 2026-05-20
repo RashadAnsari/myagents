@@ -2,11 +2,11 @@
 set -euo pipefail
 
 if [ "$#" -eq 0 ]; then
-  echo "[run-uv] usage: run-uv.sh <args forwarded to uv>" >&2
+  echo "[run-with-uv] usage: run-with-uv.sh <args forwarded to uv>" >&2
   exit 64
 fi
 
-log() { printf '[run-uv] %s\n' "$*" >&2; }
+log() { printf '[run-with-uv] %s\n' "$*" >&2; }
 
 # 1. Make sure the standard uv install dirs are on PATH.
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
