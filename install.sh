@@ -136,7 +136,6 @@ if [ -d "$HOME/.cursor" ]; then
   cursor_detected=true
   mkdir -p "$CURSOR_PLUGINS_DIR"
   ln -sf "$PLUGIN_SRC" "$CURSOR_PLUGIN_LINK"
-  cursor_symlinked=true
   echo "  ✓ Cursor symlink → $CURSOR_PLUGIN_LINK"
   echo "  • Cursor detected — reload Cursor window (Developer: Reload Window)"
 fi
