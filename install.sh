@@ -136,9 +136,7 @@ fi
 if [ -d "$HOME/.cursor" ]; then
   cursor_detected=true
   mkdir -p "$CURSOR_PLUGINS_DIR"
-  # Remove stale symlink or file before (re-)linking.
-  [ -L "$CURSOR_PLUGIN_LINK" ] || [ -e "$CURSOR_PLUGIN_LINK" ] && rm -f "$CURSOR_PLUGIN_LINK"
-  if ln -s "$PLUGIN_SRC" "$CURSOR_PLUGIN_LINK"; then
+  if ln -sf "$PLUGIN_SRC" "$CURSOR_PLUGIN_LINK"; then
     cursor_symlinked=true
     echo "  ✓ Cursor symlink → $CURSOR_PLUGIN_LINK"
   else
