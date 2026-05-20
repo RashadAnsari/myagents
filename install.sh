@@ -19,7 +19,6 @@ CURSOR_PLUGIN_LINK="$CURSOR_PLUGINS_DIR/$PLUGIN_NAME"
 registered=false
 claude_detected=false
 cursor_detected=false
-cursor_symlinked=false
 failed_registry=false
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -136,12 +135,9 @@ fi
 if [ -d "$HOME/.cursor" ]; then
   cursor_detected=true
   mkdir -p "$CURSOR_PLUGINS_DIR"
-  if ln -sf "$PLUGIN_SRC" "$CURSOR_PLUGIN_LINK"; then
-    cursor_symlinked=true
-    echo "  ✓ Cursor symlink → $CURSOR_PLUGIN_LINK"
-  else
-    echo "  ✗ Cursor symlink failed"
-  fi
+  ln -sf "$PLUGIN_SRC" "$CURSOR_PLUGIN_LINK"
+  cursor_symlinked=true
+  echo "  ✓ Cursor symlink → $CURSOR_PLUGIN_LINK"
   echo "  • Cursor detected — reload Cursor window (Developer: Reload Window)"
 fi
 
@@ -153,7 +149,7 @@ echo " myagents — $PLUGIN_NAME plugin"
 echo "────────────────────────────────"
 printf " Registry    : %s\n" "$( [ "$registered" = true ] && echo "✓ written" || echo "✗ FAILED" )"
 printf " Claude Code : %s\n" "$( [ "$claude_detected" = true ] && echo "✓ detected" || echo "– not detected" )"
-printf " Cursor      : %s\n" "$( [ "$cursor_detected" = true ] && ( [ "$cursor_symlinked" = true ] && echo "✓ symlinked" || echo "✓ detected (symlink failed)" ) || echo "– not detected" )"
+printf " Cursor      : %s\n" "$( [ "$cursor_detected" = true ] && echo "✓ symlinked" || echo "– not detected" )"
 echo "────────────────────────────────"
 
 if [ "$claude_detected" = false ] && [ "$cursor_detected" = false ]; then
