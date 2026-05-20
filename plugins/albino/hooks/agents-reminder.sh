@@ -7,4 +7,4 @@ MANDATORY SKILLS: The following skills MUST be active and followed for every tas
 - dev-conventions: Follow project conventions for reuse, scope, localization, UI, validation, and data alignment
 - latest-versions: Always look up and use the latest stable version of any library or dependency
 - research-first: Never guess — research docs, source, and specs before answering or implementing anything non-trivial
-- project-memory: Retrieve relevant project memory before non-trivial work and store durable learnings after the task"
+- project-memory: Query the project-memory MCP server to retrieve durable facts, decisions, and conventions for the current repo before non-trivial work; write back any new learnings when the task is done so future sessions benefit"
