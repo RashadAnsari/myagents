@@ -8,7 +8,7 @@ Rules for all agents and subagents working in this repository.
 
 **When a new review agent is added to `plugins/albino/agents/`, the following MUST be updated in the same change:**
 
-**`plugins/albino/commands/ultrareview.md`** — add the new agent to the "Spawn All Reviewers in Parallel" list (Step 1) and add its corresponding section to the report structure (Step 3).
+**`plugins/albino/commands/reviewcrew.md`** — add the new agent to the "Spawn All Reviewers in Parallel" list (Step 1) and add its corresponding section to the report structure (Step 3).
 
 **Failure to update this file when adding a review agent is a violation of this rule.**
 
@@ -65,4 +65,3 @@ This runs plugin validation, formatting, linting, typechecking, and tests in seq
 
 - Read this file before doing anything in this repository.
 - When spawning subagents, instruct each one to read `AGENTS.md` itself before acting.
-- Do not create `README.md` or `CLAUDE.md` unless explicitly instructed.

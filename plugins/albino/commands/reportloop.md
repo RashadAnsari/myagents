@@ -5,13 +5,13 @@ allowed-tools: [Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion]
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
 
-# Ultra Fix
+# Report Loop
 
 Read `REVIEW_REPORT.md`, walk through every issue one by one, explain it, ask the user to fix or skip, handle follow-up questions, and apply fixes.
 
 ## Step 1 — Load the Report
 
-Read `REVIEW_REPORT.md` from the project root. If it does not exist, stop and tell the user to run `/ultrareview` first.
+Read `REVIEW_REPORT.md` from the project root. If it does not exist, stop and tell the user to run `/reviewcrew` first.
 
 Parse all issues across all sections. Collect them into an ordered list:
 1. CRITICAL issues first (all sections)
@@ -79,7 +79,7 @@ After all issues are processed, write a summary:
 
 ```
 ─────────────────────────────────────────────
-Ultra Fix Complete
+Report Loop Complete
 ─────────────────────────────────────────────
 Fixed:   N issues
 Skipped: N issues

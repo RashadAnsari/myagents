@@ -5,7 +5,7 @@ allowed-tools: [Agent, Read, Write, Glob, Grep]
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
 
-# Ultra Review
+# Review Crew
 
 Spawn all specialist review agents in parallel, collect their findings, and write a single consolidated report to `REVIEW_REPORT.md` in the project root.
 
