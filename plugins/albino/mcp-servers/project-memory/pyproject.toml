@@ -1,0 +1,39 @@
+[project]
+name = "project-memory-mcp"
+version = "0.1.0"
+description = "Generic MCP server for durable, searchable project memory."
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp>=3.3.1",
+    "fastembed>=0.8.0",
+    "sqlite-vec>=0.1.9",
+]
+
+[project.scripts]
+myagents-project-memory = "project_memory.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/project_memory"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.15.13",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

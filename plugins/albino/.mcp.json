@@ -4,7 +4,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "PLUGIN=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$PLUGIN\" ] && PLUGIN=\"$(pwd)\"; cd \"$PLUGIN/mcp-servers/project-memory\" && \"$PLUGIN/hooks/run-with-bun.sh\" install --frozen-lockfile >&2 && exec \"$PLUGIN/hooks/run-with-bun.sh\" src/index.ts"
+        "PLUGIN=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$PLUGIN\" ] && PLUGIN=\"$(pwd)\"; exec \"$PLUGIN/hooks/run-with-uv.sh\" run --directory \"$PLUGIN/mcp-servers/project-memory\" myagents-project-memory"
       ]
     }
   }

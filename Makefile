@@ -9,13 +9,12 @@ validate:
 
 # Format the Project Memory MCP server.
 format:
-	bun run --cwd plugins/albino/mcp-servers/project-memory format
+	uv run --directory plugins/albino/mcp-servers/project-memory ruff format src tests
 
-# Lint and typecheck the Project Memory MCP server.
+# Lint the Project Memory MCP server.
 lint:
-	bun run --cwd plugins/albino/mcp-servers/project-memory lint
-	bun run --cwd plugins/albino/mcp-servers/project-memory typecheck
+	uv run --directory plugins/albino/mcp-servers/project-memory ruff check src tests
 
 # Test the Project Memory MCP server.
 test:
-	bun run --cwd plugins/albino/mcp-servers/project-memory test
+	uv run --directory plugins/albino/mcp-servers/project-memory pytest

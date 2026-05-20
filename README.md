@@ -70,9 +70,9 @@ Personal productivity plugin.
 
 | Server | Description |
 |--------|-------------|
-| `project-memory` | Bun-powered local stdio MCP server for durable project and user memory with neural vector search (sqlite-vec + all-MiniLM-L6-v2), FTS5/BM25 fallback, quality gates, secret rejection, export/import, and explicit checkout path linking |
+| `project-memory` | Python/uv local stdio MCP server for durable project and user memory with vector KNN search (sqlite-vec + bge-small-en-v1.5 via fastembed), quality gates, and secret rejection |
 
-Project memory is stored outside git at `~/.myagents/project-memory/memory.sqlite` by default. User memory is stored in the same database. Set `MYAGENTS_MEMORY_DIR` to override the storage directory. Memories are keyed by project root (project memory) or stored globally (user memory) and can be exported or imported through the MCP tools.
+Project memory is stored outside git at `~/.myagents/project-memory/memory.sqlite` by default. User memory is stored in the same database. Set `MYAGENTS_MEMORY_DIR` to override the storage directory. Project memories are scoped to the repository root; user memories are stored globally across all projects.
 
 #### Hooks
 

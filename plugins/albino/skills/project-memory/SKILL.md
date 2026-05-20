@@ -109,7 +109,6 @@ Read project memory before non-trivial work on a codebase:
 1. Read `memory://project/current/brief` for conventions, decisions, pitfalls, and recent entries.
 2. Call `memory.search` with task-specific terms: file names, function names, domain concepts, error messages.
 3. Use findings to guide investigation — but verify against the actual repo before acting on them.
-4. If memory references another checkout path, call `memory.possible_project_matches` to see related paths. Only link with `memory.link_project_paths` when you are certain they share the same project.
 
 Memory can be stale. Always confirm what it says against current files, tests, and docs.
 
@@ -139,13 +138,13 @@ Do not write:
 | `decision` | Architectural or design decisions with rationale | "Chose SQLite over Postgres because the tool is local-first and single-user." |
 | `convention` | Naming, style, or structure rules | "All MCP tool handlers must call `jsonResult()` for consistent response format." |
 | `architecture` | Module boundaries, data flow, key relationships | "The store layer owns all SQL; the service layer handles validation and business logic." |
-| `workflow` | Non-obvious build, test, or deploy steps | "Run `bun install --frozen-lockfile` before tests; the lockfile must not change." |
+| `workflow` | Non-obvious build, test, or deploy steps | "Run `uv sync` before tests; the lockfile must not change." |
 | `preference` | User preferences specific to this project | "User wants all new files to use named exports, never default exports." |
-| `gotcha` | Surprising behavior or traps | "FTS MATCH fails on single-character queries; always fall back to LIKE." |
+| `gotcha` | Surprising behavior or traps | "sqlite-vec must be loaded before any DDL runs; loading after table creation silently skips vector indexing." |
 | `bug` | Root causes of recurring issues | "WAL files cause read contention when the db is opened twice in the same process." |
 | `dependency` | Constraint or quirk of a library or tool | "Zod v4 changed `.optional()` chaining semantics; do not upgrade without testing." |
 | `testing` | Test patterns or required coverage | "Integration tests use InMemoryTransport; never use real stdio in tests." |
-| `handoff` | End-of-task learnings for the next agent | "The FTS fallback path was added because emoji-only queries produce no FTS tokens." |
+| `handoff` | End-of-task learnings for the next agent | "Switched memory search to vector-only (KNN via sqlite-vec); removed the FTS fallback entirely." |
 
 ### Quality Rules for Project Memory
 
@@ -168,7 +167,7 @@ Same rules as user memory:
 **At task end (when something durable was learned):**
 ```
 1. Identify what would help the next agent on this codebase
-2. memory.remember or memory.capture_task_summary
+2. memory.remember
 3. Include whyUsefulLater — if you cannot explain it, skip it
 ```
 
@@ -184,7 +183,7 @@ Same rules as user memory:
 
 ## Searching Effectively
 
-Both `memory.search` and `user.search` use FTS5 with BM25 ranking and fall back to LIKE search.
+Both `memory.search` and `user.search` use vector KNN search. Queries and memories are embedded with `BAAI/bge-small-en-v1.5` (384-dimensional), and nearest neighbours are retrieved by cosine distance. This means search finds memories by meaning, not word overlap — "login issue" will surface "authentication problem with tokens" even though the two share no words.
 
 **Use specific terms, not generic questions:**
 - Good: `"sqlite fts fallback"`, `"migration project_id backfill"`, `"typescript strict return types"`
@@ -211,9 +210,9 @@ Both `memory.search` and `user.search` use FTS5 with BM25 ranking and fall back 
 | "The user is a senior engineer at a fintech" | `user.remember` → `context` |
 | "The auth module must never cache tokens" | `memory.remember` → `decision` |
 | "User prefers bullet points in responses" | `user.remember` → `communication` |
-| "Bun's SQLite closes connections on GC" | `memory.remember` → `gotcha` |
+| "sqlite-vec extension requires uv-managed Python on macOS for extension loading" | `memory.remember` → `gotcha` |
 | "User uses VS Code with Prettier" | `user.remember` → `tool_preference` |
-| "Run `bun test` before any push in this repo" | `memory.remember` → `workflow` |
+| "Run `uv run pytest` before any push in this repo" | `memory.remember` → `workflow` |
 
 When in doubt: if it applies only to this repo, use project memory. If it applies regardless of which repo you are in, use user memory.
 

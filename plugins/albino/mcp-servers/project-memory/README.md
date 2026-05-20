@@ -9,7 +9,7 @@ Both are local-first:
 
 - Runs over MCP stdio.
 - Stores memory in SQLite at `~/.myagents/project-memory/memory.sqlite`.
-- Uses neural vector search (KNN via `sqlite-vec`) as the primary ranking method, with SQLite FTS5/BM25 as fallback.
+- Uses neural vector search (KNN via `sqlite-vec`) for semantic retrieval.
 - Rejects noisy, vague, duplicate, and secret-looking memories.
 - Exposes tools, resources, and prompts through MCP.
 
@@ -17,20 +17,13 @@ Both are local-first:
 
 The Albino plugin registers this server in `plugins/albino/.mcp.json`.
 
-The MCP host runs:
+The MCP host runs the `myagents-project-memory` entrypoint via `run-with-uv.sh`:
 
 ```bash
-bash ./mcp-servers/project-memory/run.sh
+hooks/run-with-uv.sh run --directory mcp-servers/project-memory myagents-project-memory
 ```
 
-`run.sh` does the runtime setup:
-
-1. Finds `bun` in `PATH` or `~/.bun/bin/bun`.
-2. Installs Bun with the official installer if Bun is missing.
-3. Runs `bun install --frozen-lockfile`.
-4. Starts `src/index.ts`.
-
-Setup logs go to stderr so stdout remains reserved for MCP JSON-RPC.
+`run-with-uv.sh` locates or installs `uv`, then delegates to it. `uv` auto-syncs the virtual environment on first run and starts the server over stdio. No separate install step required.
 
 ## Storage
 
@@ -96,24 +89,14 @@ Bad project memory:
 ### Project Memory Tools
 
 - `memory.remember` — Store durable project memory after quality and secret checks.
-- `memory.search` — Search project memory with optional kind and tag filters.
-- `memory.get` — Fetch one memory by id.
+- `memory.search` — Vector search project memory with optional kind and tag filters.
 - `memory.project_brief` — Return compact conventions, decisions, pitfalls, and recent memory.
 - `memory.update` — Correct, refine, or archive an existing memory.
 - `memory.forget` — Archive by default or hard-delete when requested.
-- `memory.capture_task_summary` — Store reusable end-of-task learnings.
-- `memory.export_project` — Export project memory for backup or migration.
-- `memory.import_project` — Import a project memory export.
-- `memory.link_project_paths` — Explicitly link another checkout path to the same project memory.
-- `memory.possible_project_matches` — Find same-git-remote paths without automatically linking them.
 
 ### Project Memory Resources
 
 - `memory://project/current/brief` — Conventions, decisions, pitfalls, and recent memory.
-- `memory://project/current/conventions` — Conventions and preferences.
-- `memory://project/current/decisions` — Decisions and architecture.
-- `memory://project/current/pitfalls` — Gotchas and bugs.
-- `memory://project/current/recent` — Most recently updated memories.
 
 ### Project Memory Prompts
 
@@ -158,20 +141,14 @@ Bad user memory:
 ### User Memory Tools
 
 - `user.remember` — Store durable user memory after quality and secret checks.
-- `user.search` — Search user memory with optional kind and tag filters.
-- `user.get` — Fetch one user memory by id.
+- `user.search` — Vector search user memory with optional kind and tag filters.
 - `user.brief` — Return compact preferences, behaviors, context, and recent user memories.
 - `user.update` — Correct, refine, or archive an existing user memory.
 - `user.forget` — Archive by default or hard-delete when requested.
-- `user.export` — Export all user memory for backup or migration.
-- `user.import` — Import a user memory export with validation and deduplication.
 
 ### User Memory Resources
 
 - `memory://user/brief` — All four categories of user memory.
-- `memory://user/preferences` — Preferences, conventions, and tool preferences.
-- `memory://user/behaviors` — Behaviors, workflows, and communication style.
-- `memory://user/context` — Context entries.
 
 ### User Memory Prompts
 
@@ -180,23 +157,19 @@ Bad user memory:
 
 ## Search
 
-Memory search uses a two-stage hybrid pipeline:
-
-1. **Vector KNN (primary)** — The query and all memories are embedded using `Xenova/all-MiniLM-L6-v2` (a 384-dimension sentence transformer from `@huggingface/transformers`). Embeddings are stored in `sqlite-vec` virtual tables (`memory_vec`, `user_memory_vec`). At query time the nearest neighbours are retrieved by cosine distance using sqlite-vec's `MATCH` operator.
-
-2. **FTS5/BM25 (fallback)** — If vector search returns no results (e.g. no embeddings have been generated yet), the query falls back to SQLite FTS5 with BM25 ranking, then to a SQL `LIKE` scan.
+Memory search uses vector KNN exclusively. The query and all memories are embedded using `BAAI/bge-small-en-v1.5` (a 384-dimension sentence transformer via `fastembed`). Embeddings are stored in `sqlite-vec` virtual tables (`memory_vec`, `user_memory_vec`). At query time the nearest neighbours are retrieved by cosine distance using sqlite-vec's `MATCH` operator.
 
 **Why vector search?**
 
 Vector search finds memories by meaning, not word overlap. A query for "login issue" will surface a memory about "authentication problem with tokens" even though the two share no words, because the embedding model places them near each other in the 384-dimensional vector space.
 
+**Atomicity**
+
+`remember()` is atomic. If embedding fails after the memory row is written, the row is hard-deleted and the error is re-raised. There are no half-written records and no backfill step.
+
 **Model and caching**
 
-The embedding model (~25 MB) is downloaded once on first use and cached locally by `@huggingface/transformers`. Subsequent starts load from cache with no network access required.
-
-**Backfill**
-
-On every startup, `backfillEmbeddings()` runs and generates embeddings for any memories that do not yet have one. This handles memories created before vector search was introduced and any records written during a failed embedding attempt.
+The embedding model (~130 MB ONNX) is downloaded once on first use and cached locally by `fastembed` at the default HuggingFace cache path (`~/.cache/huggingface/hub`). Subsequent starts load from cache with no network access required.
 
 ## Development
 
@@ -211,11 +184,10 @@ make test
 From this directory:
 
 ```bash
-bun install
-bun run format
-bun run lint
-bun run typecheck
-bun test
+uv sync
+uv run ruff format src tests
+uv run ruff check src tests
+uv run pytest
 ```
 
 Smoke test the stdio server:
@@ -223,13 +195,13 @@ Smoke test the stdio server:
 ```bash
 printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0.0.0"}}}' \
-  | MYAGENTS_MEMORY_DIR=/tmp/myagents-memory-smoke bash ./run.sh
+  | MYAGENTS_MEMORY_DIR=/tmp/myagents-memory-smoke uv run --directory . myagents-project-memory
 ```
 
 ## Important Behavior
 
 - Memory is a hint, not authority. Current user instructions, repo files, tests, and official docs override memory.
-- Archived memories are excluded from normal search; pass `includeArchived: true` to include them.
-- Hard delete removes the memory row but keeps an audit event.
-- Project paths with the same git remote are only linked when `memory.link_project_paths` is called explicitly.
+- Archived memories are excluded from normal search; pass `include_archived=True` to include them.
+- Hard delete removes the memory row but always keeps an audit event.
+- `remember()` is atomic: if embedding fails the memory row is rolled back immediately.
 - The `MYAGENTS_MEMORY_DIR` environment variable overrides the storage directory; the database is placed directly inside it as `memory.sqlite`.
