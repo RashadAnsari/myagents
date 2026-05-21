@@ -33,7 +33,7 @@ need() {
 # ── Fetch repo ─────────────────────────────────────────────────────────────────
 
 need git
-need python3   # used to safely merge JSON config files
+need python3
 
 if [ -d "$INSTALL_DIR/.git" ]; then
   echo "→ Updating $INSTALL_DIR..."
@@ -46,11 +46,6 @@ fi
 [ -d "$PLUGIN_SRC" ] || { echo "✗ Plugin source not found at $PLUGIN_SRC"; exit 1; }
 
 # ── Register plugin in ~/.claude/ ──────────────────────────────────────────────
-#
-# Both Cursor and Claude Code read plugin registration from these JSON files.
-# Writing them directly (instead of running `claude plugin install` + creating
-# a Cursor symlink) means the script works on Cursor-only setups too, and
-# points both editors at the live source so edits propagate on the next reload.
 
 echo "→ Registering plugin..."
 mkdir -p "$CLAUDE_PLUGINS_DIR"
@@ -125,7 +120,7 @@ else
   failed_registry=true
 fi
 
-# ── Editor detection (informational only) ──────────────────────────────────────
+# ── Editor detection ──────────────────────────────────────
 
 if command -v claude &>/dev/null; then
   claude_detected=true
@@ -136,7 +131,6 @@ if [ -d "$HOME/.cursor" ]; then
   cursor_detected=true
   mkdir -p "$CURSOR_PLUGINS_DIR"
   ln -sf "$PLUGIN_SRC" "$CURSOR_PLUGIN_LINK"
-  echo "  ✓ Cursor symlink → $CURSOR_PLUGIN_LINK"
   echo "  • Cursor detected — reload Cursor window (Developer: Reload Window)"
 fi
 
