@@ -126,6 +126,63 @@ def test_update_memory(bare_store, tmp_path):
     assert "style" in updated.tags
 
 
+def test_update_memory_content_only(bare_store, tmp_path):
+    project = bare_store.get_or_create_project(str(tmp_path))
+    memory = bare_store.create_memory(
+        project_id=project.id,
+        kind="convention",
+        content="Original content about using snake_case for all Python identifiers.",
+        summary="original summary",
+        why_useful_later="Consistency across codebase.",
+        tags=["style"],
+        confidence="medium",
+        source=None,
+        source_ref=None,
+    )
+    updated = bare_store.update_memory(
+        memory_id=memory.id,
+        content="Updated content about using snake_case for all Python identifiers and module names.",
+        summary=None,
+        why_useful_later=None,
+        tags=None,
+        confidence=None,
+        archived_at=None,
+        reason="clarified scope",
+    )
+    assert "module names" in updated.content
+    assert updated.summary == "original summary"
+    assert updated.tags == ["style"]
+    assert updated.confidence == "medium"
+
+
+def test_update_memory_why_only(bare_store, tmp_path):
+    project = bare_store.get_or_create_project(str(tmp_path))
+    memory = bare_store.create_memory(
+        project_id=project.id,
+        kind="gotcha",
+        content="SQLite WAL mode must be enabled before foreign keys to avoid lock contention.",
+        summary=None,
+        why_useful_later="Original rationale that needs improvement.",
+        tags=[],
+        confidence="low",
+        source=None,
+        source_ref=None,
+    )
+    updated = bare_store.update_memory(
+        memory_id=memory.id,
+        content=None,
+        summary=None,
+        why_useful_later="Future agents need this ordering rule to avoid locking failures during SQLite initialization.",
+        tags=None,
+        confidence=None,
+        archived_at=None,
+        reason="improved rationale",
+    )
+    assert "locking failures" in updated.why_useful_later
+    assert updated.confidence == "low"
+    assert "WAL mode" in updated.content
+
+
 def test_archive_memory(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
     memory = bare_store.create_memory(

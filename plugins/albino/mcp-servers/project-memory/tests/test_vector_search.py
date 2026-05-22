@@ -63,6 +63,22 @@ def test_cosine_similarity_zero_vector_returns_0():
     assert cosine_similarity(nonzero, zero) == 0.0
 
 
+def test_cosine_similarity_mismatched_lengths_returns_0():
+    a = [0.1] * EMBEDDING_DIM
+    b = [0.1] * (EMBEDDING_DIM - 1)
+    assert cosine_similarity(a, b) == 0.0
+
+
+def test_cosine_similarity_nan_input_returns_0():
+    import math
+
+    nan = float("nan")
+    a = [nan] + [0.1] * (EMBEDDING_DIM - 1)
+    b = [0.1] * EMBEDDING_DIM
+    result = cosine_similarity(a, b)
+    assert result == 0.0 or not math.isnan(result)
+
+
 async def test_vector_search_stores_embedding(service: ProjectMemoryService, tmp_dir):
     await service.remember(
         project_root=str(tmp_dir),

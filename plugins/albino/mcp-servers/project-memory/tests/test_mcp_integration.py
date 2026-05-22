@@ -210,6 +210,22 @@ async def test_user_forget_archives(mcp_server):
     assert forgotten["deleted"] is False
 
 
+async def test_memory_handoff_and_cleanup_prompts(mcp_server):
+    async with Client(mcp_server) as client:
+        handoff = await client.get_prompt(
+            "memory_handoff",
+            {"task_summary": "Refactored auth module", "tests_run": "pytest tests/"},
+        )
+        cleanup = await client.get_prompt("memory_cleanup", {"topic": "auth"})
+
+    handoff_text = handoff.messages[0].content.text if handoff and handoff.messages else ""
+    assert "Refactored auth module" in handoff_text
+    assert "pytest tests/" in handoff_text
+
+    cleanup_text = cleanup.messages[0].content.text if cleanup and cleanup.messages else ""
+    assert "auth" in cleanup_text
+
+
 async def test_reads_user_brief_resource_and_prompts(mcp_server):
     async with Client(mcp_server) as client:
         await client.call_tool(

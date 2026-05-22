@@ -1,7 +1,12 @@
 import pytest
 
 from project_memory.memory_service import MemoryQualityError, ProjectMemoryService, UserMemoryService
-from project_memory.paths import default_database_path, normalize_project_root
+from project_memory.paths import (
+    _normalize_git_remote,
+    default_database_path,
+    fingerprint_remote,
+    normalize_project_root,
+)
 
 
 async def test_stores_and_searches_durable_memory(service: ProjectMemoryService, tmp_dir):
@@ -17,7 +22,12 @@ async def test_stores_and_searches_durable_memory(service: ProjectMemoryService,
     results = await service.search(project_root=str(tmp_dir), query="durable project decisions", k=5)
 
     assert memory.id > 0
+    assert memory.kind == "decision"
+    assert memory.tags == ["mcp", "memory"]
+    assert memory.confidence == "high"
+    assert memory.source == "test"
     assert len(results) == 1
+    assert results[0].id == memory.id
     assert "durable project decisions" in results[0].content
 
 
@@ -152,6 +162,38 @@ async def test_normalize_project_root_is_absolute(tmp_dir):
     assert root == str(tmp_dir.resolve())
 
 
+def test_normalize_git_remote_strips_https_credentials():
+    assert _normalize_git_remote("https://user:pass@github.com/org/repo") == "https://github.com/org/repo"
+
+
+def test_normalize_git_remote_converts_ssh_to_https():
+    assert _normalize_git_remote("git@github.com:org/repo.git") == "https://github.com/org/repo"
+
+
+def test_normalize_git_remote_strips_dot_git_suffix():
+    assert _normalize_git_remote("https://github.com/org/repo.git") == "https://github.com/org/repo"
+
+
+def test_normalize_git_remote_lowercases():
+    assert _normalize_git_remote("https://GitHub.com/Org/Repo") == "https://github.com/org/repo"
+
+
+def test_fingerprint_remote_returns_none_for_none():
+    assert fingerprint_remote(None) is None
+
+
+def test_fingerprint_remote_returns_hex_string():
+    result = fingerprint_remote("https://github.com/org/repo")
+    assert result is not None
+    assert len(result) == 64
+    assert all(c in "0123456789abcdef" for c in result)
+
+
+def test_fingerprint_remote_is_deterministic():
+    remote = "https://github.com/org/repo"
+    assert fingerprint_remote(remote) == fingerprint_remote(remote)
+
+
 async def test_user_remember_and_search(user_service: UserMemoryService):
     memory = await user_service.remember(
         kind="preference",
@@ -228,6 +270,80 @@ async def test_archive_excludes_from_search(service: ProjectMemoryService, tmp_d
         project_root=str(tmp_dir), query="SQLite WAL journal mode foreign keys", include_archived=True
     )
     assert any(r.id == memory.id for r in results_with_archived)
+
+
+async def test_project_brief_orders_by_confidence(service: ProjectMemoryService, tmp_dir):
+    await service.remember(
+        project_root=str(tmp_dir),
+        kind="decision",
+        content="The project stores all configuration in environment variables and never commits secrets to the repository.",
+        why_useful_later="Future agents need this to keep credentials out of version control across all environments.",
+        confidence="low",
+    )
+    await service.remember(
+        project_root=str(tmp_dir),
+        kind="decision",
+        content="The project uses a monorepo layout with all packages under the packages directory at the root level.",
+        why_useful_later="Future agents need this layout knowledge to place new packages in the correct directory.",
+        confidence="high",
+    )
+    await service.remember(
+        project_root=str(tmp_dir),
+        kind="decision",
+        content="The project deploys to Kubernetes using Helm charts and all deployments require a staging promotion step.",
+        why_useful_later="Future agents need this to generate correct deployment manifests and avoid skipping staging.",
+        confidence="medium",
+    )
+    brief = service.project_brief(str(tmp_dir))
+    decisions = brief["decisions"]
+    assert len(decisions) == 3
+    confidences = [m.confidence for m in decisions]
+    assert confidences == ["high", "medium", "low"]
+
+
+async def test_remember_defaults(service: ProjectMemoryService, tmp_dir):
+    memory = await service.remember(
+        project_root=str(tmp_dir),
+        kind="convention",
+        content="All database queries must use parameterized statements to prevent SQL injection vulnerabilities in production.",
+        why_useful_later="Future agents must use parameterized queries and never format user input directly into SQL.",
+    )
+    assert memory.confidence == "medium"
+    assert memory.tags == []
+    assert memory.source is None
+
+
+async def test_end_to_end_workflow(service: ProjectMemoryService, tmp_dir):
+    memory = await service.remember(
+        project_root=str(tmp_dir),
+        kind="convention",
+        content="All Python functions must have type annotations for parameters and return values without exception.",
+        why_useful_later="Future agents need this to write correctly typed Python code that passes the project linter.",
+        confidence="medium",
+        tags=["python", "types"],
+    )
+
+    results = await service.search(project_root=str(tmp_dir), query="type annotations Python functions")
+    assert len(results) == 1
+    assert results[0].id == memory.id
+
+    updated = await service.update(
+        project_root=str(tmp_dir),
+        memory_id=memory.id,
+        confidence="high",
+        reason="Confirmed enforced in CI via mypy strict mode.",
+    )
+    assert updated.confidence == "high"
+    assert updated.tags == ["python", "types"]
+
+    service.forget(str(tmp_dir), memory.id, reason="Superseded by project-wide mypy config.")
+    results_after = await service.search(project_root=str(tmp_dir), query="type annotations Python")
+    assert all(r.id != memory.id for r in results_after)
+
+    with_archived = await service.search(
+        project_root=str(tmp_dir), query="type annotations Python", include_archived=True
+    )
+    assert any(r.id == memory.id for r in with_archived)
 
 
 async def test_hard_delete_removes_from_search(service: ProjectMemoryService, tmp_dir):
