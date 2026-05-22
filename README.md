@@ -81,7 +81,15 @@ Project memory is stored outside git at `~/.myagents/project-memory/memory.sqlit
 
 | Event | Hook | Description |
 |-------|------|-------------|
-| `UserPromptSubmit` / `beforeSubmitPrompt` | `agents-reminder` | Injects mandatory `AGENTS.md` reminder and active skill list before every prompt |
+| `UserPromptSubmit` | `agents-reminder` | Injects mandatory `AGENTS.md` reminder and active skill list before every prompt |
+
+#### Rules
+
+Cursor rules (`.mdc` files) — always applied to every Cursor agent session.
+
+| Rule | Description |
+|------|-------------|
+| `agents-reminder` | Injects mandatory `AGENTS.md` reminder and active skill list before every prompt *(Cursor only)* |
 
 ---
 

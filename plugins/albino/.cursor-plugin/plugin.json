@@ -6,6 +6,7 @@
     "name": "Rashad Ansari",
     "url": "https://github.com/RashadAnsari"
   },
+  "rules": "./rules",
   "hooks": {
     "version": 1,
     "hooks": {

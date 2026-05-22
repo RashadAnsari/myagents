@@ -18,7 +18,14 @@ Review agents are any agent file whose name ends in `-reviewer.md` inside `plugi
 
 ## Skill Reminder Sync Rule
 
-The following skills are injected into every agent prompt via the reminder hook (`hooks/agents-reminder.sh`):
+The following skills are injected into every agent prompt via two files that must always be kept in sync:
+
+- `plugins/albino/hooks/agents-reminder.sh` — used by Claude Code via `UserPromptSubmit` hook
+- `plugins/albino/rules/agents-reminder.mdc` — used by Cursor via the `rules/` plugin directory
+
+**Any change to the reminder content MUST be applied to both files in the same change. Never update one without the other.**
+
+The skills currently injected:
 
 - `agent-protocol`
 - `code-reusability`
@@ -33,7 +40,7 @@ The above 6 skills are mandatory — they are always injected into every agent p
 
 > "A new skill `<name>` was added. Do you want it included in the agent reminder so it is enforced on every task?"
 
-If the user says yes — add it to the skill list in `plugins/albino/hooks/agents-reminder.sh`. If no — leave the hook unchanged.
+If the user says yes — add it to the skill list in both `plugins/albino/hooks/agents-reminder.sh` and `plugins/albino/rules/agents-reminder.mdc`. If no — leave both files unchanged.
 
 Do not silently add or skip skills. Always ask.
 
