@@ -21,7 +21,7 @@ claude_detected=false
 cursor_detected=false
 failed_registry=false
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+# Helpers
 
 need() {
   if ! command -v "$1" &>/dev/null; then
@@ -30,7 +30,7 @@ need() {
   fi
 }
 
-# ── Fetch repo ─────────────────────────────────────────────────────────────────
+# Fetch repo
 
 need git
 need python3
@@ -45,7 +45,7 @@ fi
 
 [ -d "$PLUGIN_SRC" ] || { echo "✗ Plugin source not found at $PLUGIN_SRC"; exit 1; }
 
-# ── Register plugin in ~/.claude/ ──────────────────────────────────────────────
+# Register plugin in ~/.claude/
 
 echo "→ Registering plugin..."
 mkdir -p "$CLAUDE_PLUGINS_DIR"
@@ -120,7 +120,7 @@ else
   failed_registry=true
 fi
 
-# ── Editor detection ──────────────────────────────────────
+# Editor detection
 
 if command -v claude &>/dev/null; then
   claude_detected=true
@@ -134,7 +134,7 @@ if [ -d "$HOME/.cursor" ]; then
   echo "  • Cursor detected: reload Cursor window (Developer: Reload Window)"
 fi
 
-# ── Summary ────────────────────────────────────────────────────────────────────
+# Summary
 
 echo ""
 echo "────────────────────────────────"
