@@ -88,11 +88,12 @@ Bad project memory:
 
 ### Project Memory Tools
 
-- `memory.remember`: Store durable project memory after quality and secret checks.
-- `memory.search`: Vector search project memory with optional kind and tag filters.
+- `memory.remember`: Store durable project memory after quality and secret checks. Requires `why_useful_later`. Idempotent by content: a duplicate raises an error rather than creating a second record.
+- `memory.search`: Vector search project memory with optional kind and tag filters. Supports `offset` for pagination.
 - `memory.project_brief`: Return compact conventions, decisions, pitfalls, and recent memory.
 - `memory.update`: Correct, refine, or archive an existing memory.
 - `memory.forget`: Archive by default or hard-delete when requested.
+- `memory.purge`: Hard-delete archived project memories older than N days to prevent unbounded growth. Audit events are always preserved.
 
 ### Project Memory Resources
 
@@ -140,11 +141,12 @@ Bad user memory:
 
 ### User Memory Tools
 
-- `user.remember`: Store durable user memory after quality and secret checks.
-- `user.search`: Vector search user memory with optional kind and tag filters.
+- `user.remember`: Store durable user memory after quality and secret checks. Requires `why_useful_later`. Idempotent by content.
+- `user.search`: Vector search user memory with optional kind and tag filters. Supports `offset` for pagination.
 - `user.brief`: Return compact preferences, behaviors, context, and recent user memories.
 - `user.update`: Correct, refine, or archive an existing user memory.
 - `user.forget`: Archive by default or hard-delete when requested.
+- `user.purge`: Hard-delete archived user memories older than N days to prevent unbounded growth. Audit events are always preserved.
 
 ### User Memory Resources
 

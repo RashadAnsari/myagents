@@ -179,6 +179,13 @@ Same rules as user memory:
 4. Preserve useful source references when correcting
 ```
 
+**During memory cleanup (periodic housekeeping):**
+```
+1. memory.purge <days>  → hard-delete archived project memories older than N days
+2. user.purge <days>    → hard-delete archived user memories older than N days
+3. Audit events are always preserved; only the memory rows are removed
+```
+
 ---
 
 ## Searching Effectively
