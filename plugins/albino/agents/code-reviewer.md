@@ -88,6 +88,17 @@ Read-only agent. Exhaustive review of code correctness, style, patterns, and ant
 - Resource not closed via context manager (`with` statement missing for files, DB connections)
 - Wildcard import — `from module import *` pollutes namespace
 
+### Go
+- Error return ignored — `result, _ = f()` discards an error that should be checked
+- `panic` used for expected, recoverable errors instead of returning an `error` value
+- `interface{}` / `any` used where a typed interface or concrete type fits
+- Context not accepted or propagated — function does I/O or long work without a `context.Context` parameter
+- Goroutine leak — goroutine started without a cancellation or shutdown signal so it can never exit
+- `sync.WaitGroup` used without coordinating errors — use `errgroup` when any goroutine can fail
+- Named return values used non-trivially — causes hard-to-follow control flow with bare `return`
+- `init()` function with side effects — initialization order across packages is not guaranteed
+- Embedding a type to inherit methods without documenting the promoted API — breaks encapsulation silently
+
 ### General
 - N+1 query — fetching related records in a loop instead of a join or batch load
 - Synchronous blocking I/O inside async event loop — stalls entire loop

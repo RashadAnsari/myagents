@@ -99,12 +99,14 @@ class ProjectMemoryService:
         project_root: str,
         query: str,
         k: int = 8,
+        offset: int = 0,
         kinds: list[MemoryKind] | None = None,
         tags: list[str] | None = None,
         include_archived: bool = False,
     ) -> list[MemoryRecord]:
         project = self._store.get_or_create_project(project_root)
         limit = _clamp(k, 1, 25)
+        skip = _clamp(offset, 0, 100)
 
         vectors = await embed([query])
         if not vectors:
@@ -115,14 +117,23 @@ class ProjectMemoryService:
             project_id=project.id,
             query_vector=query_vector,
             limit=limit,
+            offset=skip,
             include_archived=include_archived,
             kinds=kinds or None,
             tags=_normalize_tags(tags) or None,
         )
 
-    def project_brief(self, project_root: str) -> dict[str, list[MemoryRecord]]:
+    def project_brief(self, project_root: str, limit_per_category: int = 8) -> dict[str, list[MemoryRecord]]:
         project = self._store.get_or_create_project(project_root)
-        return self._store.project_brief(project.id)
+        limit = _clamp(limit_per_category, 1, 25)
+        return self._store.project_brief(project.id, limit_per_category=limit)
+
+    def purge_archived(self, project_root: str, days: int = 90) -> int:
+        from datetime import timedelta
+
+        project = self._store.get_or_create_project(project_root)
+        before = (datetime.now(tz=UTC) - timedelta(days=days)).isoformat()
+        return self._store.purge_archived_memories(project.id, before)
 
     async def update(
         self,
@@ -230,11 +241,13 @@ class UserMemoryService:
         self,
         query: str,
         k: int = 8,
+        offset: int = 0,
         kinds: list[UserMemoryKind] | None = None,
         tags: list[str] | None = None,
         include_archived: bool = False,
     ) -> list[UserMemoryRecord]:
         limit = _clamp(k, 1, 25)
+        skip = _clamp(offset, 0, 100)
 
         vectors = await embed([query])
         if not vectors:
@@ -244,6 +257,7 @@ class UserMemoryService:
         return self._store.search_user_memories(
             query_vector=query_vector,
             limit=limit,
+            offset=skip,
             include_archived=include_archived,
             kinds=kinds or None,
             tags=_normalize_tags(tags) or None,
@@ -251,6 +265,12 @@ class UserMemoryService:
 
     def brief(self) -> dict[str, list[UserMemoryRecord]]:
         return self._store.user_memory_brief()
+
+    def purge_archived(self, days: int = 90) -> int:
+        from datetime import timedelta
+
+        before = (datetime.now(tz=UTC) - timedelta(days=days)).isoformat()
+        return self._store.purge_archived_user_memories(before)
 
     async def update(
         self,

@@ -58,6 +58,7 @@ class ProjectMemoryStore:
                 )
             self._conn.execute("PRAGMA journal_mode = WAL;")
             self._conn.execute("PRAGMA journal_size_limit = 67108864;")
+            self._conn.execute("PRAGMA wal_autocheckpoint = 1000;")
             self._conn.execute("PRAGMA foreign_keys = ON;")
             self._migrate()
         except Exception as exc:
@@ -226,6 +227,7 @@ class ProjectMemoryStore:
         project_id: int,
         query_vector: bytes,
         limit: int,
+        offset: int = 0,
         include_archived: bool = False,
         kinds: list[MemoryKind] | None = None,
         tags: list[str] | None = None,
@@ -253,28 +255,46 @@ class ProjectMemoryStore:
                   {archived_where}
                   {kinds_where}
                   {tags_where}
-                ORDER BY knn.distance""",
-            (query_vector, limit, project_id, *(kinds or []), *(tags or [])),
+                ORDER BY knn.distance
+                LIMIT ? OFFSET ?""",
+            (query_vector, limit + offset, project_id, *(kinds or []), *(tags or []), limit, offset),
         ).fetchall()
         memories = [_map_memory(r) for r in rows]
         self._mark_used([m.id for m in memories])
         return memories
 
-    def project_brief(self, project_id: int) -> dict[str, list[MemoryRecord]]:
+    def project_brief(self, project_id: int, limit_per_category: int = 8) -> dict[str, list[MemoryRecord]]:
         active = self.list_active_memories(project_id)
 
-        def by_kind(kinds: list[MemoryKind], limit: int) -> list[MemoryRecord]:
+        def by_kind(kinds: list[MemoryKind]) -> list[MemoryRecord]:
             return sorted(
                 [m for m in active if m.kind in kinds],
                 key=_brief_sort_key,
-            )[:limit]
+            )[:limit_per_category]
 
         return {
-            "conventions": by_kind(["convention", "preference"], 8),
-            "decisions": by_kind(["decision", "architecture"], 8),
-            "pitfalls": by_kind(["gotcha", "bug"], 8),
-            "recent": sorted(active, key=lambda m: m.updated_at, reverse=True)[:8],
+            "conventions": by_kind(["convention", "preference"]),
+            "decisions": by_kind(["decision", "architecture"]),
+            "pitfalls": by_kind(["gotcha", "bug"]),
+            "recent": sorted(active, key=lambda m: m.updated_at, reverse=True)[:limit_per_category],
         }
+
+    def purge_archived_memories(self, project_id: int, before_iso: str) -> int:
+        rows = self._conn.execute(
+            "SELECT id FROM memories WHERE project_id = ? AND archived_at IS NOT NULL AND archived_at < ?",
+            (project_id, before_iso),
+        ).fetchall()
+        ids = [r["id"] for r in rows]
+        for memory_id in ids:
+            self._add_event(memory_id, "purged", f"Purged (before {before_iso})", project_id=project_id)
+            self._conn.execute("DELETE FROM memory_vec WHERE memory_id = ?", (memory_id,))
+            self._conn.execute("DELETE FROM memories WHERE id = ?", (memory_id,))
+        if ids:
+            self._commit("purge_archived_memories")
+            print(
+                f"[INFO] project-memory: purged {len(ids)} archived memories for project {project_id}", file=sys.stderr
+            )
+        return len(ids)
 
     def upsert_embedding(self, memory_id: int, vector: list[float]) -> None:
         if not self._vec_available:
@@ -408,6 +428,7 @@ class ProjectMemoryStore:
         self,
         query_vector: bytes,
         limit: int,
+        offset: int = 0,
         include_archived: bool = False,
         kinds: list[UserMemoryKind] | None = None,
         tags: list[str] | None = None,
@@ -435,25 +456,41 @@ class ProjectMemoryStore:
                   {archived_where}
                   {kinds_where}
                   {tags_where}
-                ORDER BY knn.distance""",
-            (query_vector, limit, *(kinds or []), *(tags or [])),
+                ORDER BY knn.distance
+                LIMIT ? OFFSET ?""",
+            (query_vector, limit + offset, *(kinds or []), *(tags or []), limit, offset),
         ).fetchall()
         memories = [_map_user_memory(r) for r in rows]
         self._mark_user_memories_used([m.id for m in memories])
         return memories
 
-    def user_memory_brief(self) -> dict[str, list[UserMemoryRecord]]:
+    def user_memory_brief(self, limit_per_category: int = 8) -> dict[str, list[UserMemoryRecord]]:
         active = self.list_active_user_memories()
 
-        def by_kind(kinds: list[UserMemoryKind], limit: int) -> list[UserMemoryRecord]:
-            return sorted([m for m in active if m.kind in kinds], key=_user_brief_sort_key)[:limit]
+        def by_kind(kinds: list[UserMemoryKind]) -> list[UserMemoryRecord]:
+            return sorted([m for m in active if m.kind in kinds], key=_user_brief_sort_key)[:limit_per_category]
 
         return {
-            "preferences": by_kind(["preference", "convention", "tool_preference"], 8),
-            "behaviors": by_kind(["behavior", "workflow", "communication"], 8),
-            "context": by_kind(["context"], 8),
-            "recent": sorted(active, key=lambda m: m.updated_at, reverse=True)[:8],
+            "preferences": by_kind(["preference", "convention", "tool_preference"]),
+            "behaviors": by_kind(["behavior", "workflow", "communication"]),
+            "context": by_kind(["context"]),
+            "recent": sorted(active, key=lambda m: m.updated_at, reverse=True)[:limit_per_category],
         }
+
+    def purge_archived_user_memories(self, before_iso: str) -> int:
+        rows = self._conn.execute(
+            "SELECT id FROM user_memories WHERE archived_at IS NOT NULL AND archived_at < ?",
+            (before_iso,),
+        ).fetchall()
+        ids = [r["id"] for r in rows]
+        for memory_id in ids:
+            self._add_user_event(memory_id, "purged", f"Purged (before {before_iso})")
+            self._conn.execute("DELETE FROM user_memory_vec WHERE memory_id = ?", (memory_id,))
+            self._conn.execute("DELETE FROM user_memories WHERE id = ?", (memory_id,))
+        if ids:
+            self._commit("purge_archived_user_memories")
+            print(f"[INFO] project-memory: purged {len(ids)} archived user memories", file=sys.stderr)
+        return len(ids)
 
     def upsert_user_embedding(self, memory_id: int, vector: list[float]) -> None:
         if not self._vec_available:
@@ -530,6 +567,7 @@ class ProjectMemoryStore:
             );
 
             CREATE INDEX IF NOT EXISTS idx_memory_events_memory_id ON memory_events(memory_id);
+            CREATE INDEX IF NOT EXISTS idx_memory_events_created_at ON memory_events(created_at);
 
             CREATE TABLE IF NOT EXISTS user_memories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -561,6 +599,7 @@ class ProjectMemoryStore:
             );
 
             CREATE INDEX IF NOT EXISTS idx_user_memory_events_memory_id ON user_memory_events(memory_id);
+            CREATE INDEX IF NOT EXISTS idx_user_memory_events_created_at ON user_memory_events(created_at);
 
         """)
         if self._vec_available:

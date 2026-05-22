@@ -30,11 +30,13 @@ async def test_exposes_expected_project_tools_resources_prompts(mcp_server):
         "memory.project_brief",
         "memory.update",
         "memory.forget",
+        "memory.purge",
         "user.remember",
         "user.search",
         "user.brief",
         "user.update",
         "user.forget",
+        "user.purge",
     }
     assert resource_uris == {"memory://project/current/brief", "memory://user/brief"}
     assert {

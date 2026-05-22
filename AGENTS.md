@@ -33,7 +33,7 @@ The above 6 skills are mandatory — they are always injected into every agent p
 
 > "A new skill `<name>` was added. Do you want it included in the agent reminder so it is enforced on every task?"
 
-If the user says yes — add it to the list in `hooks/agents-reminder.sh`. If no — leave the hook unchanged.
+If the user says yes — add it to the skill list in `plugins/albino/hooks/agents-reminder.sh`. If no — leave the hook unchanged.
 
 Do not silently add or skip skills. Always ask.
 
@@ -41,7 +41,7 @@ Do not silently add or skip skills. Always ask.
 
 ## README Sync Rule
 
-After any change that affects the public surface of this project, update `README.md` accordingly. This includes:
+After any change that affects the public surface of this project, update `README.md` (at `README.md` in the repository root) accordingly. This includes:
 
 - Adding, removing, or renaming an agent, skill, command, or hook
 - Changing what a command or agent does
@@ -54,7 +54,7 @@ Do not update README for internal implementation changes that are not visible to
 
 ## Verify After Changes Rule
 
-After completing any change in this repository, run:
+After completing any change in this repository, run the following from the repository root:
 
 ```
 make local

@@ -32,7 +32,7 @@ Slash commands available in Claude Code / Cursor sessions.
 | `/reportloop` | Walk through every issue in `REVIEW_REPORT.md` interactively — explain, fix or skip, one by one |
 | `/statusline` | Configure the Claude Code statusline — asks global or project install, shows git branch, current directory, model, and time *(Claude Code only)* |
 | `/commit` | Stage all changes and create a git commit with an appropriate message |
-| `/caveman` | Switch to lite communication mode — drops filler/hedging/pleasantries for the session. Includes commit format, PR review style, file compression, and subagent delegation guide. |
+| `/caveman` | Switch to lite communication mode — drops filler/hedging/pleasantries for the session. Includes commit format, PR review style, file compression, and subagent delegation templates for spawning agents in caveman mode. |
 
 #### Agents
 
@@ -49,10 +49,10 @@ Specialist review agents — spawned in parallel by `/reviewcrew` and available 
 | `dependency-reviewer` | Reviews vulnerable, outdated, unused packages and supply chain risk |
 | `docs-reviewer` | Reviews documentation accuracy, completeness, and staleness |
 | `agents-md-reviewer` | Reviews codebase against `AGENTS.md` rules |
-| `accessibility-reviewer` | Reviews WCAG compliance, ARIA usage, keyboard navigation, and screen reader compatibility |
-| `api-design-reviewer` | Reviews REST/GraphQL naming, HTTP semantics, versioning, error shape, and backward compatibility |
-| `database-reviewer` | Reviews schema design, migration safety, indexing strategy, constraints, and query patterns |
-| `i18n-reviewer` | Reviews hardcoded strings, date/number formatting, pluralization, RTL layout, and locale handling |
+| `accessibility-reviewer` | Reviews WCAG compliance, ARIA usage, keyboard navigation, and screen reader compatibility. Use when: adding interactive components, building forms, or auditing UI for assistive-technology support. |
+| `api-design-reviewer` | Reviews REST/GraphQL naming, HTTP semantics, versioning, error shape, and backward compatibility. Use when: designing new endpoints, changing existing API contracts, or reviewing client-facing interfaces. |
+| `database-reviewer` | Reviews schema design, migration safety, indexing strategy, constraints, and query patterns. Use when: adding tables, writing migrations, or auditing existing schema for correctness and safety. |
+| `i18n-reviewer` | Reviews hardcoded strings, date/number formatting, pluralization, RTL layout, and locale handling. Use when: adding user-visible text, date or number formatting, or preparing the app for a new locale. |
 
 #### Skills
 
@@ -73,7 +73,7 @@ Behavioral guidelines injected into agent prompts. The six mandatory skills are 
 
 | Server | Description |
 |--------|-------------|
-| `project-memory` | Python/uv local stdio MCP server for durable project and user memory with vector KNN search (sqlite-vec + bge-small-en-v1.5 via fastembed), quality gates, and secret rejection |
+| `project-memory` | Stores and retrieves durable project knowledge and user preferences across sessions. Supports semantic search so agents can recall relevant decisions, conventions, and gotchas before starting a task. Rejects vague, duplicate, or secret-containing entries. |
 
 Project memory is stored outside git at `~/.myagents/project-memory/memory.sqlite` by default. User memory is stored in the same database. Set `MYAGENTS_MEMORY_DIR` to override the storage directory. Project memories are scoped to the repository root; user memories are stored globally across all projects.
 

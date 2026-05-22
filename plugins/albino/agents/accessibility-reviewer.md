@@ -126,7 +126,7 @@ Read-only agent. Exhaustive audit of WCAG 2.1 AA compliance, ARIA usage, keyboar
 1. Glob all template, JSX, TSX, HTML, CSS, and SCSS files
 2. Read and check each file against every category above
 3. Flag only confirmed or high-confidence issues
-4. Expert scan: mentally simulate the experience of a keyboard-only user and a screen reader user navigating the UI — look for flows that work visually but break in assistive technology; flag with a descriptive label anything that doesn't fit a named category
+4. Expert scan: for each interactive flow, (a) trace the actual tab order through the DOM and verify it matches visual reading order, (b) verify that every interactive element has a programmatically determinable name, role, and state via ARIA or native semantics, (c) check that focus is never lost or trapped outside an active modal, and (d) verify that no user action requires a pointer gesture without an equivalent keyboard path — flag with a descriptive label anything that doesn't fit a named category
 
 ## Output
 

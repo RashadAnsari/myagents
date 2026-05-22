@@ -84,11 +84,11 @@ Read-only agent. Exhaustive audit of logging and monitoring coverage across the 
 
 ## Structured Logging
 
-- Unstructured free-text logs — unsearchable, unparseable at scale
-- Inconsistent log formats across modules — correlation impossible
-- No log levels used — all output at same severity
-- Log level not configurable without code change
-- No request tracing across service boundaries (missing trace ID propagation)
+- Unstructured free-text logs — plain string messages like `"user 42 logged in"` instead of structured fields `{"event": "login", "user_id": 42, "ip": "..."}` — unsearchable and unparseable at scale
+- Inconsistent log formats across modules — one module uses JSON, another uses `key=value` pairs, another uses plain text — log aggregation and correlation become impossible
+- No log levels used — all output at the same severity, so filtering noise from signals requires parsing every line
+- Log level not configurable without a code change — should be controlled via environment variable (e.g., `LOG_LEVEL=debug`) or runtime config
+- No request tracing across service boundaries — inbound `X-Trace-ID` or `X-Request-ID` header not extracted, not propagated to downstream calls, and not included in log output — distributed traces break at service boundaries
 
 ## Outbound Call Logging
 

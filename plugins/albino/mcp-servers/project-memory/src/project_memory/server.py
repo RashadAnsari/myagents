@@ -8,7 +8,7 @@ from pydantic import Field
 
 from .memory_service import ProjectMemoryService, UserMemoryService
 from .paths import current_project_root
-from .types import CONFIDENCE_VALUES, MEMORY_KINDS, USER_MEMORY_KINDS, Confidence
+from .types import CONFIDENCE_VALUES, MEMORY_KINDS, USER_MEMORY_KINDS, Confidence, MemoryKind, UserMemoryKind
 
 _MEMORY_KIND_DESC = "Memory kind: decision, convention, architecture, workflow, preference, gotcha, bug, dependency, testing, or handoff."
 _USER_MEMORY_KIND_DESC = (
@@ -52,7 +52,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
     @mcp.tool(name="memory.remember")
     async def memory_remember(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
-        kind: Annotated[str, Field(description=_MEMORY_KIND_DESC)],
+        kind: Annotated[MemoryKind, Field(description=_MEMORY_KIND_DESC)],
         content: Annotated[str, Field(description=_CONTENT_DESC)],
         why_useful_later: Annotated[str, Field(description=_WHY_USEFUL_LATER_DESC)],
         summary: Annotated[str | None, Field(description=_SUMMARY_DESC)] = None,
@@ -65,7 +65,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
             str | None, Field(description="Optional reference such as a file path, PR number, or test command.")
         ] = None,
     ) -> dict:
-        """Store a durable, reusable fact scoped to this project. Call this after completing work when you learned something non-obvious: a decision with rationale, a convention, an architecture fact, a gotcha, or a recurring bug cause. Rejected if content is too short, vague, a duplicate, or contains secrets."""
+        """Store a durable, reusable fact scoped to this project. Call this after completing work when you learned something non-obvious: a decision with rationale, a convention, an architecture fact, a gotcha, or a recurring bug cause. Rejected if content is too short, vague, or contains secrets. Idempotent by content: a second call with identical content raises MemoryQualityError (reason: 'duplicates'), confirming the memory already exists without creating a duplicate."""
         _log_tool("memory.remember", project=project_root, kind=kind)
         _validate_kind(kind, MEMORY_KINDS, "memory kind")
         _validate_confidence(confidence)
@@ -89,16 +89,20 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
             str, Field(description="Specific search terms: file names, function names, concepts, or error messages.")
         ],
         k: Annotated[int, Field(description="Maximum results to return. Default 8, max 25.", ge=1, le=25)] = 8,
-        kinds: Annotated[list[str] | None, Field(description="Restrict results to these memory kinds.")] = None,
+        offset: Annotated[
+            int, Field(description="Number of results to skip for pagination. Default 0.", ge=0, le=100)
+        ] = 0,
+        kinds: Annotated[list[MemoryKind] | None, Field(description="Restrict results to these memory kinds.")] = None,
         tags: Annotated[list[str] | None, Field(description=_TAGS_DESC)] = None,
         include_archived: Annotated[bool, Field(description=_INCLUDE_ARCHIVED_DESC)] = False,
     ) -> list:
-        """Vector search across project memory. Call this at task start with specific terms — file names, function names, domain concepts, error messages. Do not use generic questions as queries. Returns up to k results ordered by semantic relevance. Raises RuntimeError if embedding fails."""
-        _log_tool("memory.search", project=project_root, query=query, k=k)
+        """Vector search across project memory. Call this at task start with specific terms — file names, function names, domain concepts, error messages. Do not use generic questions as queries. Returns up to k results ordered by semantic relevance, starting at offset for pagination. Raises RuntimeError if embedding fails."""
+        _log_tool("memory.search", project=project_root, query=query, k=k, offset=offset)
         results = await project_service.search(
             project_root=project_root,
             query=query,
             k=k,
+            offset=offset,
             kinds=kinds or None,
             tags=tags,
             include_archived=include_archived,
@@ -108,10 +112,13 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
     @mcp.tool(name="memory.project_brief")
     def memory_project_brief(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
+        limit_per_category: Annotated[
+            int, Field(description="Maximum entries per category. Default 8, max 25.", ge=1, le=25)
+        ] = 8,
     ) -> dict:
-        """Return a compact summary of the most important project memory grouped into: conventions (style/preference), decisions (architecture), pitfalls (gotchas/bugs), and 8 most recently updated entries. Read this at the start of every non-trivial task before calling memory.search for specifics."""
-        _log_tool("memory.project_brief", project=project_root)
-        brief = project_service.project_brief(project_root)
+        """Return a compact summary of the most important project memory grouped into: conventions (style/preference), decisions (architecture), pitfalls (gotchas/bugs), and most recently updated entries. Read this at the start of every non-trivial task before calling memory.search for specifics. Increase limit_per_category to retrieve more entries per group."""
+        _log_tool("memory.project_brief", project=project_root, limit=limit_per_category)
+        brief = project_service.project_brief(project_root, limit_per_category=limit_per_category)
         return {k: [dataclasses.asdict(m) for m in v] for k, v in brief.items()}
 
     @mcp.tool(name="memory.update")
@@ -156,7 +163,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
 
     @mcp.tool(name="user.remember")
     async def user_remember(
-        kind: Annotated[str, Field(description=_USER_MEMORY_KIND_DESC)],
+        kind: Annotated[UserMemoryKind, Field(description=_USER_MEMORY_KIND_DESC)],
         content: Annotated[str, Field(description=_CONTENT_DESC)],
         why_useful_later: Annotated[str, Field(description=_WHY_USEFUL_LATER_DESC)],
         summary: Annotated[str | None, Field(description=_SUMMARY_DESC)] = None,
@@ -190,15 +197,21 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
             ),
         ],
         k: Annotated[int, Field(description="Maximum results to return. Default 8, max 25.", ge=1, le=25)] = 8,
-        kinds: Annotated[list[str] | None, Field(description="Restrict results to these user memory kinds.")] = None,
+        offset: Annotated[
+            int, Field(description="Number of results to skip for pagination. Default 0.", ge=0, le=100)
+        ] = 0,
+        kinds: Annotated[
+            list[UserMemoryKind] | None, Field(description="Restrict results to these user memory kinds.")
+        ] = None,
         tags: Annotated[list[str] | None, Field(description=_TAGS_DESC)] = None,
         include_archived: Annotated[bool, Field(description=_INCLUDE_ARCHIVED_DESC)] = False,
     ) -> list:
-        """Vector search across global user memory. Use at session start alongside user.brief to load context relevant to the current task domain. Returns up to k results ordered by semantic relevance. Raises RuntimeError if embedding fails."""
-        _log_tool("user.search", query=query, k=k)
+        """Vector search across global user memory. Use at session start alongside user.brief to load context relevant to the current task domain. Returns up to k results ordered by semantic relevance, starting at offset for pagination. Raises RuntimeError if embedding fails."""
+        _log_tool("user.search", query=query, k=k, offset=offset)
         results = await user_service.search(
             query=query,
             k=k,
+            offset=offset,
             kinds=kinds or None,
             tags=tags,
             include_archived=include_archived,
@@ -248,6 +261,29 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         """Soft-delete a user memory so it no longer appears in search results. Default is archive (reversible); set hard_delete: true only when the user explicitly requests permanent removal."""
         _log_tool("user.forget", id=id, hard_delete=hard_delete)
         return user_service.forget(id, hard_delete=hard_delete, reason=reason)
+
+    @mcp.tool(name="memory.purge")
+    def memory_purge(
+        project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
+        days: Annotated[
+            int, Field(description="Permanently delete archived memories older than this many days.", ge=1)
+        ] = 90,
+    ) -> dict:
+        """Hard-delete archived project memories older than 'days' to prevent unbounded table growth. Safe to call during memory cleanup sessions. Audit events are always preserved. Returns count of records permanently removed."""
+        _log_tool("memory.purge", project=project_root, days=days)
+        count = project_service.purge_archived(project_root, days)
+        return {"purged": count}
+
+    @mcp.tool(name="user.purge")
+    def user_purge(
+        days: Annotated[
+            int, Field(description="Permanently delete archived user memories older than this many days.", ge=1)
+        ] = 90,
+    ) -> dict:
+        """Hard-delete archived user memories older than 'days' to prevent unbounded growth. Audit events are always preserved. Returns count of records permanently removed."""
+        _log_tool("user.purge", days=days)
+        count = user_service.purge_archived(days)
+        return {"purged": count}
 
     @mcp.resource(
         "memory://project/current/brief",

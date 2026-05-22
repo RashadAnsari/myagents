@@ -63,15 +63,15 @@ Read-only agent. Exhaustive review of performance bottlenecks, algorithmic compl
 
 ## Frontend & Rendering
 
-- Unnecessary re-render — component re-renders on every parent render; missing `React.memo`, `useMemo`, or `useCallback`
-- Heavy computation on main thread — blocking render and interaction; should be offloaded to Web Worker
-- No code splitting — entire bundle loaded upfront; lazy-load routes and heavy components
-- No list virtualization — rendering thousands of DOM nodes instead of visible window only
-- Layout thrash — reading and writing DOM layout properties alternately in loop, forcing repeated reflow
-- Large uncompressed images — no WebP/AVIF, no responsive `srcset`, no lazy loading for below-fold images
+- Unnecessary re-render — component re-renders on every parent render without memoization; in React: missing `React.memo`, `useMemo`, or `useCallback`; in Vue: missing `computed` or `v-memo`; in Svelte: unnecessary reactive declarations
+- Heavy computation on main thread — blocking render and interaction; offload to Web Worker or background task scheduler
+- No code splitting — entire bundle loaded upfront; lazy-load routes and heavy components (dynamic `import()`, route-level splits)
+- No list virtualization — rendering thousands of DOM nodes at once instead of windowing to visible items only
+- Layout thrash — reading and writing DOM layout properties alternately in a loop, forcing repeated reflow; batch reads before writes
+- Large uncompressed images — no WebP/AVIF format, no responsive `srcset`, no lazy loading for below-fold images
 - Render-blocking resources — fonts or scripts blocking first paint; use `preload`, `font-display: swap`, `defer`/`async`
-- CSS-in-JS computed at runtime in hot render path — use static extraction at build time
-- Too many small HTTP requests for assets — bundle or use HTTP/2 push
+- Runtime style computation in hot render path — prefer static CSS or build-time extraction over per-render style generation
+- Too many small HTTP requests for assets — bundle or serve via HTTP/2 multiplexing
 
 ## Caching
 
@@ -135,7 +135,7 @@ Read-only agent. Exhaustive review of performance bottlenecks, algorithmic compl
 1. Glob all source files
 2. Read and check each file against every category above
 3. Flag only confirmed or high-confidence issues — no speculation
-4. Expert scan: mentally trace critical paths under real load — look for compounding inefficiencies, tail latency risks, and resource contention that only emerges at scale; flag with a descriptive label anything that doesn't fit a named category
+4. Expert scan: trace critical paths under real load through static analysis only — reason about compounding inefficiencies, tail latency risks, and resource contention that only emerges at scale; flag with a descriptive label anything that doesn't fit a named category (note: profiling data is not available — findings are based on code structure and known patterns, not measured runtime behavior)
 
 ## Output
 

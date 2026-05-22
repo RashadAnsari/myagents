@@ -81,18 +81,18 @@ Read-only agent. Exhaustive audit of database schema design, migrations, indexin
 
 ## Migration Safety
 
-- Adding `NOT NULL` column without default to a large table — locks table while backfilling
-- Adding `NOT NULL` column with default in a single migration on Postgres — rewrites entire table, long lock
-- Renaming a column without a multi-phase migration — breaks any live application reading the old name
-- Dropping a column that application code still references — runtime error after deploy
-- Changing a column type in place on a large table — full table rewrite with lock
-- Adding a `UNIQUE` constraint without `CONCURRENTLY` on a large Postgres table — full table lock
-- Creating an index without `CONCURRENTLY` on a live table — blocks all writes
+- Adding `NOT NULL` column without default to a large table — locks table while backfilling; use a nullable column first, backfill, then add the constraint in a separate migration
+- Adding `NOT NULL` column with default in a single migration on Postgres — rewrites entire table with a long exclusive lock; use `ALTER TABLE ... ADD COLUMN ... DEFAULT ... NOT NULL` only on Postgres 11+ where this is instant for constant defaults
+- Renaming a column without a multi-phase migration — breaks any live application reading the old name; first add the new column, dual-write, migrate reads, then drop the old column
+- Dropping a column that application code still references — runtime error after deploy; remove the code reference first, deploy, then drop the column
+- Changing a column type in place on a large table — full table rewrite with lock; use a new column, backfill, swap in a separate migration
+- Adding a `UNIQUE` constraint without `CONCURRENTLY` on a large Postgres table — full table lock; use `CREATE UNIQUE INDEX CONCURRENTLY` then `ADD CONSTRAINT ... USING INDEX`
+- Creating an index without `CONCURRENTLY` on a live table — blocks all writes; always use `CREATE INDEX CONCURRENTLY` in production migrations
 - Removing a unique constraint that application code relies on for correctness guarantees
 - Migration that does not have a rollback / down migration defined
-- Migration that runs data transformations without a transaction — partial failure leaves data inconsistent
-- Multiple schema changes batched into one migration that cannot be partially rolled back
-- Migration depends on application-level code that may not be deployed yet — deployment order dependency
+- Migration that runs data transformations without a transaction — partial failure leaves data inconsistent; wrap in `BEGIN`/`COMMIT` or equivalent
+- Multiple schema changes batched into one migration that cannot be partially rolled back — split into independently revertible steps
+- Migration depends on application-level code that may not be deployed yet — deployment order dependency; database migrations must be backward-compatible with the currently deployed application version
 
 ## Query Patterns
 

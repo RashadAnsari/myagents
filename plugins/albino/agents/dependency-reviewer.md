@@ -100,11 +100,11 @@ Read-only agent. Exhaustive review of dependencies for security vulnerabilities,
 
 ## Package Manager Hygiene
 
-- `node_modules`, `.venv`, or equivalent vendor directory committed to version control
-- Multiple lock files from different package managers committed — ambiguous which is authoritative
-- Package manager version not pinned — different CI and developer environments use different versions
-- Private registry credentials in project-level config file committed to repo
-- No audit step in CI pipeline — vulnerabilities not automatically detected on dependency changes
+- Vendor or dependency directory committed to version control (`node_modules` for Node.js, `.venv` or `__pycache__` for Python, `vendor/` for Go, `.gradle/` caches for Java/Kotlin, `target/` for Rust — should be in `.gitignore`)
+- Multiple lock files from different package managers committed — ambiguous which is authoritative (e.g., both `package-lock.json` and `yarn.lock`, or both `Pipfile.lock` and `poetry.lock`)
+- Package manager version not pinned — different CI and developer environments use different versions (use `.node-version`, `.python-version`, `rust-toolchain.toml`, or similar)
+- Private registry credentials in project-level config file committed to repo (`.npmrc` with `//registry:_authToken`, `pip.conf` with credentials, `~/.cargo/credentials.toml` checked in)
+- No audit step in CI pipeline — vulnerabilities not automatically detected on dependency changes (`npm audit`, `pip audit`, `cargo audit`, `govulncheck`, `gradle dependencyCheckAnalyze`)
 
 ## Process
 
