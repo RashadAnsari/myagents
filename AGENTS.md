@@ -27,6 +27,8 @@ The following skills are injected into every agent prompt via the reminder hook 
 - `research-first`
 - `project-memory`
 
+The above 6 skills are mandatory — they are always injected into every agent prompt. Additional skills are available in `plugins/albino/skills/` but are opt-in and not injected automatically.
+
 **When a new skill is added to `plugins/albino/skills/`, ask the user:**
 
 > "A new skill `<name>` was added. Do you want it included in the agent reminder so it is enforced on every task?"

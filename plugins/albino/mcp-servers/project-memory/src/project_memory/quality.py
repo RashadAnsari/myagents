@@ -1,5 +1,8 @@
 import re
 
+_DUPLICATE_PROJECT_MSG = "Memory duplicates an existing active memory."
+_DUPLICATE_USER_MSG = "Memory duplicates an existing active user memory."
+
 _VAGUE_PHRASES = [
     "fixed the issue",
     "made changes",
@@ -84,7 +87,7 @@ def evaluate_memory_quality(
         reasons.append("Memory looks like it may contain a secret or credential.")
 
     if _is_duplicate(content, existing_contents):
-        reasons.append("Memory duplicates an existing active memory.")
+        reasons.append(_DUPLICATE_PROJECT_MSG)
 
     return len(reasons) == 0, reasons
 
@@ -95,10 +98,5 @@ def evaluate_user_memory_quality(
     existing_contents: list[str],
 ) -> tuple[bool, list[str]]:
     ok, reasons = evaluate_memory_quality(content, why_useful_later, existing_contents)
-    reasons = [
-        r
-        if r != "Memory duplicates an existing active memory."
-        else "Memory duplicates an existing active user memory."
-        for r in reasons
-    ]
+    reasons = [_DUPLICATE_USER_MSG if r == _DUPLICATE_PROJECT_MSG else r for r in reasons]
     return ok, reasons

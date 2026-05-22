@@ -1,11 +1,12 @@
 import asyncio
+import os
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from fastembed import TextEmbedding
 
 EMBEDDING_DIM = 384
-_MODEL_ID = "BAAI/bge-small-en-v1.5"
+_MODEL_ID = os.environ.get("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
 
 _model: "TextEmbedding | None" = None
 

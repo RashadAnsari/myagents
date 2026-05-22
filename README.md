@@ -24,6 +24,8 @@ Personal productivity plugin.
 
 #### Commands
 
+Slash commands available in Claude Code / Cursor sessions.
+
 | Command | Description |
 |---------|-------------|
 | `/reviewcrew` | Full codebase audit — runs all review agents in parallel and writes `REVIEW_REPORT.md` |
@@ -33,6 +35,8 @@ Personal productivity plugin.
 | `/caveman` | Switch to lite communication mode — drops filler/hedging/pleasantries for the session. Includes commit format, PR review style, file compression, and subagent delegation guide. |
 
 #### Agents
+
+Specialist review agents — spawned in parallel by `/reviewcrew` and available for individual use.
 
 | Agent | Description |
 |-------|-------------|
@@ -51,6 +55,8 @@ Personal productivity plugin.
 | `i18n-reviewer` | Reviews hardcoded strings, date/number formatting, pluralization, RTL layout, and locale handling |
 
 #### Skills
+
+Behavioral guidelines injected into agent prompts. The six mandatory skills are always active; the rest are opt-in.
 
 | Skill | Description |
 |-------|-------------|

@@ -48,6 +48,8 @@ Generated: <current date and time>
 
 ## Summary
 
+Each row reflects the count from that reviewer's own output. Cross-reviewer duplicates are not merged.
+
 | Review Area        | Critical | High | Medium | Low |
 |--------------------|----------|------|--------|-----|
 | Security           | N        | N    | N      | N   |

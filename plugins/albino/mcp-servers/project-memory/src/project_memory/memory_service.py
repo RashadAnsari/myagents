@@ -116,8 +116,8 @@ class ProjectMemoryService:
             query_vector=query_vector,
             limit=limit,
             include_archived=include_archived,
-            kinds=kinds if kinds else None,
-            tags=_normalize_tags(tags) if tags else None,
+            kinds=kinds or None,
+            tags=_normalize_tags(tags) or None,
         )
 
     def project_brief(self, project_root: str) -> dict[str, list[MemoryRecord]]:
@@ -245,8 +245,8 @@ class UserMemoryService:
             query_vector=query_vector,
             limit=limit,
             include_archived=include_archived,
-            kinds=kinds if kinds else None,
-            tags=_normalize_tags(tags) if tags else None,
+            kinds=kinds or None,
+            tags=_normalize_tags(tags) or None,
         )
 
     def brief(self) -> dict[str, list[UserMemoryRecord]]:

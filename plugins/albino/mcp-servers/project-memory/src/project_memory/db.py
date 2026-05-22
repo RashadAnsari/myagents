@@ -57,6 +57,7 @@ class ProjectMemoryStore:
                     file=sys.stderr,
                 )
             self._conn.execute("PRAGMA journal_mode = WAL;")
+            self._conn.execute("PRAGMA journal_size_limit = 67108864;")
             self._conn.execute("PRAGMA foreign_keys = ON;")
             self._migrate()
         except Exception as exc:
@@ -497,7 +498,7 @@ class ProjectMemoryStore:
                 summary TEXT,
                 why_useful_later TEXT NOT NULL,
                 tags_json TEXT NOT NULL DEFAULT '[]',
-                confidence TEXT NOT NULL DEFAULT 'medium',
+                confidence TEXT NOT NULL DEFAULT 'medium' CHECK(confidence IN ('low', 'medium', 'high')),
                 source TEXT,
                 source_ref TEXT,
                 created_at TEXT NOT NULL,
@@ -509,10 +510,11 @@ class ProjectMemoryStore:
 
             CREATE INDEX IF NOT EXISTS idx_memories_project_active ON memories(project_id, archived_at);
             CREATE INDEX IF NOT EXISTS idx_memories_kind ON memories(kind);
+            CREATE INDEX IF NOT EXISTS idx_memories_updated_at ON memories(updated_at);
 
             CREATE TABLE IF NOT EXISTS memory_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                project_id INTEGER NOT NULL,
+                project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
                 memory_id INTEGER REFERENCES memories(id) ON DELETE SET NULL,
                 action TEXT NOT NULL,
                 reason TEXT,
@@ -528,7 +530,7 @@ class ProjectMemoryStore:
                 summary TEXT,
                 why_useful_later TEXT NOT NULL,
                 tags_json TEXT NOT NULL DEFAULT '[]',
-                confidence TEXT NOT NULL DEFAULT 'medium',
+                confidence TEXT NOT NULL DEFAULT 'medium' CHECK(confidence IN ('low', 'medium', 'high')),
                 source TEXT,
                 source_ref TEXT,
                 created_at TEXT NOT NULL,
@@ -540,6 +542,7 @@ class ProjectMemoryStore:
 
             CREATE INDEX IF NOT EXISTS idx_user_memories_active ON user_memories(archived_at);
             CREATE INDEX IF NOT EXISTS idx_user_memories_kind ON user_memories(kind);
+            CREATE INDEX IF NOT EXISTS idx_user_memories_updated_at ON user_memories(updated_at);
 
             CREATE TABLE IF NOT EXISTS user_memory_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -618,11 +621,13 @@ def _map_user_memory(row: sqlite3.Row) -> UserMemoryRecord:
     )
 
 
+def _confidence_score(confidence: str) -> int:
+    return {"high": 3, "medium": 2, "low": 1}.get(confidence, 2)
+
+
 def _brief_sort_key(m: MemoryRecord) -> tuple:
-    confidence_score = {"high": 3, "medium": 2, "low": 1}.get(m.confidence, 2)
-    return (-confidence_score, -m.use_count, m.updated_at)
+    return (-_confidence_score(m.confidence), -m.use_count, m.updated_at)
 
 
 def _user_brief_sort_key(m: UserMemoryRecord) -> tuple:
-    confidence_score = {"high": 3, "medium": 2, "low": 1}.get(m.confidence, 2)
-    return (-confidence_score, -m.use_count, m.updated_at)
+    return (-_confidence_score(m.confidence), -m.use_count, m.updated_at)

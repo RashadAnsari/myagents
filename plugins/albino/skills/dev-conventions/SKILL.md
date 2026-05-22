@@ -44,6 +44,8 @@ General rules that apply across all projects. Read and follow before making any 
 
 ## UI Consistency
 
+Color tokens are named variables defined in the project's design system that reference specific colors (e.g., `primary`, `surface`, `error`, `on-primary`). They live in the theme configuration and must be referenced by name — never replaced with raw hex or RGB values.
+
 - Always use the project's design system — theme, spacing scale, color tokens, typography
 - Never invent colors, spacing values, or design tokens outside the established scale
 - Never create a parallel design system or shadow theme

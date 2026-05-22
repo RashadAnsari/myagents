@@ -199,3 +199,47 @@ async def test_user_forget_archives(user_service: UserMemoryService):
     )
     result = user_service.forget(memory.id, reason="Already migrated.")
     assert result["archived"] is True
+
+
+async def test_tag_normalization(service: ProjectMemoryService, tmp_dir):
+    memory = await service.remember(
+        project_root=str(tmp_dir),
+        kind="convention",
+        content="All API endpoints must be versioned with a v1 prefix and must return consistent JSON error shapes.",
+        why_useful_later="Future agents need this when adding new endpoints to maintain API consistency.",
+        tags=["API", "  REST  ", "api", "REST", "v1-endpoints"],
+    )
+    assert memory.tags == ["api", "rest", "v1-endpoints"]
+
+
+async def test_archive_excludes_from_search(service: ProjectMemoryService, tmp_dir):
+    memory = await service.remember(
+        project_root=str(tmp_dir),
+        kind="gotcha",
+        content="SQLite journal mode must be set to WAL before enabling foreign keys to avoid lock contention issues.",
+        why_useful_later="Future agents need this ordering to avoid SQLite locking failures during initialization.",
+    )
+    service.forget(str(tmp_dir), memory.id, reason="Superseded.")
+
+    results = await service.search(project_root=str(tmp_dir), query="SQLite WAL journal mode foreign keys")
+    assert all(r.id != memory.id for r in results)
+
+    results_with_archived = await service.search(
+        project_root=str(tmp_dir), query="SQLite WAL journal mode foreign keys", include_archived=True
+    )
+    assert any(r.id == memory.id for r in results_with_archived)
+
+
+async def test_hard_delete_removes_from_search(service: ProjectMemoryService, tmp_dir):
+    memory = await service.remember(
+        project_root=str(tmp_dir),
+        kind="gotcha",
+        content="Embedding the model must be initialized lazily to avoid loading large model weights at import time.",
+        why_useful_later="Future agents need this to avoid slow startup times caused by eager model initialization.",
+    )
+    service.forget(str(tmp_dir), memory.id, hard_delete=True, reason="Cleaned up.")
+
+    results = await service.search(
+        project_root=str(tmp_dir), query="embedding model lazy initialization startup", include_archived=True
+    )
+    assert all(r.id != memory.id for r in results)
