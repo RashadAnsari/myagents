@@ -55,7 +55,8 @@ def _normalize_for_comparison(value: str) -> str:
 
 def _is_duplicate(content: str, existing_contents: list[str]) -> bool:
     normalized = _normalize_for_comparison(content)
-    return any(_normalize_for_comparison(c) == normalized for c in existing_contents)
+    normalized_existing = {_normalize_for_comparison(c) for c in existing_contents}
+    return normalized in normalized_existing
 
 
 def evaluate_memory_quality(

@@ -3,6 +3,8 @@ description: Create a git commit
 allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*)
 ---
 
+MANDATORY: Read AGENTS.md and follow its rules before doing anything.
+
 ## Context
 
 - Current git status: !`git status`

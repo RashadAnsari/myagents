@@ -3,6 +3,8 @@ description: Configure the Claude Code statusline to show git branch, current di
 allowed-tools: [Read, Write, Edit, Bash]
 ---
 
+MANDATORY: Read AGENTS.md and follow its rules before doing anything.
+
 Configure the Claude Code statusline by doing the following steps in order:
 
 1. Ask the user where to install using AskUserQuestion with these options:

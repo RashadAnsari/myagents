@@ -147,7 +147,7 @@ Generated: <current date and time>
 ## Rules
 
 - Do not truncate or summarize any reviewer's output — paste full findings
-- Fill in the summary table with actual counts from each reviewer's output
+- Fill in the summary table with actual counts from each reviewer's output. Count each issue once per reviewer that reported it — do not merge cross-reviewer duplicates. Write `0` for severity levels where a reviewer found nothing; do not leave cells blank.
 - If a reviewer finds no issues, write `No issues found.` under its section — do not omit the section
 - If a reviewer fails or errors, write `Reviewer failed: <error>` under its section
 - Report file must be complete and self-contained — no references to external files needed to understand findings

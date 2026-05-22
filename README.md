@@ -49,7 +49,6 @@ Personal productivity plugin.
 | `api-design-reviewer` | Reviews REST/GraphQL naming, HTTP semantics, versioning, error shape, and backward compatibility |
 | `database-reviewer` | Reviews schema design, migration safety, indexing strategy, constraints, and query patterns |
 | `i18n-reviewer` | Reviews hardcoded strings, date/number formatting, pluralization, RTL layout, and locale handling |
-| `humanizer` | Removes AI writing patterns from text |
 
 #### Skills
 

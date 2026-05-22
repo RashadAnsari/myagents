@@ -2,6 +2,7 @@ import hashlib
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -40,7 +41,8 @@ def get_git_remote(root_path: str) -> str | None:
         )
         remote = result.stdout.strip()
         return _normalize_git_remote(remote) if remote else None
-    except (subprocess.SubprocessError, OSError):
+    except (subprocess.SubprocessError, OSError) as exc:
+        print(f"[WARNING] project-memory: git remote lookup failed for {root_path}: {exc}", file=sys.stderr)
         return None
 
 

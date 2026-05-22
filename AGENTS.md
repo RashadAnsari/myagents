@@ -4,7 +4,7 @@ Rules for all agents and subagents working in this repository.
 
 ---
 
-## Ultra-Reviewer Sync Rule
+## Review Crew Sync Rule
 
 **When a new review agent is added to `plugins/albino/agents/`, the following MUST be updated in the same change:**
 
@@ -25,6 +25,7 @@ The following skills are injected into every agent prompt via the reminder hook 
 - `dev-conventions`
 - `latest-versions`
 - `research-first`
+- `project-memory`
 
 **When a new skill is added to `plugins/albino/skills/`, ask the user:**
 
@@ -57,7 +58,7 @@ After completing any change in this repository, run:
 make local
 ```
 
-This runs plugin validation, formatting, linting, typechecking, and tests in sequence. If any step fails, fix the issue and re-run until `make local` passes with no errors. Do not report a task as done until `make local` exits cleanly.
+This runs plugin validation, formatting, linting, and tests in sequence. If any step fails, fix the issue and re-run until `make local` passes with no errors. Do not report a task as done until `make local` exits cleanly.
 
 ---
 
@@ -65,3 +66,4 @@ This runs plugin validation, formatting, linting, typechecking, and tests in seq
 
 - Read this file before doing anything in this repository.
 - When spawning subagents, instruct each one to read `AGENTS.md` itself before acting.
+- Never write decorative section separator comments such as `# ── function_name ──`. Use plain comments or no comment at all.

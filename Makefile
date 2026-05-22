@@ -3,7 +3,7 @@
 # Run all validation, formatting, linting, and testing tasks for the Albino plugin.
 local: validate format lint test
 
-# Validate the Albino plugin using the Claude CLI tool.
+# Validate the Albino plugin and enforce AGENTS.md sync rules.
 validate:
 	claude plugin validate plugins/albino
 

@@ -1,8 +1,9 @@
 import re
+import sys
 from datetime import UTC, datetime
 
 from .db import ProjectMemoryStore, pack_vector
-from .embedding import EMBEDDING_DIM, embed, memory_embed_text
+from .embedding import embed, memory_embed_text
 from .quality import evaluate_memory_quality, evaluate_user_memory_quality, looks_like_secret
 from .types import (
     Confidence,
@@ -60,6 +61,10 @@ class ProjectMemoryService:
         existing_contents = [m.content for m in existing]
         ok, reasons = evaluate_memory_quality(content, why_useful_later, existing_contents)
         if not ok:
+            print(
+                f"[WARNING] project-memory: memory rejected for project {project.id} — {'; '.join(reasons)}",
+                file=sys.stderr,
+            )
             raise MemoryQualityError(reasons)
 
         normalized_tags = _normalize_tags(tags)
@@ -77,12 +82,15 @@ class ProjectMemoryService:
         try:
             text = memory_embed_text(memory.content, memory.summary, memory.tags)
             vectors = await embed([text])
+            if not vectors:
+                raise RuntimeError("Embedding returned empty result.")
             self._store.upsert_embedding(memory.id, vectors[0])
-        except Exception:
+        except Exception as exc:
+            print(f"project-memory: embedding failed for memory {memory.id}, rolling back: {exc}", file=sys.stderr)
             try:
                 self._store.hard_delete_memory(memory.id, "Embedding failed during creation.", project.id)
-            except Exception:
-                pass
+            except Exception as cleanup_exc:
+                print(f"project-memory: cleanup of memory {memory.id} also failed: {cleanup_exc}", file=sys.stderr)
             raise
         return memory
 
@@ -97,23 +105,20 @@ class ProjectMemoryService:
     ) -> list[MemoryRecord]:
         project = self._store.get_or_create_project(project_root)
         limit = _clamp(k, 1, 25)
-        fetch_limit = limit * 4 if tags else limit * 2
 
         vectors = await embed([query])
-        query_vector = pack_vector(vectors[0]) if vectors else pack_vector([0.0] * EMBEDDING_DIM)
+        if not vectors:
+            raise RuntimeError("Embedding returned empty result.")
+        query_vector = pack_vector(vectors[0])
 
-        results = self._store.search_memories(
+        return self._store.search_memories(
             project_id=project.id,
             query_vector=query_vector,
-            limit=fetch_limit,
+            limit=limit,
             include_archived=include_archived,
             kinds=kinds if kinds else None,
+            tags=_normalize_tags(tags) if tags else None,
         )
-        if tags:
-            required = _normalize_tags(tags)
-            results = [m for m in results if all(t in m.tags for t in required)]
-
-        return results[:limit]
 
     def project_brief(self, project_root: str) -> dict[str, list[MemoryRecord]]:
         project = self._store.get_or_create_project(project_root)
@@ -154,6 +159,8 @@ class ProjectMemoryService:
         if not updated.archived_at:
             text = memory_embed_text(updated.content, updated.summary, updated.tags)
             vectors = await embed([text])
+            if not vectors:
+                raise RuntimeError("Embedding returned empty result.")
             self._store.upsert_embedding(updated.id, vectors[0])
         return updated
 
@@ -190,6 +197,7 @@ class UserMemoryService:
         existing_contents = [m.content for m in existing]
         ok, reasons = evaluate_user_memory_quality(content, why_useful_later, existing_contents)
         if not ok:
+            print(f"[WARNING] project-memory: user memory rejected — {'; '.join(reasons)}", file=sys.stderr)
             raise MemoryQualityError(reasons)
 
         normalized_tags = _normalize_tags(tags)
@@ -206,12 +214,15 @@ class UserMemoryService:
         try:
             text = memory_embed_text(memory.content, memory.summary, memory.tags)
             vectors = await embed([text])
+            if not vectors:
+                raise RuntimeError("Embedding returned empty result.")
             self._store.upsert_user_embedding(memory.id, vectors[0])
-        except Exception:
+        except Exception as exc:
+            print(f"project-memory: embedding failed for user memory {memory.id}, rolling back: {exc}", file=sys.stderr)
             try:
                 self._store.hard_delete_user_memory(memory.id, "Embedding failed during creation.")
-            except Exception:
-                pass
+            except Exception as cleanup_exc:
+                print(f"project-memory: cleanup of user memory {memory.id} also failed: {cleanup_exc}", file=sys.stderr)
             raise
         return memory
 
@@ -224,22 +235,19 @@ class UserMemoryService:
         include_archived: bool = False,
     ) -> list[UserMemoryRecord]:
         limit = _clamp(k, 1, 25)
-        fetch_limit = limit * 4 if tags else limit * 2
 
         vectors = await embed([query])
-        query_vector = pack_vector(vectors[0]) if vectors else pack_vector([0.0] * EMBEDDING_DIM)
+        if not vectors:
+            raise RuntimeError("Embedding returned empty result.")
+        query_vector = pack_vector(vectors[0])
 
-        results = self._store.search_user_memories(
+        return self._store.search_user_memories(
             query_vector=query_vector,
-            limit=fetch_limit,
+            limit=limit,
             include_archived=include_archived,
             kinds=kinds if kinds else None,
+            tags=_normalize_tags(tags) if tags else None,
         )
-        if tags:
-            required = _normalize_tags(tags)
-            results = [m for m in results if all(t in m.tags for t in required)]
-
-        return results[:limit]
 
     def brief(self) -> dict[str, list[UserMemoryRecord]]:
         return self._store.user_memory_brief()
@@ -277,6 +285,8 @@ class UserMemoryService:
         if not updated.archived_at:
             text = memory_embed_text(updated.content, updated.summary, updated.tags)
             vectors = await embed([text])
+            if not vectors:
+                raise RuntimeError("Embedding returned empty result.")
             self._store.upsert_user_embedding(updated.id, vectors[0])
         return updated
 

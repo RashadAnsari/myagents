@@ -31,39 +31,55 @@ def _parse_json_array(value: str) -> list[str]:
     try:
         parsed = json.loads(value)
         return [item for item in parsed if isinstance(item, str)] if isinstance(parsed, list) else []
-    except Exception:
+    except Exception as exc:
+        print(f"[WARNING] project-memory: failed to parse JSON array ({exc}): {value!r}", file=sys.stderr)
         return []
 
 
 class ProjectMemoryStore:
     def __init__(self, db_path: str) -> None:
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-        # check_same_thread=False is intentional: this server is asyncio-based and all DB
-        # calls are synchronous (never awaited), so only one coroutine accesses the
-        # connection at a time on the single event-loop thread.
-        self._conn = sqlite3.connect(db_path, check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
-        self._vec_available = False
         try:
-            self._conn.enable_load_extension(True)
-            sqlite_vec.load(self._conn)
-            self._conn.enable_load_extension(False)
-            self._vec_available = True
+            # check_same_thread=False is intentional: this server is asyncio-based and all DB
+            # calls are synchronous (never awaited), so only one coroutine accesses the
+            # connection at a time on the single event-loop thread.
+            self._conn = sqlite3.connect(db_path, check_same_thread=False)
+            self._conn.row_factory = sqlite3.Row
+            self._vec_available = False
+            try:
+                self._conn.enable_load_extension(True)
+                sqlite_vec.load(self._conn)
+                self._conn.enable_load_extension(False)
+                self._vec_available = True
+            except Exception as exc:
+                print(
+                    f"[WARNING] project-memory: sqlite-vec failed to load ({exc}); vector search disabled for {db_path}",
+                    file=sys.stderr,
+                )
+            self._conn.execute("PRAGMA journal_mode = WAL;")
+            self._conn.execute("PRAGMA foreign_keys = ON;")
+            self._migrate()
         except Exception as exc:
-            print(f"project-memory: sqlite-vec failed to load ({exc}); vector search unavailable.", file=sys.stderr)
-        self._conn.execute("PRAGMA journal_mode = WAL;")
-        self._conn.execute("PRAGMA foreign_keys = ON;")
-        self._migrate()
+            print(f"[ERROR] project-memory: database initialization failed for {db_path}: {exc}", file=sys.stderr)
+            raise
 
     def close(self) -> None:
         self._conn.close()
+
+    def _commit(self, context: str) -> None:
+        try:
+            self._conn.commit()
+        except Exception as exc:
+            print(f"[ERROR] project-memory: commit failed in {context}: {exc}", file=sys.stderr)
+            raise
 
     def get_or_create_project(self, project_root: str) -> ProjectRecord:
         root_path = normalize_project_root(project_root)
         git_remote = get_git_remote(root_path)
         remote_fingerprint = fingerprint_remote(git_remote)
         now = _now()
-        # INSERT OR IGNORE handles concurrent callers racing to create the same project.
+        # INSERT OR IGNORE is safe here: all DB calls are synchronous on the single asyncio
+        # event-loop thread, so there is no true concurrent access to this connection.
         self._conn.execute(
             """INSERT OR IGNORE INTO projects
                (root_path, name, git_remote, remote_fingerprint, known_paths_json, created_at, updated_at)
@@ -78,7 +94,7 @@ class ProjectMemoryStore:
                 now,
             ),
         )
-        self._conn.commit()
+        self._commit("get_or_create_project")
         row = self._conn.execute("SELECT * FROM projects WHERE root_path = ?", (root_path,)).fetchone()
         return _map_project(row)
 
@@ -131,11 +147,11 @@ class ProjectMemoryStore:
                 now,
             ),
         )
-        self._conn.commit()
         memory = self.get_memory(result.lastrowid)
         if not memory:
             raise RuntimeError("Failed to create memory.")
         self._add_event(memory.id, "created", why_useful_later, project_id=project_id)
+        self._commit("create_memory")
         return memory
 
     def update_memory(
@@ -169,11 +185,11 @@ class ProjectMemoryStore:
                 memory_id,
             ),
         )
-        self._conn.commit()
         memory = self.get_memory(memory_id)
         if not memory:
             raise RuntimeError(f"Memory not found after update: {memory_id}")
         self._add_event(memory.id, "updated", reason, project_id=existing.project_id)
+        self._commit("update_memory")
         return memory
 
     def archive_memory(self, memory_id: int, reason: str) -> MemoryRecord:
@@ -182,20 +198,22 @@ class ProjectMemoryStore:
             "UPDATE memories SET archived_at = ?, updated_at = ? WHERE id = ?",
             (archived_at, archived_at, memory_id),
         )
-        self._conn.commit()
         memory = self.get_memory(memory_id)
         if not memory:
             raise RuntimeError(f"Memory not found after archive: {memory_id}")
         # Keep the embedding so include_archived=True searches can still find this memory.
         # The KNN JOIN+WHERE filters it from normal searches via archived_at IS NULL.
         self._add_event(memory_id, "forgotten", reason, project_id=memory.project_id)
+        self._commit("archive_memory")
         return memory
 
     def hard_delete_memory(self, memory_id: int, reason: str, project_id: int) -> None:
+        # Audit event created before delete so the FK is satisfied at insert time.
+        # ON DELETE SET NULL clears memory_id in the event once the row is removed.
+        self._add_event(memory_id, "hard_deleted", reason, project_id=project_id)
         self._conn.execute("DELETE FROM memory_vec WHERE memory_id = ?", (memory_id,))
         self._conn.execute("DELETE FROM memories WHERE id = ?", (memory_id,))
-        self._conn.commit()
-        self._add_event(memory_id, "hard_deleted", reason, project_id=project_id)
+        self._commit("hard_delete_memory")
 
     def search_memories(
         self,
@@ -204,11 +222,17 @@ class ProjectMemoryStore:
         limit: int,
         include_archived: bool = False,
         kinds: list[MemoryKind] | None = None,
+        tags: list[str] | None = None,
     ) -> list[MemoryRecord]:
         if not self._vec_available:
             return []
         archived_where = "" if include_archived else "AND memories.archived_at IS NULL"
         kinds_where = f"AND memories.kind IN ({','.join('?' * len(kinds))})" if kinds else ""
+        tags_where = (
+            " ".join("AND EXISTS (SELECT 1 FROM json_each(memories.tags_json) WHERE value = ?)" for _ in tags)
+            if tags
+            else ""
+        )
         rows = self._conn.execute(
             f"""WITH knn AS (
                     SELECT memory_id, distance
@@ -222,8 +246,9 @@ class ProjectMemoryStore:
                 WHERE memories.project_id = ?
                   {archived_where}
                   {kinds_where}
+                  {tags_where}
                 ORDER BY knn.distance""",
-            (query_vector, limit, project_id, *(kinds or [])),
+            (query_vector, limit, project_id, *(kinds or []), *(tags or [])),
         ).fetchall()
         memories = [_map_memory(r) for r in rows]
         self._mark_used([m.id for m in memories])
@@ -253,25 +278,23 @@ class ProjectMemoryStore:
             "INSERT INTO memory_vec (memory_id, embedding) VALUES (?, ?)",
             (memory_id, pack_vector(vector)),
         )
-        self._conn.commit()
+        self._commit("upsert_embedding")
 
     def _mark_used(self, ids: list[int]) -> None:
         if not ids:
             return
-        now = _now()
-        for mid in ids:
-            self._conn.execute(
-                "UPDATE memories SET last_used_at = ?, use_count = use_count + 1 WHERE id = ?",
-                (now, mid),
-            )
-        self._conn.commit()
+        placeholders = ",".join("?" * len(ids))
+        self._conn.execute(
+            f"UPDATE memories SET last_used_at = ?, use_count = use_count + 1 WHERE id IN ({placeholders})",
+            (_now(), *ids),
+        )
+        self._commit("_mark_used")
 
     def _add_event(self, memory_id: int, action: str, reason: str | None, *, project_id: int) -> None:
         self._conn.execute(
             "INSERT INTO memory_events (project_id, memory_id, action, reason, created_at) VALUES (?, ?, ?, ?, ?)",
             (project_id, memory_id, action, reason, _now()),
         )
-        self._conn.commit()
 
     def list_active_user_memories(self) -> list[UserMemoryRecord]:
         rows = self._conn.execute(
@@ -302,11 +325,11 @@ class ProjectMemoryStore:
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)""",
             (kind, content, summary, why_useful_later, json.dumps(tags), confidence, source, source_ref, now, now),
         )
-        self._conn.commit()
         memory = self.get_user_memory(result.lastrowid)
         if not memory:
             raise RuntimeError("Failed to create user memory.")
         self._add_user_event(memory.id, "created", why_useful_later)
+        self._commit("create_user_memory")
         return memory
 
     def update_user_memory(
@@ -340,11 +363,11 @@ class ProjectMemoryStore:
                 memory_id,
             ),
         )
-        self._conn.commit()
         memory = self.get_user_memory(memory_id)
         if not memory:
             raise RuntimeError(f"User memory not found after update: {memory_id}")
         self._add_user_event(memory_id, "updated", reason)
+        self._commit("update_user_memory")
         return memory
 
     def archive_user_memory(self, memory_id: int, reason: str) -> UserMemoryRecord:
@@ -353,22 +376,24 @@ class ProjectMemoryStore:
             "UPDATE user_memories SET archived_at = ?, updated_at = ? WHERE id = ?",
             (archived_at, archived_at, memory_id),
         )
-        self._conn.commit()
         memory = self.get_user_memory(memory_id)
         if not memory:
             raise RuntimeError(f"User memory not found after archive: {memory_id}")
         # Keep the embedding so include_archived=True searches can still find this memory.
         self._add_user_event(memory_id, "forgotten", reason)
+        self._commit("archive_user_memory")
         return memory
 
     def hard_delete_user_memory(self, memory_id: int, reason: str) -> None:
         existing = self.get_user_memory(memory_id)
         if not existing:
             raise ValueError(f"User memory not found: {memory_id}")
+        # Audit event created before delete so the FK is satisfied at insert time.
+        # ON DELETE SET NULL clears memory_id in the event once the row is removed.
+        self._add_user_event(memory_id, "hard_deleted", reason)
         self._conn.execute("DELETE FROM user_memory_vec WHERE memory_id = ?", (memory_id,))
         self._conn.execute("DELETE FROM user_memories WHERE id = ?", (memory_id,))
-        self._conn.commit()
-        self._add_user_event(memory_id, "hard_deleted", reason)
+        self._commit("hard_delete_user_memory")
 
     def search_user_memories(
         self,
@@ -376,11 +401,17 @@ class ProjectMemoryStore:
         limit: int,
         include_archived: bool = False,
         kinds: list[UserMemoryKind] | None = None,
+        tags: list[str] | None = None,
     ) -> list[UserMemoryRecord]:
         if not self._vec_available:
             return []
         archived_where = "" if include_archived else "AND user_memories.archived_at IS NULL"
         kinds_where = f"AND user_memories.kind IN ({','.join('?' * len(kinds))})" if kinds else ""
+        tags_where = (
+            " ".join("AND EXISTS (SELECT 1 FROM json_each(user_memories.tags_json) WHERE value = ?)" for _ in tags)
+            if tags
+            else ""
+        )
         rows = self._conn.execute(
             f"""WITH knn AS (
                     SELECT memory_id, distance
@@ -394,8 +425,9 @@ class ProjectMemoryStore:
                 WHERE 1=1
                   {archived_where}
                   {kinds_where}
+                  {tags_where}
                 ORDER BY knn.distance""",
-            (query_vector, limit, *(kinds or [])),
+            (query_vector, limit, *(kinds or []), *(tags or [])),
         ).fetchall()
         memories = [_map_user_memory(r) for r in rows]
         self._mark_user_memories_used([m.id for m in memories])
@@ -422,25 +454,25 @@ class ProjectMemoryStore:
             "INSERT INTO user_memory_vec (memory_id, embedding) VALUES (?, ?)",
             (memory_id, pack_vector(vector)),
         )
-        self._conn.commit()
+        self._commit("upsert_user_embedding")
 
     def _add_user_event(self, memory_id: int | None, action: str, reason: str | None) -> None:
+        if memory_id is None and action != "hard_deleted":
+            raise ValueError(f"memory_id must not be None for action '{action}'")
         self._conn.execute(
             "INSERT INTO user_memory_events (memory_id, action, reason, created_at) VALUES (?, ?, ?, ?)",
             (memory_id, action, reason, _now()),
         )
-        self._conn.commit()
 
     def _mark_user_memories_used(self, ids: list[int]) -> None:
         if not ids:
             return
-        now = _now()
-        for mid in ids:
-            self._conn.execute(
-                "UPDATE user_memories SET last_used_at = ?, use_count = use_count + 1 WHERE id = ?",
-                (now, mid),
-            )
-        self._conn.commit()
+        placeholders = ",".join("?" * len(ids))
+        self._conn.execute(
+            f"UPDATE user_memories SET last_used_at = ?, use_count = use_count + 1 WHERE id IN ({placeholders})",
+            (_now(), *ids),
+        )
+        self._commit("_mark_user_memories_used")
 
     def _migrate(self) -> None:
         self._conn.executescript("""
@@ -481,11 +513,13 @@ class ProjectMemoryStore:
             CREATE TABLE IF NOT EXISTS memory_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 project_id INTEGER NOT NULL,
-                memory_id INTEGER,
+                memory_id INTEGER REFERENCES memories(id) ON DELETE SET NULL,
                 action TEXT NOT NULL,
                 reason TEXT,
                 created_at TEXT NOT NULL
             );
+
+            CREATE INDEX IF NOT EXISTS idx_memory_events_memory_id ON memory_events(memory_id);
 
             CREATE TABLE IF NOT EXISTS user_memories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -509,11 +543,13 @@ class ProjectMemoryStore:
 
             CREATE TABLE IF NOT EXISTS user_memory_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                memory_id INTEGER,
+                memory_id INTEGER REFERENCES user_memories(id) ON DELETE SET NULL,
                 action TEXT NOT NULL,
                 reason TEXT,
                 created_at TEXT NOT NULL
             );
+
+            CREATE INDEX IF NOT EXISTS idx_user_memory_events_memory_id ON user_memory_events(memory_id);
 
         """)
         if self._vec_available:

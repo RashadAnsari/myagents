@@ -150,7 +150,9 @@ Grouped by severity:
 ```
 ## CRITICAL / HIGH / MEDIUM / LOW
 
-- path/to/file:line — <category>: <what the issue is and why it matters>
+- path/to/file:line        — single line: <category>: <what the issue is and why it matters>
+- path/to/file:start-end   — line range spanning multiple lines
+- path/to/file             — whole-file issue (missing file, missing section, no entry point)
 ```
 
 No praise. No recommendations beyond fixing the actual issue. Omit severity levels with no findings.
