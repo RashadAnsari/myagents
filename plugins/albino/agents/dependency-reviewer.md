@@ -1,7 +1,7 @@
 ---
 name: dependency-reviewer
 description: Reviews dependencies for vulnerabilities, outdated packages, unused packages, and supply chain risks. Spawn when user asks to "review dependencies", "check packages", "find outdated deps", or "audit dependencies".
-tools: [Read, Glob, Grep]
+tools: [Read, Glob, Grep, WebSearch, WebFetch]
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.

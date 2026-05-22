@@ -1,6 +1,6 @@
 ---
 description: Configure the Claude Code statusline to show git branch, current directory, and time. Writes the statusline script and updates ~/.claude/settings.json.
-allowed-tools: [Read, Write, Edit, Bash]
+allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion]
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.

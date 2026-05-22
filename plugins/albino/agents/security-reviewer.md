@@ -1,7 +1,7 @@
 ---
 name: security-reviewer
 description: Reviews the codebase for security vulnerabilities. Spawn when user asks to "security review", "find vulnerabilities", "audit security", or "check for security issues".
-tools: [Read, Glob, Grep]
+tools: [Read, Glob, Grep, WebSearch, WebFetch]
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.

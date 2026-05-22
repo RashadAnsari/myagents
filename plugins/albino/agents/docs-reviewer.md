@@ -1,7 +1,7 @@
 ---
 name: docs-reviewer
 description: Reviews documentation for accuracy, completeness, and staleness. Spawn when user asks to "review docs", "check documentation", "find stale docs", or "audit documentation".
-tools: [Read, Glob, Grep]
+tools: [Read, Glob, Grep, WebFetch]
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
