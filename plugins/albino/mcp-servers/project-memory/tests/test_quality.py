@@ -40,6 +40,21 @@ class TestLooksLikeSecret:
         # Needs 40+ chars after the first +/
         assert looks_like_secret("base64+ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx")
 
+    def test_stripe_live_key(self):
+        assert looks_like_secret("sk_live_abcdefghijklmnopqrstuvwxyz1234567890ab")
+
+    def test_stripe_test_key(self):
+        assert looks_like_secret("sk_test_abcdefghijklmnopqrstuvwxyz12345678")
+
+    def test_slack_token(self):
+        assert looks_like_secret("xoxb-12345678901-12345678901-ABCDEFGHIJKLMNOPQRS")
+
+    def test_twilio_account_sid(self):
+        assert looks_like_secret("ACaaaabbbbccccdddd0000111122223333")
+
+    def test_openai_project_key(self):
+        assert looks_like_secret("sk-proj-ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcd")
+
     def test_entropy_heuristic_mixed_case_digits_special(self):
         # 40+ chars, mixed case, digits, special char
         assert looks_like_secret("aAbBcC1234567890aAbBcC123456789/abcdefgh")
