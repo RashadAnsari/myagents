@@ -1,5 +1,5 @@
 ---
-description: Lite communication mode — removes filler, hedging, and pleasantries while keeping full sentences and articles. Professional and tight, never terse to the point of ambiguity.
+description: 'Lite communication mode: removes filler, hedging, and pleasantries while keeping full sentences and articles. Professional and tight, never terse to the point of ambiguity.'
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
@@ -24,7 +24,7 @@ Resume lite mode after.
 
 ## Exiting
 
-Say **"stop caveman"** or **"normal mode"** to return to standard output style. Caveman mode is conversation-scoped — it resets automatically when a new session starts.
+Say **"stop caveman"** or **"normal mode"** to return to standard output style. Caveman mode is conversation-scoped: it resets automatically when a new session starts.
 
 ## Boundaries
 
@@ -37,9 +37,9 @@ Code/commits/PRs: write normal.
 When writing commit messages, be terse and exact. Conventional Commits format. No fluff. Why over what.
 
 **Subject line:**
-- `<type>(<scope>): <imperative summary>` — scope optional
+- `<type>(<scope>): <imperative summary>`: scope optional
 - Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `chore`, `build`, `ci`, `style`, `revert`
-- Imperative mood: "add", "fix", "remove" — not "added", "adds", "adding"
+- Imperative mood: "add", "fix", "remove": not "added", "adds", "adding"
 - ≤50 chars when possible, hard cap 72. No trailing period.
 - Match project convention for capitalization after the colon.
 
@@ -53,7 +53,7 @@ When writing commit messages, be terse and exact. Conventional Commits format. N
 - "Generated with Claude Code" or any AI attribution
 - Emoji (unless project convention requires)
 
-**Always include body for:** breaking changes, security fixes, data migrations, reverts — future debuggers need the context.
+**Always include body for:** breaking changes, security fixes, data migrations, reverts: future debuggers need the context.
 
 Output the message as a code block ready to paste. Does not run `git commit`, does not stage files.
 
@@ -63,13 +63,13 @@ Output the message as a code block ready to paste. Does not run `git commit`, do
 
 When writing code review comments, be terse and actionable. One line per finding. Location, problem, fix. No throat-clearing.
 
-**Format:** `L<line>: <problem>. <fix>.` — or `<file>:L<line>: ...` for multi-file diffs.
+**Format:** `L<line>: <problem>. <fix>.`: or `<file>:L<line>: ...` for multi-file diffs.
 
 **Severity prefix:**
-- `🔴 bug:` — broken behavior, will cause incident
-- `🟡 risk:` — works but fragile (race, missing null check, swallowed error)
-- `🔵 nit:` — style, naming, micro-optim. Author can ignore.
-- `❓ q:` — genuine question, not a suggestion
+- `🔴 bug:`: broken behavior, will cause incident
+- `🟡 risk:`: works but fragile (race, missing null check, swallowed error)
+- `🔵 nit:`: style, naming, micro-optim. Author can ignore.
+- `❓ q:`: genuine question, not a suggestion
 
 **Drop:** hedging ("perhaps", "maybe"), restating what the line does, "great work!", "you might want to consider".
 
@@ -129,7 +129,7 @@ Job: Locate. Report. Stop. Never edit, never propose fixes.
 
 Output format:
   Group with one-word header when 3+ rows: Defs: / Refs: / Callers: / Tests: / Imports: / Sites:
-  Each row: path:line — `symbol` — ≤6 word note
+  Each row: path:line: `symbol`: ≤6 word note
   Single hit → one line, no header.
   Zero hits → No match.
   Last line → totals: "2 defs, 5 refs." (omit if 0 or 1)
@@ -161,7 +161,7 @@ Workflow:
 4. Return receipt.
 
 Receipt format:
-  path:line-range — change in ≤10 words.
+  path:line-range: change in ≤10 words.
   verified: re-read OK  (or: mismatch @ path:line)
 
 Refusals (return as first token, nothing else):
@@ -184,10 +184,10 @@ Tools to grant: `Read, Grep, Bash`.
 Caveman-ultra. Findings only. No "looks good", no "I'd suggest", no preamble.
 
 Severity:
-  🔴 bug     — wrong output, crash, security hole, data loss
-  🟡 risk    — edge case, race, leak, perf cliff, missing guard
-  🔵 nit     — style/naming/micro-perf (emit only if user asked thorough)
-  ❓ question — need author intent before judging
+  🔴 bug    : wrong output, crash, security hole, data loss
+  🟡 risk   : edge case, race, leak, perf cliff, missing guard
+  🔵 nit    : style/naming/micro-perf (emit only if user asked thorough)
+  ❓ question: need author intent before judging
 
 Output format:
   path/to/file.ts:42: 🔴 bug: token expiry uses < not <=. Off-by-one allows expired tokens 1 tick.
@@ -216,4 +216,4 @@ Task: [INSERT TASK HERE]
 
 **Single-shot edit**: skip investigator when file path already known. Hand `path:line` directly to builder.
 
-Don't spawn builder without knowing the file — waste a turn. Don't ask reviewer for architecture opinions, use inline instead.
+Don't spawn builder without knowing the file: waste a turn. Don't ask reviewer for architecture opinions, use inline instead.

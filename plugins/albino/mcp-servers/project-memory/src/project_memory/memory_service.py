@@ -62,7 +62,7 @@ class ProjectMemoryService:
         ok, reasons = evaluate_memory_quality(content, why_useful_later, existing_contents)
         if not ok:
             print(
-                f"[WARNING] project-memory: memory rejected for project {project.id} — {'; '.join(reasons)}",
+                f"[WARNING] project-memory: memory rejected for project {project.id}: {'; '.join(reasons)}",
                 file=sys.stderr,
             )
             raise MemoryQualityError(reasons)
@@ -208,7 +208,7 @@ class UserMemoryService:
         existing_contents = [m.content for m in existing]
         ok, reasons = evaluate_user_memory_quality(content, why_useful_later, existing_contents)
         if not ok:
-            print(f"[WARNING] project-memory: user memory rejected — {'; '.join(reasons)}", file=sys.stderr)
+            print(f"[WARNING] project-memory: user memory rejected: {'; '.join(reasons)}", file=sys.stderr)
             raise MemoryQualityError(reasons)
 
         normalized_tags = _normalize_tags(tags)

@@ -8,7 +8,7 @@ Rules for all agents and subagents working in this repository.
 
 **When a new review agent is added to `plugins/albino/agents/`, the following MUST be updated in the same change:**
 
-**`plugins/albino/commands/reviewcrew.md`** — add the new agent to the "Spawn All Reviewers in Parallel" list (Step 1) and add its corresponding section to the report structure (Step 3).
+**`plugins/albino/commands/reviewcrew.md`**: add the new agent to the "Spawn All Reviewers in Parallel" list (Step 1) and add its corresponding section to the report structure (Step 3).
 
 **Failure to update this file when adding a review agent is a violation of this rule.**
 
@@ -20,8 +20,8 @@ Review agents are any agent file whose name ends in `-reviewer.md` inside `plugi
 
 The following skills are injected into every agent prompt via two files that must always be kept in sync:
 
-- `plugins/albino/hooks/agents-reminder.sh` — used by Claude Code via `UserPromptSubmit` hook
-- `plugins/albino/rules/agents-reminder.mdc` — used by Cursor via the `rules/` plugin directory
+- `plugins/albino/hooks/agents-reminder.sh`: used by Claude Code via `UserPromptSubmit` hook
+- `plugins/albino/rules/agents-reminder.mdc`: used by Cursor via the `rules/` plugin directory
 
 **Any change to the reminder content MUST be applied to both files in the same change. Never update one without the other.**
 
@@ -34,13 +34,13 @@ The skills currently injected:
 - `research-first`
 - `project-memory`
 
-The above 6 skills are mandatory — they are always injected into every agent prompt. Additional skills are available in `plugins/albino/skills/` but are opt-in and not injected automatically.
+The above 6 skills are mandatory: they are always injected into every agent prompt. Additional skills are available in `plugins/albino/skills/` but are opt-in and not injected automatically.
 
 **When a new skill is added to `plugins/albino/skills/`, ask the user:**
 
 > "A new skill `<name>` was added. Do you want it included in the agent reminder so it is enforced on every task?"
 
-If the user says yes — add it to the skill list in both `plugins/albino/hooks/agents-reminder.sh` and `plugins/albino/rules/agents-reminder.mdc`. If no — leave both files unchanged.
+If the user says yes: add it to the skill list in both `plugins/albino/hooks/agents-reminder.sh` and `plugins/albino/rules/agents-reminder.mdc`. If no: leave both files unchanged.
 
 Do not silently add or skip skills. Always ask.
 
@@ -76,3 +76,4 @@ This runs plugin validation, formatting, linting, and tests in sequence. If any 
 - Read this file before doing anything in this repository.
 - When spawning subagents, instruct each one to read `AGENTS.md` itself before acting.
 - Never write decorative section separator comments such as `# ── function_name ──`. Use plain comments or no comment at all.
+- Never use the em dash character in any output, file, or generated content. Use a colon, comma, or period instead. This applies to all text: prose, comments, docstrings, strings in code, documentation, and agent prompts.

@@ -124,21 +124,21 @@ fi
 
 if command -v claude &>/dev/null; then
   claude_detected=true
-  echo "  • Claude Code detected — restart open sessions to pick up the plugin"
+  echo "  • Claude Code detected: restart open sessions to pick up the plugin"
 fi
 
 if [ -d "$HOME/.cursor" ]; then
   cursor_detected=true
   mkdir -p "$CURSOR_PLUGINS_DIR"
   ln -sf "$PLUGIN_SRC" "$CURSOR_PLUGIN_LINK"
-  echo "  • Cursor detected — reload Cursor window (Developer: Reload Window)"
+  echo "  • Cursor detected: reload Cursor window (Developer: Reload Window)"
 fi
 
 # ── Summary ────────────────────────────────────────────────────────────────────
 
 echo ""
 echo "────────────────────────────────"
-echo " myagents — $PLUGIN_NAME plugin"
+echo " myagents: $PLUGIN_NAME plugin"
 echo "────────────────────────────────"
 printf " Registry    : %s\n" "$( [ "$registered" = true ] && echo "✓ written" || echo "✗ FAILED" )"
 printf " Claude Code : %s\n" "$( [ "$claude_detected" = true ] && echo "✓ detected" || echo "– not detected" )"

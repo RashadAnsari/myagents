@@ -18,6 +18,6 @@ The `!` prefix on each line below runs the shell command inline and injects its 
 
 Based on the above changes, create a single git commit.
 
-Infer the commit message format from the recent commits shown above — match the exact style, prefix convention, casing, and structure used in this project. Do not impose an external convention if the project already has one.
+Infer the commit message format from the recent commits shown above: match the exact style, prefix convention, casing, and structure used in this project. Do not impose an external convention if the project already has one.
 
 You have the capability to call multiple tools in a single response. Stage and create the commit using a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.

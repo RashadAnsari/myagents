@@ -51,7 +51,7 @@ class ProjectMemoryStore:
                 sqlite_vec.load(self._conn)
                 self._conn.enable_load_extension(False)
                 self._vec_available = True
-            except Exception as exc:  # broad catch is intentional — sqlite-vec may raise OSError, RuntimeError, or sqlite3.OperationalError depending on platform
+            except Exception as exc:  # broad catch is intentional: sqlite-vec may raise OSError, RuntimeError, or sqlite3.OperationalError depending on platform
                 print(
                     f"[WARNING] project-memory: sqlite-vec failed to load ({exc}); vector search disabled for {db_path}",
                     file=sys.stderr,

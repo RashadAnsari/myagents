@@ -1,4 +1,4 @@
-"""Vector search tests — these use the real fastembed model (BAAI/bge-small-en-v1.5).
+"""Vector search tests: these use the real fastembed model (BAAI/bge-small-en-v1.5).
 The model is downloaded on first run (~130 MB) and cached locally thereafter."""
 
 import pytest

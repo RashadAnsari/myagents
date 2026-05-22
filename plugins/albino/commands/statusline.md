@@ -8,8 +8,8 @@ MANDATORY: Read AGENTS.md and follow its rules before doing anything.
 Configure the Claude Code statusline by doing the following steps in order:
 
 1. Ask the user where to install using AskUserQuestion with these options:
-   - **Global** — writes to `~/.claude/settings.json`, applies to all projects
-   - **Project** — writes to `.claude/settings.local.json` in the current working directory, applies only to this project (gitignored, personal)
+   - **Global**: writes to `~/.claude/settings.json`, applies to all projects
+   - **Project**: writes to `.claude/settings.local.json` in the current working directory, applies only to this project (gitignored, personal)
 
 2. Find the albino plugin install directory. Check these locations in order and use the first that exists:
    - `~/.myagents/plugins/albino`
@@ -17,7 +17,7 @@ Configure the Claude Code statusline by doing the following steps in order:
 
 3. Based on the user's choice, determine the target settings file:
    - **Global**: `~/.claude/settings.json`
-   - **Project**: `.claude/settings.local.json` (relative to current working directory — create `.claude/` if it does not exist)
+   - **Project**: `.claude/settings.local.json` (relative to current working directory: create `.claude/` if it does not exist)
 
 4. Read the target settings file. If it does not exist, treat it as an empty JSON object `{}`.
 

@@ -2,8 +2,8 @@
 
 Local MCP server for durable memory. It stores two kinds of memory:
 
-- **Project memory** — knowledge scoped to a specific codebase (decisions, conventions, gotchas).
-- **User memory** — cross-project knowledge about the person you are working with (preferences, behaviors, context).
+- **Project memory**: knowledge scoped to a specific codebase (decisions, conventions, gotchas).
+- **User memory**: cross-project knowledge about the person you are working with (preferences, behaviors, context).
 
 Both are local-first:
 
@@ -88,25 +88,25 @@ Bad project memory:
 
 ### Project Memory Tools
 
-- `memory.remember` — Store durable project memory after quality and secret checks.
-- `memory.search` — Vector search project memory with optional kind and tag filters.
-- `memory.project_brief` — Return compact conventions, decisions, pitfalls, and recent memory.
-- `memory.update` — Correct, refine, or archive an existing memory.
-- `memory.forget` — Archive by default or hard-delete when requested.
+- `memory.remember`: Store durable project memory after quality and secret checks.
+- `memory.search`: Vector search project memory with optional kind and tag filters.
+- `memory.project_brief`: Return compact conventions, decisions, pitfalls, and recent memory.
+- `memory.update`: Correct, refine, or archive an existing memory.
+- `memory.forget`: Archive by default or hard-delete when requested.
 
 ### Project Memory Resources
 
-- `memory://project/current/brief` — Conventions, decisions, pitfalls, and recent memory.
+- `memory://project/current/brief`: Conventions, decisions, pitfalls, and recent memory.
 
 ### Project Memory Prompts
 
-- `memory_bootstrap` — Fetch relevant memory before non-trivial work.
-- `memory_handoff` — Store only durable learnings after a task.
-- `memory_cleanup` — Review stale, contradictory, or low-confidence memory.
+- `memory_bootstrap`: Fetch relevant memory before non-trivial work.
+- `memory_handoff`: Store only durable learnings after a task.
+- `memory_cleanup`: Review stale, contradictory, or low-confidence memory.
 
 ## User Memory
 
-User memory is global — it is not scoped to any project. It stores stable facts about the person you are working with so agents can apply them across all sessions and repositories.
+User memory is global: it is not scoped to any project. It stores stable facts about the person you are working with so agents can apply them across all sessions and repositories.
 
 ### What Gets Stored
 
@@ -122,7 +122,7 @@ Good user memory:
 Bad user memory:
 
 - Secrets, tokens, credentials, or `.env` values.
-- Project-specific knowledge — use project memory instead.
+- Project-specific knowledge: use project memory instead.
 - One-off task details or temporary opinions.
 - Anything that does not help future agents understand this person.
 
@@ -140,20 +140,20 @@ Bad user memory:
 
 ### User Memory Tools
 
-- `user.remember` — Store durable user memory after quality and secret checks.
-- `user.search` — Vector search user memory with optional kind and tag filters.
-- `user.brief` — Return compact preferences, behaviors, context, and recent user memories.
-- `user.update` — Correct, refine, or archive an existing user memory.
-- `user.forget` — Archive by default or hard-delete when requested.
+- `user.remember`: Store durable user memory after quality and secret checks.
+- `user.search`: Vector search user memory with optional kind and tag filters.
+- `user.brief`: Return compact preferences, behaviors, context, and recent user memories.
+- `user.update`: Correct, refine, or archive an existing user memory.
+- `user.forget`: Archive by default or hard-delete when requested.
 
 ### User Memory Resources
 
-- `memory://user/brief` — All four categories of user memory.
+- `memory://user/brief`: All four categories of user memory.
 
 ### User Memory Prompts
 
-- `user_memory_bootstrap` — Read user memory at the start of a session.
-- `user_memory_update` — Store durable user-level learnings after a session.
+- `user_memory_bootstrap`: Read user memory at the start of a session.
+- `user_memory_update`: Store durable user-level learnings after a session.
 
 ## Search
 

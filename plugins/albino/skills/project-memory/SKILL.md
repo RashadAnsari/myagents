@@ -5,7 +5,7 @@ description: Use the project-memory MCP server to retrieve, verify, and store du
 
 # Project Memory & User Memory
 
-Two parallel memory systems are available. Both are indexed notes, not authority — current user instructions, repo files, tests, and official docs always override memory.
+Two parallel memory systems are available. Both are indexed notes, not authority: current user instructions, repo files, tests, and official docs always override memory.
 
 ---
 
@@ -28,7 +28,7 @@ Read user memory at the start of every non-trivial session:
 
 1. Read `memory://user/brief` for the full picture: preferences, behaviors, context, and communication style.
 2. Call `user.search` with domain terms relevant to the current task (e.g. `"typescript"`, `"git workflow"`, `"testing"`).
-3. Apply what you find throughout the session without being asked — this is the point of having it.
+3. Apply what you find throughout the session without being asked: this is the point of having it.
 
 User memory is a guide, not a constraint. Explicit user instructions in the current session take precedence.
 
@@ -45,7 +45,7 @@ Write user memory when you observe something stable and cross-project about the 
 
 Do not write:
 
-- Anything project-specific — use `memory.remember` instead.
+- Anything project-specific: use `memory.remember` instead.
 - Secrets, credentials, API keys, or `.env` values.
 - One-off opinions stated in frustration.
 - Temporary task details.
@@ -108,7 +108,7 @@ Read project memory before non-trivial work on a codebase:
 
 1. Read `memory://project/current/brief` for conventions, decisions, pitfalls, and recent entries.
 2. Call `memory.search` with task-specific terms: file names, function names, domain concepts, error messages.
-3. Use findings to guide investigation — but verify against the actual repo before acting on them.
+3. Use findings to guide investigation: but verify against the actual repo before acting on them.
 
 Memory can be stale. Always confirm what it says against current files, tests, and docs.
 
@@ -129,7 +129,7 @@ Do not write:
 - Raw command output or test results.
 - Temporary task state ("I am currently working on X").
 - Vague summaries without actionable content.
-- Facts already obvious from `README.md`, `AGENTS.md`, or nearby code — unless the memory adds durable interpretation that is hard to infer.
+- Facts already obvious from `README.md`, `AGENTS.md`, or nearby code: unless the memory adds durable interpretation that is hard to infer.
 
 ### Project Memory Kinds and Examples
 
@@ -168,7 +168,7 @@ Same rules as user memory:
 ```
 1. Identify what would help the next agent on this codebase
 2. memory.remember
-3. Include whyUsefulLater — if you cannot explain it, skip it
+3. Include whyUsefulLater: if you cannot explain it, skip it
 ```
 
 **When memory is stale or wrong:**
@@ -183,7 +183,7 @@ Same rules as user memory:
 
 ## Searching Effectively
 
-Both `memory.search` and `user.search` use vector KNN search. Queries and memories are embedded with `BAAI/bge-small-en-v1.5` (384-dimensional), and nearest neighbours are retrieved by cosine distance. This means search finds memories by meaning, not word overlap — "login issue" will surface "authentication problem with tokens" even though the two share no words.
+Both `memory.search` and `user.search` use vector KNN search. Queries and memories are embedded with `BAAI/bge-small-en-v1.5` (384-dimensional), and nearest neighbours are retrieved by cosine distance. This means search finds memories by meaning, not word overlap: "login issue" will surface "authentication problem with tokens" even though the two share no words.
 
 **Use specific terms, not generic questions:**
 - Good: `"sqlite fts fallback"`, `"migration project_id backfill"`, `"typescript strict return types"`
@@ -226,4 +226,4 @@ When in doubt: if it applies only to this repo, use project memory. If it applie
 | `medium` | Inferred from behavior or indirect evidence (default) |
 | `low` | Uncertain; should be verified before relying on it |
 
-Lower confidence when memory conflicts with current evidence rather than archiving it immediately — it may still be useful as a starting point.
+Lower confidence when memory conflicts with current evidence rather than archiving it immediately: it may still be useful as a starting point.

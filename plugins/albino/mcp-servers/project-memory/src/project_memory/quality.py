@@ -2,7 +2,7 @@ import re
 import sys
 
 # Detect-secrets plugins initialized once at module level.
-# Pattern-based plugins only — no entropy detectors, which produce false positives on natural language.
+# Pattern-based plugins only: no entropy detectors, which produce false positives on natural language.
 try:
     from detect_secrets.plugins.artifactory import ArtifactoryDetector
     from detect_secrets.plugins.aws import AWSKeyDetector

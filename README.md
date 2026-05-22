@@ -9,8 +9,8 @@ curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/instal
 ```
 
 Installs for whichever platforms are detected:
-- **Claude Code** — registers the marketplace and installs the plugin
-- **Cursor** — symlinks the plugin to `~/.cursor/plugins/local/albino`
+- **Claude Code**: registers the marketplace and installs the plugin
+- **Cursor**: symlinks the plugin to `~/.cursor/plugins/local/albino`
 
 Rerun to update. Reload your editor after install.
 
@@ -28,19 +28,19 @@ Slash commands available in Claude Code / Cursor sessions.
 
 | Command | Description |
 |---------|-------------|
-| `/reviewcrew` | Full codebase audit — runs all review agents in parallel and writes `REVIEW_REPORT.md` |
-| `/reportloop` | Walk through every issue in `REVIEW_REPORT.md` interactively — explain, fix or skip, one by one |
-| `/statusline` | Configure the Claude Code statusline — asks global or project install, shows git branch, current directory, model, and time *(Claude Code only)* |
+| `/reviewcrew` | Full codebase audit: runs all review agents in parallel and writes `REVIEW_REPORT.md` |
+| `/reportloop` | Walk through every issue in `REVIEW_REPORT.md` interactively: explain, fix or skip, one by one |
+| `/statusline` | Configure the Claude Code statusline: asks global or project install, shows git branch, current directory, model, and time *(Claude Code only)* |
 | `/commit` | Stage all changes and create a git commit with an appropriate message |
-| `/caveman` | Switch to lite communication mode — drops filler/hedging/pleasantries for the session. Includes commit format, PR review style, file compression, and subagent delegation templates for spawning agents in caveman mode. |
+| `/caveman` | Switch to lite communication mode: drops filler/hedging/pleasantries for the session. Includes commit format, PR review style, file compression, and subagent delegation templates for spawning agents in caveman mode. |
 
 #### Agents
 
-Specialist review agents — spawned in parallel by `/reviewcrew` and available for individual use.
+Specialist review agents: spawned in parallel by `/reviewcrew` and available for individual use.
 
 | Agent | Description |
 |-------|-------------|
-| `security-reviewer` | Audits for security vulnerabilities — injection, XSS, auth, SSRF, JWT, supply chain, and more |
+| `security-reviewer` | Audits for security vulnerabilities: injection, XSS, auth, SSRF, JWT, supply chain, and more |
 | `code-reviewer` | Reviews correctness, style, anti-patterns, performance, memory, and concurrency |
 | `architecture-reviewer` | Reviews structure, coupling, cohesion, SOLID, duplication, and observability |
 | `performance-reviewer` | Reviews bottlenecks, complexity, queries, caching, and scalability |
@@ -60,14 +60,14 @@ Behavioral guidelines injected into agent prompts. The six mandatory skills are 
 
 | Skill | Description |
 |-------|-------------|
-| `agent-protocol` | Mandatory — enforces `AGENTS.md` rules on every agent spawn |
+| `agent-protocol` | Mandatory: enforces `AGENTS.md` rules on every agent spawn |
 | `code-reusability` | Spots duplication and applies extraction patterns |
-| `dev-conventions` | General conventions — reuse, scope, localization, UI, validation, data |
+| `dev-conventions` | General conventions: reuse, scope, localization, UI, validation, data |
 | `latest-versions` | Always look up and use the latest stable version of any dependency |
 | `research-first` | Research docs and source before answering or implementing anything non-trivial |
 | `project-memory` | Retrieves relevant project memory before non-trivial work and stores durable learnings after the task |
 | `humanizer` | Removes signs of AI-generated writing from text |
-| `frontend-design` | Creates distinctive, production-grade frontend interfaces — avoids generic AI aesthetics |
+| `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 
 #### MCP Servers
 
@@ -85,7 +85,7 @@ Project memory is stored outside git at `~/.myagents/project-memory/memory.sqlit
 
 #### Rules
 
-Cursor rules (`.mdc` files) — always applied to every Cursor agent session.
+Cursor rules (`.mdc` files): always applied to every Cursor agent session.
 
 | Rule | Description |
 |------|-------------|

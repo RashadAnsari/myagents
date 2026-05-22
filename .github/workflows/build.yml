@@ -41,7 +41,7 @@ jobs:
       - name: Check formatting
         run: |
           make format
-          git diff --exit-code || (echo "make format produced changes — run 'make format' locally and commit the result." && exit 1)
+          git diff --exit-code || (echo "make format produced changes: run 'make format' locally and commit the result." && exit 1)
 
       - name: Lint
         run: make lint

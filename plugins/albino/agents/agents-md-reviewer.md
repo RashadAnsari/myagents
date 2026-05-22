@@ -12,7 +12,7 @@ Read-only agent. Scans the entire codebase for violations of and inconsistencies
 
 ## Process
 
-1. Read `AGENTS.md` — this is your ruleset and source of truth
+1. Read `AGENTS.md`: this is your ruleset and source of truth
 2. Glob all source files in the project
 3. Read and analyze each file against every rule in AGENTS.md
 4. Identify violations, contradictions, and deviations
@@ -23,7 +23,7 @@ Return a report grouped by rule:
 
 ```
 ## Rule: <rule name or summary>
-- path/to/file:line — <what violates it and how>
+- path/to/file:line: <what violates it and how>
 ```
 
 Only report actual violations. No praise, no suggestions beyond what AGENTS.md requires. If no violations found for a rule, omit it from the report.

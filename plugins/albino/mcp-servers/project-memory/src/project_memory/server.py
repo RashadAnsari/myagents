@@ -96,7 +96,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         tags: Annotated[list[str] | None, Field(description=_TAGS_DESC)] = None,
         include_archived: Annotated[bool, Field(description=_INCLUDE_ARCHIVED_DESC)] = False,
     ) -> list:
-        """Vector search across project memory. Call this at task start with specific terms — file names, function names, domain concepts, error messages. Do not use generic questions as queries. Returns up to k results ordered by semantic relevance, starting at offset for pagination. Raises RuntimeError if embedding fails."""
+        """Vector search across project memory. Call this at task start with specific terms: file names, function names, domain concepts, error messages. Do not use generic questions as queries. Returns up to k results ordered by semantic relevance, starting at offset for pagination. Raises RuntimeError if embedding fails."""
         _log_tool("memory.search", project=project_root, query=query, k=k, offset=offset)
         results = await project_service.search(
             project_root=project_root,
@@ -133,7 +133,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         archive: Annotated[bool, Field(description="Set true to soft-delete this memory.")] = False,
         reason: Annotated[str | None, Field(description=_REASON_DESC)] = None,
     ) -> dict:
-        """Correct, refine, or soft-delete a project memory record. Use when a stored memory is inaccurate, incomplete, or outdated — the repo always wins over memory. Prefer updating over forgetting when the core fact is still valid but needs correction. Raises MemoryQualityError if updated content contains secrets. Raises ValueError if memory not found."""
+        """Correct, refine, or soft-delete a project memory record. Use when a stored memory is inaccurate, incomplete, or outdated: the repo always wins over memory. Prefer updating over forgetting when the core fact is still valid but needs correction. Raises MemoryQualityError if updated content contains secrets. Raises ValueError if memory not found."""
         _log_tool("memory.update", project=project_root, id=id)
         if confidence:
             _validate_confidence(confidence)
@@ -172,7 +172,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         source: Annotated[str | None, Field(description="Where this was observed, e.g. 'agent' or 'user'.")] = None,
         source_ref: Annotated[str | None, Field(description="Optional contextual reference.")] = None,
     ) -> dict:
-        """Store a durable, cross-project fact about the user — their preferences, recurring behaviors, background context, global conventions, tool choices, or communication style. Applied across all projects and sessions. Rejected if content is too short, vague, a duplicate, or contains secrets."""
+        """Store a durable, cross-project fact about the user: their preferences, recurring behaviors, background context, global conventions, tool choices, or communication style. Applied across all projects and sessions. Rejected if content is too short, vague, a duplicate, or contains secrets."""
         _log_tool("user.remember", kind=kind)
         _validate_kind(kind, USER_MEMORY_KINDS, "user memory kind")
         _validate_confidence(confidence)
@@ -220,7 +220,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
 
     @mcp.tool(name="user.brief")
     def user_brief() -> dict:
-        """Return a compact summary of all active user memory grouped into: preferences (preference/convention/tool_preference), behaviors (behavior/workflow/communication), context, and 8 most recently updated entries. Read this at the start of every session before doing any work — it is the primary way to understand the user."""
+        """Return a compact summary of all active user memory grouped into: preferences (preference/convention/tool_preference), behaviors (behavior/workflow/communication), context, and 8 most recently updated entries. Read this at the start of every session before doing any work: it is the primary way to understand the user."""
         _log_tool("user.brief")
         brief = user_service.brief()
         return {k: [dataclasses.asdict(m) for m in v] for k, v in brief.items()}
@@ -236,7 +236,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         archive: Annotated[bool, Field(description="Set true to soft-delete this memory.")] = False,
         reason: Annotated[str | None, Field(description=_REASON_DESC)] = None,
     ) -> dict:
-        """Correct, refine, or soft-delete a user memory record. Use when observed behavior contradicts a stored memory — update rather than ignore stale entries. Secret-containing updates are rejected."""
+        """Correct, refine, or soft-delete a user memory record. Use when observed behavior contradicts a stored memory: update rather than ignore stale entries. Secret-containing updates are rejected."""
         _log_tool("user.update", id=id)
         if confidence:
             _validate_confidence(confidence)
@@ -318,7 +318,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
 
     @mcp.prompt(
         name="memory_handoff",
-        description="Instructs the agent to review what was learned during a task and store only durable, reusable project knowledge — not task status or command output.",
+        description="Instructs the agent to review what was learned during a task and store only durable, reusable project knowledge: not task status or command output.",
     )
     def _prompt_memory_handoff(task_summary: str = "", tests_run: str | None = None) -> str:
         lines = [
@@ -353,7 +353,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
             [
                 "Before starting work, read memory://user/brief to understand the user's preferences, behaviors, and context.",
                 "Apply this knowledge throughout the session: respect stated preferences, adapt to known workflows, and avoid patterns the user dislikes.",
-                "User memory is a guide, not a constraint — current instructions always take precedence.",
+                "User memory is a guide, not a constraint: current instructions always take precedence.",
             ]
         )
 
@@ -377,12 +377,12 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
 def _validate_kind(value: str, valid: list[str], label: str) -> None:
     if value not in valid:
         msg = f"Invalid {label}: '{value}'. Must be one of: {', '.join(valid)}."
-        print(f"[WARNING] project-memory: validation error — {msg}", file=sys.stderr)
+        print(f"[WARNING] project-memory: validation error: {msg}", file=sys.stderr)
         raise ValueError(msg)
 
 
 def _validate_confidence(value: str) -> None:
     if value not in CONFIDENCE_VALUES:
         msg = f"Invalid confidence: '{value}'. Must be one of: {', '.join(CONFIDENCE_VALUES)}."
-        print(f"[WARNING] project-memory: validation error — {msg}", file=sys.stderr)
+        print(f"[WARNING] project-memory: validation error: {msg}", file=sys.stderr)
         raise ValueError(msg)

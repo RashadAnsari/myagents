@@ -1,4 +1,4 @@
-"""MCP integration tests — exercise tools, resources, and prompts through FastMCP's in-process Client."""
+"""MCP integration tests: exercise tools, resources, and prompts through FastMCP's in-process Client."""
 
 import json
 
