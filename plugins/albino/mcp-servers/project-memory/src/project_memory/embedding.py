@@ -1,17 +1,15 @@
 import asyncio
 import os
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from fastembed import TextEmbedding
+from fastembed import TextEmbedding
 
 EMBEDDING_DIM = 384
 _MODEL_ID = os.environ.get("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
 
-_model: "TextEmbedding | None" = None
+_model: TextEmbedding | None = None
 
 
-def _get_model() -> "TextEmbedding":
+def _get_model() -> TextEmbedding:
     global _model
     if _model is None:
         from fastembed import TextEmbedding

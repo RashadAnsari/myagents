@@ -51,7 +51,7 @@ class ProjectMemoryStore:
                 sqlite_vec.load(self._conn)
                 self._conn.enable_load_extension(False)
                 self._vec_available = True
-            except Exception as exc:
+            except Exception as exc:  # broad catch is intentional — sqlite-vec may raise OSError, RuntimeError, or sqlite3.OperationalError depending on platform
                 print(
                     f"[WARNING] project-memory: sqlite-vec failed to load ({exc}); vector search disabled for {db_path}",
                     file=sys.stderr,
@@ -151,6 +151,9 @@ class ProjectMemoryStore:
         memory = self.get_memory(result.lastrowid)
         if not memory:
             raise RuntimeError("Failed to create memory.")
+        print(
+            f"[INFO] project-memory: memory created id={memory.id} project_id={project_id} kind={kind}", file=sys.stderr
+        )
         self._add_event(memory.id, "created", why_useful_later, project_id=project_id)
         self._commit("create_memory")
         return memory
@@ -204,6 +207,7 @@ class ProjectMemoryStore:
             raise RuntimeError(f"Memory not found after archive: {memory_id}")
         # Keep the embedding so include_archived=True searches can still find this memory.
         # The KNN JOIN+WHERE filters it from normal searches via archived_at IS NULL.
+        print(f"[INFO] project-memory: memory archived id={memory_id}", file=sys.stderr)
         self._add_event(memory_id, "forgotten", reason, project_id=memory.project_id)
         self._commit("archive_memory")
         return memory
@@ -211,6 +215,7 @@ class ProjectMemoryStore:
     def hard_delete_memory(self, memory_id: int, reason: str, project_id: int) -> None:
         # Audit event created before delete so the FK is satisfied at insert time.
         # ON DELETE SET NULL clears memory_id in the event once the row is removed.
+        print(f"[INFO] project-memory: memory hard-deleted id={memory_id}", file=sys.stderr)
         self._add_event(memory_id, "hard_deleted", reason, project_id=project_id)
         self._conn.execute("DELETE FROM memory_vec WHERE memory_id = ?", (memory_id,))
         self._conn.execute("DELETE FROM memories WHERE id = ?", (memory_id,))
@@ -329,6 +334,7 @@ class ProjectMemoryStore:
         memory = self.get_user_memory(result.lastrowid)
         if not memory:
             raise RuntimeError("Failed to create user memory.")
+        print(f"[INFO] project-memory: user memory created id={memory.id} kind={kind}", file=sys.stderr)
         self._add_user_event(memory.id, "created", why_useful_later)
         self._commit("create_user_memory")
         return memory
@@ -381,6 +387,7 @@ class ProjectMemoryStore:
         if not memory:
             raise RuntimeError(f"User memory not found after archive: {memory_id}")
         # Keep the embedding so include_archived=True searches can still find this memory.
+        print(f"[INFO] project-memory: user memory archived id={memory_id}", file=sys.stderr)
         self._add_user_event(memory_id, "forgotten", reason)
         self._commit("archive_user_memory")
         return memory
@@ -391,6 +398,7 @@ class ProjectMemoryStore:
             raise ValueError(f"User memory not found: {memory_id}")
         # Audit event created before delete so the FK is satisfied at insert time.
         # ON DELETE SET NULL clears memory_id in the event once the row is removed.
+        print(f"[INFO] project-memory: user memory hard-deleted id={memory_id}", file=sys.stderr)
         self._add_user_event(memory_id, "hard_deleted", reason)
         self._conn.execute("DELETE FROM user_memory_vec WHERE memory_id = ?", (memory_id,))
         self._conn.execute("DELETE FROM user_memories WHERE id = ?", (memory_id,))

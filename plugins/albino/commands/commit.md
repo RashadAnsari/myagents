@@ -7,6 +7,8 @@ MANDATORY: Read AGENTS.md and follow its rules before doing anything.
 
 ## Context
 
+The `!` prefix on each line below runs the shell command inline and injects its output before the prompt is submitted.
+
 - Current git status: !`git status`
 - Current git diff (staged and unstaged changes): !`git diff HEAD`
 - Current branch: !`git branch --show-current`

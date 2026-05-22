@@ -80,6 +80,11 @@ _SECRET_SIGNALS = [
 _DUPLICATE_PROJECT_MSG = "Memory duplicates an existing active memory."
 _DUPLICATE_USER_MSG = "Memory duplicates an existing active user memory."
 
+_MIN_CONTENT_CHARS = 40
+_MIN_CONTENT_WORDS = 7
+_MIN_WHY_CHARS = 20
+_MIN_WHY_WORDS = 4
+
 _VAGUE_PHRASES = [
     "fixed the issue",
     "made changes",
@@ -151,10 +156,10 @@ def evaluate_memory_quality(
     content = content.strip()
     why = (why_useful_later or "").strip()
 
-    if len(content) < 40 or _word_count(content) < 7:
+    if len(content) < _MIN_CONTENT_CHARS or _word_count(content) < _MIN_CONTENT_WORDS:
         reasons.append("Memory content is too short to be durable.")
 
-    if not why or len(why) < 20 or _word_count(why) < 4:
+    if not why or len(why) < _MIN_WHY_CHARS or _word_count(why) < _MIN_WHY_WORDS:
         reasons.append("Memory must explain why it will be useful later.")
 
     if any(phrase in content.lower() for phrase in _VAGUE_PHRASES):
