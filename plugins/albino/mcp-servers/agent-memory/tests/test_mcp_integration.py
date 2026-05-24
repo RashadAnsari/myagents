@@ -93,7 +93,7 @@ async def test_rejects_low_quality_memory_as_error(mcp_server, tmp_dir):
 
 
 async def test_reads_resource_and_gets_prompt(mcp_server, tmp_dir):
-    from project_memory.paths import current_project_root
+    from agent_memory.paths import current_project_root
 
     root = current_project_root()
     async with Client(mcp_server) as client:

@@ -1,17 +1,19 @@
 import hashlib
+import logging
 import os
 import re
 import subprocess
-import sys
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def default_database_path() -> str:
-    if memory_dir := os.environ.get("MYAGENTS_MEMORY_DIR"):
+    if memory_dir := os.environ.get("AGENT_MEMORY_DIR"):
         dir_path = Path(memory_dir).resolve()
         dir_path.mkdir(parents=True, exist_ok=True)
         return str(dir_path / "memory.sqlite")
-    dir_path = Path.home() / ".myagents" / "project-memory"
+    dir_path = Path.home() / ".myagents" / "agent-memory"
     dir_path.mkdir(parents=True, exist_ok=True)
     return str(dir_path / "memory.sqlite")
 
@@ -42,7 +44,7 @@ def get_git_remote(root_path: str) -> str | None:
         remote = result.stdout.strip()
         return _normalize_git_remote(remote) if remote else None
     except (subprocess.SubprocessError, OSError) as exc:
-        print(f"[WARNING] project-memory: git remote lookup failed for {root_path}: {exc}", file=sys.stderr)
+        logger.warning("git remote lookup failed for %s: %s", root_path, exc)
         return None
 
 

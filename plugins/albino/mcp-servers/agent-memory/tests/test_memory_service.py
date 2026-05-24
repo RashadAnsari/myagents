@@ -1,7 +1,7 @@
 import pytest
 
-from project_memory.memory_service import MemoryQualityError, ProjectMemoryService, UserMemoryService
-from project_memory.paths import (
+from agent_memory.memory_service import MemoryQualityError, ProjectMemoryService, UserMemoryService
+from agent_memory.paths import (
     _normalize_git_remote,
     default_database_path,
     fingerprint_remote,
@@ -13,7 +13,7 @@ async def test_stores_and_searches_durable_memory(service: ProjectMemoryService,
     memory = await service.remember(
         project_root=str(tmp_dir),
         kind="decision",
-        content="Use the project-memory MCP server for durable project decisions and verify memories against repo files before acting.",
+        content="Use the agent-memory MCP server for durable project decisions and verify memories against repo files before acting.",
         why_useful_later="Future agents need this to retrieve useful project context without trusting stale notes blindly.",
         tags=["mcp", "memory"],
         confidence="high",
@@ -80,7 +80,7 @@ async def test_rejects_too_short_memory(service: ProjectMemoryService, tmp_dir):
 
 
 async def test_rejects_duplicate_memory(service: ProjectMemoryService, tmp_dir):
-    content = "Use the project-memory MCP server for durable project decisions and verify memories against repo files before acting."
+    content = "Use the agent-memory MCP server for durable project decisions and verify memories against repo files before acting."
     why = "Future agents need this to retrieve useful project context without trusting stale notes blindly."
     await service.remember(project_root=str(tmp_dir), kind="decision", content=content, why_useful_later=why)
     with pytest.raises(MemoryQualityError, match="duplicates"):
@@ -150,8 +150,8 @@ async def test_project_brief_groups_by_kind(service: ProjectMemoryService, tmp_d
 async def test_default_database_path_uses_home():
     import os
 
-    if "MYAGENTS_MEMORY_DIR" in os.environ:
-        pytest.skip("MYAGENTS_MEMORY_DIR is set; default path check is not applicable.")
+    if "AGENT_MEMORY_DIR" in os.environ:
+        pytest.skip("AGENT_MEMORY_DIR is set; default path check is not applicable.")
     path = default_database_path()
     assert "myagents" in path
     assert path.endswith("memory.sqlite")

@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from project_memory.db import ProjectMemoryStore
-from project_memory.memory_service import ProjectMemoryService, UserMemoryService
-from project_memory.server import create_server
+from agent_memory.db import AgentMemoryStore
+from agent_memory.memory_service import ProjectMemoryService, UserMemoryService
+from agent_memory.server import create_server
 
 
 def pytest_configure(config):
@@ -18,8 +18,8 @@ def tmp_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def store(tmp_path: Path) -> ProjectMemoryStore:
-    s = ProjectMemoryStore(str(tmp_path / "memory.sqlite"))
+def store(tmp_path: Path) -> AgentMemoryStore:
+    s = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
     if not s._vec_available:
         s.close()
         if os.environ.get("REQUIRE_VEC"):
@@ -36,12 +36,12 @@ def store(tmp_path: Path) -> ProjectMemoryStore:
 
 
 @pytest.fixture
-def service(store: ProjectMemoryStore) -> ProjectMemoryService:
+def service(store: AgentMemoryStore) -> ProjectMemoryService:
     return ProjectMemoryService(store)
 
 
 @pytest.fixture
-def user_service(store: ProjectMemoryStore) -> UserMemoryService:
+def user_service(store: AgentMemoryStore) -> UserMemoryService:
     return UserMemoryService(store)
 
 

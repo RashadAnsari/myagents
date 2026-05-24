@@ -2,13 +2,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from project_memory.db import ProjectMemoryStore
-from project_memory.memory_service import ProjectMemoryService, UserMemoryService
+from agent_memory.db import AgentMemoryStore
+from agent_memory.memory_service import ProjectMemoryService, UserMemoryService
 
 
 @pytest.fixture
 def bare_store(tmp_path):
-    s = ProjectMemoryStore(str(tmp_path / "memory.sqlite"))
+    s = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
     yield s
     s.close()
 
@@ -30,7 +30,7 @@ _USER_WHY = "Agents need this to verify user memory rollback when the embedding 
 
 
 async def test_project_remember_rolls_back_on_embed_error(svc, bare_store, tmp_path):
-    with patch("project_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
+    with patch("agent_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
         with pytest.raises(RuntimeError, match="model down"):
             await svc.remember(
                 project_root=str(tmp_path),
@@ -44,7 +44,7 @@ async def test_project_remember_rolls_back_on_embed_error(svc, bare_store, tmp_p
 
 
 async def test_project_remember_raises_on_empty_embed(svc, tmp_path):
-    with patch("project_memory.memory_service.embed", new=AsyncMock(return_value=[])):
+    with patch("agent_memory.memory_service.embed", new=AsyncMock(return_value=[])):
         with pytest.raises(RuntimeError, match="empty result"):
             await svc.remember(
                 project_root=str(tmp_path),
@@ -55,7 +55,7 @@ async def test_project_remember_raises_on_empty_embed(svc, tmp_path):
 
 
 async def test_project_remember_reraises_when_cleanup_also_fails(svc, tmp_path):
-    with patch("project_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
+    with patch("agent_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
         with patch.object(svc._store, "hard_delete_memory", side_effect=RuntimeError("db locked")):
             with pytest.raises(RuntimeError, match="model down"):
                 await svc.remember(
@@ -67,7 +67,7 @@ async def test_project_remember_reraises_when_cleanup_also_fails(svc, tmp_path):
 
 
 async def test_user_remember_rolls_back_on_embed_error(user_svc, bare_store):
-    with patch("project_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
+    with patch("agent_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
         with pytest.raises(RuntimeError, match="model down"):
             await user_svc.remember(
                 kind="preference",
@@ -80,7 +80,7 @@ async def test_user_remember_rolls_back_on_embed_error(user_svc, bare_store):
 
 
 async def test_user_remember_raises_on_empty_embed(user_svc):
-    with patch("project_memory.memory_service.embed", new=AsyncMock(return_value=[])):
+    with patch("agent_memory.memory_service.embed", new=AsyncMock(return_value=[])):
         with pytest.raises(RuntimeError, match="empty result"):
             await user_svc.remember(
                 kind="preference",
@@ -90,7 +90,7 @@ async def test_user_remember_raises_on_empty_embed(user_svc):
 
 
 async def test_user_remember_reraises_when_cleanup_also_fails(user_svc):
-    with patch("project_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
+    with patch("agent_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
         with patch.object(user_svc._store, "hard_delete_user_memory", side_effect=RuntimeError("db locked")):
             with pytest.raises(RuntimeError, match="model down"):
                 await user_svc.remember(

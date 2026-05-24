@@ -31,8 +31,8 @@ jobs:
           path: ~/.cache/huggingface
           key: hf-model-bge-small-en-v1.5
 
-      - name: Sync project-memory MCP server dependencies
-        working-directory: plugins/albino/mcp-servers/project-memory
+      - name: Sync agent-memory MCP server dependencies
+        working-directory: plugins/albino/mcp-servers/agent-memory
         run: uv sync
 
       - name: Validate

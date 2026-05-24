@@ -8,7 +8,7 @@ Local MCP server for durable memory. It stores two kinds of memory:
 Both are local-first:
 
 - Runs over MCP stdio.
-- Stores memory in SQLite at `~/.myagents/project-memory/memory.sqlite`.
+- Stores memory in SQLite at `~/.myagents/agent-memory/memory.sqlite`.
 - Uses neural vector search (KNN via `sqlite-vec`) for semantic retrieval.
 - Rejects noisy, vague, duplicate, and secret-looking memories.
 - Exposes tools, resources, and prompts through MCP.
@@ -17,10 +17,10 @@ Both are local-first:
 
 The Albino plugin registers this server in `plugins/albino/.mcp.json`.
 
-The MCP host runs the `myagents-project-memory` entrypoint via `run-with-uv.sh`:
+The MCP host runs the `agent-memory` entrypoint via `run-with-uv.sh`:
 
 ```bash
-scripts/run-with-uv.sh run --directory mcp-servers/project-memory myagents-project-memory
+scripts/run-with-uv.sh run --directory mcp-servers/agent-memory agent-memory
 ```
 
 `run-with-uv.sh` locates or installs `uv`, then delegates to it. `uv` auto-syncs the virtual environment on first run and starts the server over stdio. No separate install step required.
@@ -30,13 +30,13 @@ scripts/run-with-uv.sh run --directory mcp-servers/project-memory myagents-proje
 Default database path:
 
 ```text
-~/.myagents/project-memory/memory.sqlite
+~/.myagents/agent-memory/memory.sqlite
 ```
 
 Override the storage directory with:
 
 ```bash
-MYAGENTS_MEMORY_DIR=/custom/memory/dir
+AGENT_MEMORY_DIR=/custom/memory/dir
 ```
 
 When set, the database path becomes:
@@ -197,7 +197,7 @@ Smoke test the stdio server:
 ```bash
 printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0.0.0"}}}' \
-  | MYAGENTS_MEMORY_DIR=/tmp/myagents-memory-smoke uv run --directory . myagents-project-memory
+  | AGENT_MEMORY_DIR=/tmp/agent-memory-smoke uv run --directory . agent-memory
 ```
 
 ## Important Behavior
@@ -206,4 +206,4 @@ printf '%s\n' \
 - Archived memories are excluded from normal search; pass `include_archived=True` to include them.
 - Hard delete removes the memory row but always keeps an audit event.
 - `remember()` is atomic: if embedding fails the memory row is rolled back immediately.
-- The `MYAGENTS_MEMORY_DIR` environment variable overrides the storage directory; the database is placed directly inside it as `memory.sqlite`.
+- The `AGENT_MEMORY_DIR` environment variable overrides the storage directory; the database is placed directly inside it as `memory.sqlite`.

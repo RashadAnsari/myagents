@@ -1,6 +1,6 @@
 import dataclasses
 import json
-import sys
+import logging
 from typing import Annotated
 
 from fastmcp import FastMCP
@@ -9,6 +9,8 @@ from pydantic import Field
 from .memory_service import ProjectMemoryService, UserMemoryService
 from .paths import current_project_root
 from .types import CONFIDENCE_VALUES, MEMORY_KINDS, USER_MEMORY_KINDS, Confidence, MemoryKind, UserMemoryKind
+
+logger = logging.getLogger(__name__)
 
 _MEMORY_KIND_DESC = "Memory kind: decision, convention, architecture, workflow, preference, gotcha, bug, dependency, testing, or handoff."
 _USER_MEMORY_KIND_DESC = (
@@ -34,7 +36,7 @@ _ID_DESC = "Numeric id of the memory record."
 
 def _log_tool(name: str, **context: object) -> None:
     parts = " ".join(f"{k}={v!r}" for k, v in context.items())
-    print(f"[tool] {name} {parts}".strip(), file=sys.stderr)
+    logger.debug("tool %s %s", name, parts)
 
 
 def _ser(obj: object) -> str:
@@ -47,7 +49,7 @@ def _ser(obj: object) -> str:
 
 
 def create_server(project_service: ProjectMemoryService, user_service: UserMemoryService) -> FastMCP:
-    mcp = FastMCP("myagents-project-memory")
+    mcp = FastMCP("agent-memory")
 
     @mcp.tool(name="memory.remember")
     async def memory_remember(
@@ -377,12 +379,12 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
 def _validate_kind(value: str, valid: list[str], label: str) -> None:
     if value not in valid:
         msg = f"Invalid {label}: '{value}'. Must be one of: {', '.join(valid)}."
-        print(f"[WARNING] project-memory: validation error: {msg}", file=sys.stderr)
+        logger.warning("validation error: %s", msg)
         raise ValueError(msg)
 
 
 def _validate_confidence(value: str) -> None:
     if value not in CONFIDENCE_VALUES:
         msg = f"Invalid confidence: '{value}'. Must be one of: {', '.join(CONFIDENCE_VALUES)}."
-        print(f"[WARNING] project-memory: validation error: {msg}", file=sys.stderr)
+        logger.warning("validation error: %s", msg)
         raise ValueError(msg)

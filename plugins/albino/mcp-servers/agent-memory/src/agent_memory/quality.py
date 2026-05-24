@@ -1,5 +1,7 @@
+import logging
 import re
-import sys
+
+logger = logging.getLogger(__name__)
 
 # Detect-secrets plugins initialized once at module level.
 # Pattern-based plugins only: no entropy detectors, which produce false positives on natural language.
@@ -55,7 +57,7 @@ try:
     ]
 except ImportError:  # pragma: no cover
     _DS_PLUGINS = []
-    print("project-memory: detect-secrets unavailable, using regex-only secret detection", file=sys.stderr)
+    logger.warning("detect-secrets unavailable, using regex-only secret detection")
 
 # Targeted regexes covering gaps not handled by detect-secrets pattern plugins:
 # - Stripe test keys (StripeDetector only covers _live_ with exactly 24 chars)

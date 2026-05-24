@@ -19,8 +19,8 @@ __pycache__/
 # Review output
 REVIEW_REPORT.md
 
-# Project memory
-/project-memory
+# Agent memory
+/agent-memory
 memory.sqlite
 memory.sqlite-shm
 memory.sqlite-wal

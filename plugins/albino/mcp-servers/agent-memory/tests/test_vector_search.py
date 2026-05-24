@@ -3,8 +3,8 @@ The model is downloaded on first run (~130 MB) and cached locally thereafter."""
 
 import pytest
 
-from project_memory.embedding import EMBEDDING_DIM, cosine_similarity, embed, memory_embed_text
-from project_memory.memory_service import ProjectMemoryService, UserMemoryService
+from agent_memory.embedding import EMBEDDING_DIM, cosine_similarity, embed, memory_embed_text
+from agent_memory.memory_service import ProjectMemoryService, UserMemoryService
 
 
 async def test_embed_returns_correct_dim():

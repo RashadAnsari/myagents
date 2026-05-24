@@ -29,7 +29,7 @@ The skills currently injected:
 - `dev-conventions`
 - `latest-versions`
 - `research-first`
-- `project-memory`
+- `agent-memory`
 
 These 6 skills are mandatory and always active. Additional skills are available in `plugins/albino/skills/` but are opt-in and not injected automatically.
 

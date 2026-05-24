@@ -1,6 +1,6 @@
 import pytest
 
-from project_memory.quality import evaluate_memory_quality, evaluate_user_memory_quality, looks_like_secret
+from agent_memory.quality import evaluate_memory_quality, evaluate_user_memory_quality, looks_like_secret
 
 _GOOD_CONTENT = "Use postgres for all persistent storage to avoid adding Redis or Mongo to the stack unnecessarily."
 _GOOD_WHY = "Future agents need this to keep infrastructure choices consistent across all services."

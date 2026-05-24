@@ -1,12 +1,12 @@
 import pytest
 
-from project_memory.db import ProjectMemoryStore
+from agent_memory.db import AgentMemoryStore
 
 
 @pytest.fixture
 def bare_store(tmp_path):
     """Store fixture that does NOT skip when sqlite-vec is unavailable."""
-    s = ProjectMemoryStore(str(tmp_path / "memory.sqlite"))
+    s = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
     yield s
     s.close()
 
@@ -20,9 +20,9 @@ def test_store_initializes_schema(bare_store):
 
 def test_migrate_is_idempotent(tmp_path):
     path = str(tmp_path / "memory.sqlite")
-    s1 = ProjectMemoryStore(path)
+    s1 = AgentMemoryStore(path)
     s1.close()
-    s2 = ProjectMemoryStore(path)
+    s2 = AgentMemoryStore(path)
     s2.close()
 
 

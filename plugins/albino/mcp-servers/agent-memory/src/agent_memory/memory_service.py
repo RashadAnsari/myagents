@@ -1,8 +1,8 @@
+import logging
 import re
-import sys
 from datetime import UTC, datetime
 
-from .db import ProjectMemoryStore, pack_vector
+from .db import AgentMemoryStore, pack_vector
 from .embedding import embed, memory_embed_text
 from .quality import evaluate_memory_quality, evaluate_user_memory_quality, looks_like_secret
 from .types import (
@@ -12,6 +12,8 @@ from .types import (
     UserMemoryKind,
     UserMemoryRecord,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryQualityError(ValueError):
@@ -41,7 +43,7 @@ def _clamp(value: int, lo: int, hi: int) -> int:
 
 
 class ProjectMemoryService:
-    def __init__(self, store: ProjectMemoryStore) -> None:
+    def __init__(self, store: AgentMemoryStore) -> None:
         self._store = store
 
     async def remember(
@@ -61,10 +63,7 @@ class ProjectMemoryService:
         existing_contents = [m.content for m in existing]
         ok, reasons = evaluate_memory_quality(content, why_useful_later, existing_contents)
         if not ok:
-            print(
-                f"[WARNING] project-memory: memory rejected for project {project.id}: {'; '.join(reasons)}",
-                file=sys.stderr,
-            )
+            logger.warning("memory rejected for project %s: %s", project.id, "; ".join(reasons))
             raise MemoryQualityError(reasons)
 
         normalized_tags = _normalize_tags(tags)
@@ -86,11 +85,11 @@ class ProjectMemoryService:
                 raise RuntimeError("Embedding returned empty result.")
             self._store.upsert_embedding(memory.id, vectors[0])
         except Exception as exc:
-            print(f"project-memory: embedding failed for memory {memory.id}, rolling back: {exc}", file=sys.stderr)
+            logger.error("embedding failed for memory %s, rolling back: %s", memory.id, exc)
             try:
                 self._store.hard_delete_memory(memory.id, "Embedding failed during creation.", project.id)
             except Exception as cleanup_exc:
-                print(f"project-memory: cleanup of memory {memory.id} also failed: {cleanup_exc}", file=sys.stderr)
+                logger.error("cleanup of memory %s also failed: %s", memory.id, cleanup_exc)
             raise
         return memory
 
@@ -190,7 +189,7 @@ class ProjectMemoryService:
 
 
 class UserMemoryService:
-    def __init__(self, store: ProjectMemoryStore) -> None:
+    def __init__(self, store: AgentMemoryStore) -> None:
         self._store = store
 
     async def remember(
@@ -208,7 +207,7 @@ class UserMemoryService:
         existing_contents = [m.content for m in existing]
         ok, reasons = evaluate_user_memory_quality(content, why_useful_later, existing_contents)
         if not ok:
-            print(f"[WARNING] project-memory: user memory rejected: {'; '.join(reasons)}", file=sys.stderr)
+            logger.warning("user memory rejected: %s", "; ".join(reasons))
             raise MemoryQualityError(reasons)
 
         normalized_tags = _normalize_tags(tags)
@@ -229,11 +228,11 @@ class UserMemoryService:
                 raise RuntimeError("Embedding returned empty result.")
             self._store.upsert_user_embedding(memory.id, vectors[0])
         except Exception as exc:
-            print(f"project-memory: embedding failed for user memory {memory.id}, rolling back: {exc}", file=sys.stderr)
+            logger.error("embedding failed for user memory %s, rolling back: %s", memory.id, exc)
             try:
                 self._store.hard_delete_user_memory(memory.id, "Embedding failed during creation.")
             except Exception as cleanup_exc:
-                print(f"project-memory: cleanup of user memory {memory.id} also failed: {cleanup_exc}", file=sys.stderr)
+                logger.error("cleanup of user memory %s also failed: %s", memory.id, cleanup_exc)
             raise
         return memory
 

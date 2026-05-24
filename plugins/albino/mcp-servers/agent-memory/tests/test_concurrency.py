@@ -9,16 +9,16 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from project_memory.db import ProjectMemoryStore
-from project_memory.embedding import EMBEDDING_DIM
-from project_memory.memory_service import ProjectMemoryService, UserMemoryService
+from agent_memory.db import AgentMemoryStore
+from agent_memory.embedding import EMBEDDING_DIM
+from agent_memory.memory_service import ProjectMemoryService, UserMemoryService
 
 _VECTOR = [0.1] * EMBEDDING_DIM
 
 
 @pytest.fixture
 def bare_store(tmp_path):
-    s = ProjectMemoryStore(str(tmp_path / "memory.sqlite"))
+    s = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
     yield s
     s.close()
 
@@ -74,7 +74,7 @@ def _make_contents(n: int) -> list[tuple[str, str]]:
 
 async def test_concurrent_remember_creates_all_memories(svc, bare_store, tmp_path):
     pairs = _make_contents(5)
-    with patch("project_memory.memory_service.embed", new=AsyncMock(return_value=[_VECTOR])):
+    with patch("agent_memory.memory_service.embed", new=AsyncMock(return_value=[_VECTOR])):
         memories = await asyncio.gather(
             *[
                 svc.remember(
@@ -97,7 +97,7 @@ async def test_concurrent_remember_creates_all_memories(svc, bare_store, tmp_pat
 
 async def test_concurrent_remember_no_id_collisions(svc, tmp_path):
     pairs = _make_contents(8)
-    with patch("project_memory.memory_service.embed", new=AsyncMock(return_value=[_VECTOR])):
+    with patch("agent_memory.memory_service.embed", new=AsyncMock(return_value=[_VECTOR])):
         memories = await asyncio.gather(
             *[
                 svc.remember(
@@ -116,7 +116,7 @@ async def test_concurrent_remember_no_id_collisions(svc, tmp_path):
 
 async def test_concurrent_user_remember_creates_all(user_svc, bare_store):
     pairs = _make_contents(5)
-    with patch("project_memory.memory_service.embed", new=AsyncMock(return_value=[_VECTOR])):
+    with patch("agent_memory.memory_service.embed", new=AsyncMock(return_value=[_VECTOR])):
         memories = await asyncio.gather(
             *[
                 user_svc.remember(
@@ -137,7 +137,7 @@ async def test_concurrent_user_remember_creates_all(user_svc, bare_store):
 
 async def test_concurrent_remember_and_search(svc, tmp_path):
     first_content, first_why = _make_contents(1)[0]
-    with patch("project_memory.memory_service.embed", new=AsyncMock(return_value=[_VECTOR])):
+    with patch("agent_memory.memory_service.embed", new=AsyncMock(return_value=[_VECTOR])):
         await svc.remember(
             project_root=str(tmp_path),
             kind="decision",
@@ -146,7 +146,7 @@ async def test_concurrent_remember_and_search(svc, tmp_path):
         )
 
     pairs = _make_contents(8)[1:]  # skip the already-stored first one
-    with patch("project_memory.memory_service.embed", new=AsyncMock(return_value=[_VECTOR])):
+    with patch("agent_memory.memory_service.embed", new=AsyncMock(return_value=[_VECTOR])):
         results = await asyncio.gather(
             svc.search(project_root=str(tmp_path), query="postgres storage"),
             *[

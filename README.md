@@ -65,7 +65,7 @@ Behavioral guidelines injected into agent prompts. The six mandatory skills are 
 | `dev-conventions` | General conventions: reuse, scope, localization, UI, validation, data |
 | `latest-versions` | Always look up and use the latest stable version of any dependency |
 | `research-first` | Research docs and source before answering or implementing anything non-trivial |
-| `project-memory` | Retrieves relevant project memory before non-trivial work and stores durable learnings after the task |
+| `agent-memory` | Retrieves relevant project memory before non-trivial work and stores durable learnings after the task |
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 
@@ -73,9 +73,9 @@ Behavioral guidelines injected into agent prompts. The six mandatory skills are 
 
 | Server | Description |
 |--------|-------------|
-| `project-memory` | Stores and retrieves durable project knowledge and user preferences across sessions. Supports semantic search so agents can recall relevant decisions, conventions, and gotchas before starting a task. Rejects vague, duplicate, or secret-containing entries. |
+| `agent-memory` | Stores and retrieves durable project knowledge and user preferences across sessions. Supports semantic search so agents can recall relevant decisions, conventions, and gotchas before starting a task. Rejects vague, duplicate, or secret-containing entries. |
 
-Project memory is stored outside git at `~/.myagents/project-memory/memory.sqlite` by default. User memory is stored in the same database. Set `MYAGENTS_MEMORY_DIR` to override the storage directory. Project memories are scoped to the repository root; user memories are stored globally across all projects.
+Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite` by default. User memory is stored in the same database. Set `AGENT_MEMORY_DIR` to override the storage directory. Project memories are scoped to the repository root; user memories are stored globally across all projects.
 
 #### Hooks
 

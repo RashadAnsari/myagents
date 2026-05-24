@@ -1,6 +1,6 @@
 ---
-name: project-memory
-description: Use the project-memory MCP server to retrieve, verify, and store durable project knowledge and global user knowledge before and after non-trivial work.
+name: agent-memory
+description: Use the agent-memory MCP server to retrieve, verify, and store durable project knowledge and global user knowledge before and after non-trivial work.
 ---
 
 # Project Memory & User Memory
@@ -72,7 +72,7 @@ Every user memory must satisfy all of these:
 - **No vague phrases.** Avoid "fixed the issue", "made changes", "implemented it".
 - **No command output.** Do not store npm logs, test output, or exit codes.
 - **No secrets.** Any content matching API key, token, or private key patterns is rejected automatically.
-- **No duplicates.** Normalized content must differ from existing active memories.
+- **No duplicates.** Normalized content must differ from existing active memories. A duplicate raises `MemoryQualityError` (reason: `duplicates`). Do not retry: it confirms the memory already exists.
 
 ### User Memory Workflow
 
@@ -89,6 +89,7 @@ Every user memory must satisfy all of these:
 2. Check: is this cross-project? (if not, use memory.remember instead)
 3. user.remember for each durable fact
 4. Include a clear whyUsefulLater
+5. Optionally: source="agent" or source="user", source_ref=<context>
 ```
 
 **When user memory conflicts with observed behavior:**
@@ -153,7 +154,7 @@ Same rules as user memory:
 - Content ≥ 40 characters or ≥ 7 words.
 - `whyUsefulLater` required and meaningful.
 - No vague phrases, command output, or secrets.
-- No duplicates of existing active memories.
+- No duplicates of existing active memories. A second call with identical content raises `MemoryQualityError` (reason: `duplicates`) rather than silently doing nothing. Do not retry on this error: it confirms the memory already exists.
 
 ### Project Memory Workflow
 
@@ -169,6 +170,7 @@ Same rules as user memory:
 1. Identify what would help the next agent on this codebase
 2. memory.remember
 3. Include whyUsefulLater: if you cannot explain it, skip it
+4. Optionally: source="agent" or source="user", source_ref=<file path, PR, or test command>
 ```
 
 **When memory is stale or wrong:**
@@ -222,6 +224,22 @@ Both `memory.search` and `user.search` use vector KNN search. Queries and memori
 | "Run `uv run pytest` before any push in this repo" | `memory.remember` → `workflow` |
 
 When in doubt: if it applies only to this repo, use project memory. If it applies regardless of which repo you are in, use user memory.
+
+---
+
+## Prompts
+
+The server exposes MCP prompts you can invoke directly to get structured instructions injected into a task. Use these when you want the memory workflow spelled out explicitly rather than relying on the skill prose.
+
+| Prompt | When to use | Key parameter |
+|---|---|---|
+| `memory_bootstrap` | Before starting a non-trivial task on a codebase | `task` (optional description) |
+| `memory_handoff` | After completing a task to decide what to store | `task_summary`, `tests_run` |
+| `memory_cleanup` | During housekeeping to find and fix stale entries | `topic` (optional focus area) |
+| `user_memory_bootstrap` | At session start to load the user's preferences | none |
+| `user_memory_update` | At session end to store new user knowledge | `session_summary` |
+
+These prompts are shortcuts: they return the same guidance this skill describes, formatted as ready-to-follow instructions.
 
 ---
 

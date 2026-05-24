@@ -1,28 +1,34 @@
+import logging
 import sys
-import traceback
 
-from .db import ProjectMemoryStore
+from .db import AgentMemoryStore
 from .memory_service import ProjectMemoryService, UserMemoryService
 from .paths import default_database_path
 from .server import create_server
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s %(name)s: %(message)s",
+    stream=sys.stderr,
+)
+
+logger = logging.getLogger(__name__)
 
 
 def main() -> None:
     store = None
     try:
-        store = ProjectMemoryStore(default_database_path())
+        store = AgentMemoryStore(default_database_path())
         project_service = ProjectMemoryService(store)
         user_service = UserMemoryService(store)
         mcp = create_server(project_service, user_service)
     except Exception as exc:
-        print(f"project-memory: initialization failed: {exc}", file=sys.stderr)
-        traceback.print_exc()
+        logger.exception("initialization failed: %s", exc)
         sys.exit(1)
     try:
         mcp.run()
     except Exception as exc:
-        print(f"project-memory: server error: {exc}", file=sys.stderr)
-        traceback.print_exc()
+        logger.exception("server error: %s", exc)
         sys.exit(1)
     finally:
         store.close()

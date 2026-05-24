@@ -7,14 +7,14 @@ local: validate format lint test
 validate:
 	claude plugin validate plugins/albino
 
-# Format the Project Memory MCP server.
+# Format the agent-memory MCP server.
 format:
-	uv run --directory plugins/albino/mcp-servers/project-memory ruff format src tests
+	uv run --directory plugins/albino/mcp-servers/agent-memory ruff format src tests
 
-# Lint the Project Memory MCP server.
+# Lint the agent-memory MCP server.
 lint:
-	uv run --directory plugins/albino/mcp-servers/project-memory ruff check src tests
+	uv run --directory plugins/albino/mcp-servers/agent-memory ruff check src tests
 
-# Test the Project Memory MCP server.
+# Test the agent-memory MCP server.
 test:
-	uv run --directory plugins/albino/mcp-servers/project-memory pytest
+	uv run --directory plugins/albino/mcp-servers/agent-memory python -m pytest

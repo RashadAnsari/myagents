@@ -6,11 +6,11 @@
         "@playwright/mcp@latest"
       ]
     },
-    "project-memory": {
+    "agent-memory": {
       "command": "bash",
       "args": [
         "-c",
-        "PLUGIN=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$PLUGIN\" ] && PLUGIN=\"$(pwd)\"; exec \"$PLUGIN/scripts/run-with-uv.sh\" run --directory \"$PLUGIN/mcp-servers/project-memory\" myagents-project-memory"
+        "PLUGIN=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$PLUGIN\" ] && PLUGIN=\"$(pwd)\"; exec \"$PLUGIN/scripts/run-with-uv.sh\" run --directory \"$PLUGIN/mcp-servers/agent-memory\" agent-memory"
       ]
     }
   }
