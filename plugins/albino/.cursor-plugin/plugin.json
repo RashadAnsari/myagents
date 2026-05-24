@@ -10,9 +10,19 @@
   "hooks": {
     "version": 1,
     "hooks": {
+      "sessionStart": [
+        {
+          "command": "./hooks/session-start.sh"
+        }
+      ],
       "beforeSubmitPrompt": [
         {
-          "command": "./hooks/agents-reminder.sh"
+          "command": "./hooks/user-prompt-submit.sh"
+        }
+      ],
+      "stop": [
+        {
+          "command": "./hooks/session-stop.sh"
         }
       ]
     }

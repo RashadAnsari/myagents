@@ -20,7 +20,7 @@ The Albino plugin registers this server in `plugins/albino/.mcp.json`.
 The MCP host runs the `myagents-project-memory` entrypoint via `run-with-uv.sh`:
 
 ```bash
-hooks/run-with-uv.sh run --directory mcp-servers/project-memory myagents-project-memory
+scripts/run-with-uv.sh run --directory mcp-servers/project-memory myagents-project-memory
 ```
 
 `run-with-uv.sh` locates or installs `uv`, then delegates to it. `uv` auto-syncs the virtual environment on first run and starts the server over stdio. No separate install step required.

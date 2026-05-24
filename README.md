@@ -79,9 +79,11 @@ Project memory is stored outside git at `~/.myagents/project-memory/memory.sqlit
 
 #### Hooks
 
-| Event | Hook | Description |
-|-------|------|-------------|
-| `UserPromptSubmit` | `agents-reminder` | Injects mandatory `AGENTS.md` reminder and active skill list before every prompt |
+| Hook | Event | Description |
+|------|-------|-------------|
+| `session-start` | `SessionStart` / `sessionStart` | Bootstraps project memory and user preferences before the first prompt |
+| `user-prompt-submit` | `UserPromptSubmit` / `beforeSubmitPrompt` | Injects mandatory `AGENTS.md` reminder and active skill list before every prompt |
+| `session-stop` | `Stop` / `stop` | Emits a memory handoff reminder after each turn so durable learnings get saved |
 
 #### Rules
 
@@ -89,7 +91,7 @@ Cursor rules (`.mdc` files): always applied to every Cursor agent session.
 
 | Rule | Description |
 |------|-------------|
-| `agents-reminder` | Injects mandatory `AGENTS.md` reminder and active skill list before every prompt *(Cursor only)* |
+| `session-memory` | Bootstraps project memory at conversation start and prompts memory handoff at conversation end *(covers Cursor `stop` gap)* |
 
 ---
 
