@@ -83,7 +83,6 @@ Project memory is stored outside git at `~/.myagents/project-memory/memory.sqlit
 |------|-------|-------------|
 | `session-start` | `SessionStart` / `sessionStart` | Bootstraps project memory and user preferences before the first prompt |
 | `user-prompt-submit` | `UserPromptSubmit` / `beforeSubmitPrompt` | Injects mandatory `AGENTS.md` reminder and active skill list before every prompt |
-| `session-stop` | `Stop` / `stop` | Emits a memory handoff reminder after each turn so durable learnings get saved |
 
 #### Rules
 

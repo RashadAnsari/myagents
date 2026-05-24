@@ -19,11 +19,6 @@
         {
           "command": "./hooks/user-prompt-submit.sh"
         }
-      ],
-      "stop": [
-        {
-          "command": "./hooks/session-stop.sh"
-        }
       ]
     }
   }
