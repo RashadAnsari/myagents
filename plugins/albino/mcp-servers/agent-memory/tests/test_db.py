@@ -1,6 +1,9 @@
 import pytest
 
 from agent_memory.db import AgentMemoryStore
+from agent_memory.embedding import EMBEDDING_DIM
+
+_DUMMY_VECTOR = [0.0] * EMBEDDING_DIM
 
 
 @pytest.fixture
@@ -54,6 +57,7 @@ def test_create_and_get_memory(bare_store, tmp_path):
         confidence="high",
         source="test",
         source_ref=None,
+        vector=_DUMMY_VECTOR,
     )
     assert memory.id > 0
     assert memory.kind == "decision"
@@ -77,6 +81,7 @@ def test_list_active_memories_excludes_archived(bare_store, tmp_path):
         confidence="medium",
         source=None,
         source_ref=None,
+        vector=_DUMMY_VECTOR,
     )
     m2 = bare_store.create_memory(
         project_id=project.id,
@@ -88,6 +93,7 @@ def test_list_active_memories_excludes_archived(bare_store, tmp_path):
         confidence="medium",
         source=None,
         source_ref=None,
+        vector=_DUMMY_VECTOR,
     )
     bare_store.archive_memory(m2.id, "test archive")
 
@@ -109,6 +115,7 @@ def test_update_memory(bare_store, tmp_path):
         confidence="medium",
         source=None,
         source_ref=None,
+        vector=_DUMMY_VECTOR,
     )
     updated = bare_store.update_memory(
         memory_id=memory.id,
@@ -137,6 +144,7 @@ def test_update_memory_content_only(bare_store, tmp_path):
         confidence="medium",
         source=None,
         source_ref=None,
+        vector=_DUMMY_VECTOR,
     )
     updated = bare_store.update_memory(
         memory_id=memory.id,
@@ -166,6 +174,7 @@ def test_update_memory_why_only(bare_store, tmp_path):
         confidence="low",
         source=None,
         source_ref=None,
+        vector=_DUMMY_VECTOR,
     )
     updated = bare_store.update_memory(
         memory_id=memory.id,
@@ -194,6 +203,7 @@ def test_archive_memory(bare_store, tmp_path):
         confidence="high",
         source=None,
         source_ref=None,
+        vector=_DUMMY_VECTOR,
     )
     archived = bare_store.archive_memory(memory.id, "no longer relevant")
     assert archived.archived_at is not None
@@ -214,6 +224,7 @@ def test_hard_delete_memory_removes_row(bare_store, tmp_path):
         confidence="low",
         source=None,
         source_ref=None,
+        vector=_DUMMY_VECTOR,
     )
     memory_id = memory.id
     bare_store.hard_delete_memory(memory_id, "test deletion", project.id)
@@ -235,6 +246,7 @@ def test_hard_delete_keeps_audit_event(bare_store, tmp_path):
         confidence="medium",
         source=None,
         source_ref=None,
+        vector=_DUMMY_VECTOR,
     )
     memory_id = memory.id
     bare_store.hard_delete_memory(memory_id, "audit test", project.id)

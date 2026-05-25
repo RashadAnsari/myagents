@@ -24,12 +24,12 @@ def user_svc(bare_store):
 
 
 _CONTENT = "Embedding failure test memory with enough words and characters to pass quality checks."
-_WHY = "Future agents need this to verify rollback behavior when embedding generation fails unexpectedly."
+_WHY = "Future agents need this to verify that DB stays clean when embedding generation fails."
 _USER_CONTENT = "User embedding failure test preference with sufficient length to pass quality validation checks."
-_USER_WHY = "Agents need this to verify user memory rollback when the embedding model raises an exception."
+_USER_WHY = "Agents need this to verify user memory DB stays clean when the embedding model raises an exception."
 
 
-async def test_project_remember_rolls_back_on_embed_error(svc, bare_store, tmp_path):
+async def test_project_remember_leaves_db_clean_on_embed_error(svc, bare_store, tmp_path):
     with patch("agent_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
         with pytest.raises(RuntimeError, match="model down"):
             await svc.remember(
@@ -54,19 +54,7 @@ async def test_project_remember_raises_on_empty_embed(svc, tmp_path):
             )
 
 
-async def test_project_remember_reraises_when_cleanup_also_fails(svc, tmp_path):
-    with patch("agent_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
-        with patch.object(svc._store, "hard_delete_memory", side_effect=RuntimeError("db locked")):
-            with pytest.raises(RuntimeError, match="model down"):
-                await svc.remember(
-                    project_root=str(tmp_path),
-                    kind="decision",
-                    content=_CONTENT,
-                    why_useful_later=_WHY,
-                )
-
-
-async def test_user_remember_rolls_back_on_embed_error(user_svc, bare_store):
+async def test_user_remember_leaves_db_clean_on_embed_error(user_svc, bare_store):
     with patch("agent_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
         with pytest.raises(RuntimeError, match="model down"):
             await user_svc.remember(
@@ -87,14 +75,3 @@ async def test_user_remember_raises_on_empty_embed(user_svc):
                 content=_USER_CONTENT,
                 why_useful_later=_USER_WHY,
             )
-
-
-async def test_user_remember_reraises_when_cleanup_also_fails(user_svc):
-    with patch("agent_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
-        with patch.object(user_svc._store, "hard_delete_user_memory", side_effect=RuntimeError("db locked")):
-            with pytest.raises(RuntimeError, match="model down"):
-                await user_svc.remember(
-                    kind="preference",
-                    content=_USER_CONTENT,
-                    why_useful_later=_USER_WHY,
-                )

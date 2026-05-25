@@ -94,6 +94,11 @@ class AgentMemoryStore:
         row = self._conn.execute("SELECT * FROM projects WHERE root_path = ?", (root_path,)).fetchone()
         return _map_project(row)
 
+    def get_project(self, project_root: str) -> ProjectRecord | None:
+        root_path = normalize_project_root(project_root)
+        row = self._conn.execute("SELECT * FROM projects WHERE root_path = ?", (root_path,)).fetchone()
+        return _map_project(row) if row else None
+
     def get_project_by_id(self, project_id: int) -> ProjectRecord:
         row = self._conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
         if not row:
@@ -122,6 +127,7 @@ class AgentMemoryStore:
         confidence: Confidence,
         source: str | None,
         source_ref: str | None,
+        vector: list[float],
     ) -> MemoryRecord:
         now = _now()
         result = self._conn.execute(
@@ -148,6 +154,7 @@ class AgentMemoryStore:
             raise RuntimeError("Failed to create memory.")
         logger.info("memory created id=%s project_id=%s kind=%s", memory.id, project_id, kind)
         self._add_event(memory.id, "created", why_useful_later, project_id=project_id)
+        self._write_embedding("memory_vec", memory.id, vector)
         self._commit("create_memory")
         return memory
 
@@ -161,6 +168,7 @@ class AgentMemoryStore:
         confidence: Confidence | None,
         archived_at: str | None,
         reason: str,
+        vector: list[float] | None = None,
     ) -> MemoryRecord:
         existing = self.get_memory(memory_id)
         if not existing:
@@ -186,6 +194,8 @@ class AgentMemoryStore:
         if not memory:
             raise RuntimeError(f"Memory not found after update: {memory_id}")
         self._add_event(memory.id, "updated", reason, project_id=existing.project_id)
+        if vector is not None:
+            self._write_embedding("memory_vec", memory_id, vector)
         self._commit("update_memory")
         return memory
 
@@ -284,13 +294,12 @@ class AgentMemoryStore:
             logger.info("purged %d archived memories for project %s", len(ids), project_id)
         return len(ids)
 
-    def upsert_embedding(self, memory_id: int, vector: list[float]) -> None:
-        self._conn.execute("DELETE FROM memory_vec WHERE memory_id = ?", (memory_id,))
+    def _write_embedding(self, table: str, memory_id: int, vector: list[float]) -> None:
+        self._conn.execute(f"DELETE FROM {table} WHERE memory_id = ?", (memory_id,))
         self._conn.execute(
-            "INSERT INTO memory_vec (memory_id, embedding) VALUES (?, ?)",
+            f"INSERT INTO {table} (memory_id, embedding) VALUES (?, ?)",
             (memory_id, pack_vector(vector)),
         )
-        self._commit("upsert_embedding")
 
     def _mark_used(self, ids: list[int]) -> None:
         if not ids:
@@ -328,6 +337,7 @@ class AgentMemoryStore:
         confidence: Confidence,
         source: str | None,
         source_ref: str | None,
+        vector: list[float],
     ) -> UserMemoryRecord:
         now = _now()
         result = self._conn.execute(
@@ -342,6 +352,7 @@ class AgentMemoryStore:
             raise RuntimeError("Failed to create user memory.")
         logger.info("user memory created id=%s kind=%s", memory.id, kind)
         self._add_user_event(memory.id, "created", why_useful_later)
+        self._write_embedding("user_memory_vec", memory.id, vector)
         self._commit("create_user_memory")
         return memory
 
@@ -355,6 +366,7 @@ class AgentMemoryStore:
         confidence: Confidence | None,
         archived_at: str | None,
         reason: str,
+        vector: list[float] | None = None,
     ) -> UserMemoryRecord:
         existing = self.get_user_memory(memory_id)
         if not existing:
@@ -380,6 +392,8 @@ class AgentMemoryStore:
         if not memory:
             raise RuntimeError(f"User memory not found after update: {memory_id}")
         self._add_user_event(memory_id, "updated", reason)
+        if vector is not None:
+            self._write_embedding("user_memory_vec", memory_id, vector)
         self._commit("update_user_memory")
         return memory
 
@@ -475,14 +489,6 @@ class AgentMemoryStore:
             self._commit("purge_archived_user_memories")
             logger.info("purged %d archived user memories", len(ids))
         return len(ids)
-
-    def upsert_user_embedding(self, memory_id: int, vector: list[float]) -> None:
-        self._conn.execute("DELETE FROM user_memory_vec WHERE memory_id = ?", (memory_id,))
-        self._conn.execute(
-            "INSERT INTO user_memory_vec (memory_id, embedding) VALUES (?, ?)",
-            (memory_id, pack_vector(vector)),
-        )
-        self._commit("upsert_user_embedding")
 
     def _add_user_event(self, memory_id: int | None, action: str, reason: str | None) -> None:
         if memory_id is None and action != "hard_deleted":
