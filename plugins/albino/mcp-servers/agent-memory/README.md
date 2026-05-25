@@ -1,4 +1,4 @@
-# Project Memory MCP Server
+# Agent Memory MCP Server
 
 Local MCP server for durable memory. It stores two kinds of memory:
 
@@ -11,7 +11,7 @@ Both are local-first:
 - Stores memory in SQLite at `~/.myagents/agent-memory/memory.sqlite`.
 - Uses neural vector search (KNN via `sqlite-vec`) for semantic retrieval.
 - Rejects noisy, vague, duplicate, and secret-looking memories.
-- Exposes tools, resources, and prompts through MCP.
+- Exposes tools through MCP.
 
 ## Startup
 
@@ -140,7 +140,7 @@ Bad user memory:
 
 ## Search
 
-Memory search uses vector KNN exclusively. The query and all memories are embedded using `BAAI/bge-small-en-v1.5` (a 384-dimension sentence transformer via `fastembed`). Embeddings are stored in `sqlite-vec` virtual tables (`memory_vec`, `user_memory_vec`). At query time the nearest neighbours are retrieved by cosine distance using sqlite-vec's `MATCH` operator.
+Memory search uses vector KNN exclusively. The query and all memories are embedded using `BAAI/bge-small-en-v1.5` (a 384-dimension sentence transformer via `fastembed`). Embeddings are stored in `sqlite-vec` virtual tables (`project_memory_vec`, `user_memory_vec`). At query time the nearest neighbours are retrieved by cosine distance using sqlite-vec's `MATCH` operator.
 
 **Why vector search?**
 
@@ -148,7 +148,7 @@ Vector search finds memories by meaning, not word overlap. A query for "login is
 
 **Atomicity**
 
-`remember()` is atomic. If embedding fails after the memory row is written, the row is hard-deleted and the error is re-raised. There are no half-written records and no backfill step.
+`remember()` computes the embedding before writing anything to the database. If embedding fails, the database is never touched and no cleanup is needed. The row insert and vector insert are committed in a single transaction, so there are no half-written records.
 
 **Model and caching**
 
@@ -186,5 +186,5 @@ printf '%s\n' \
 - Memory is a hint, not authority. Current user instructions, repo files, tests, and official docs override memory.
 - Archived memories are excluded from normal search; pass `include_archived=True` to include them.
 - Hard delete removes the memory row but always keeps an audit event.
-- `remember()` is atomic: if embedding fails the memory row is rolled back immediately.
+- `remember()` is embed-first: the embedding is computed before any DB write, so a failed embedding leaves the database untouched.
 - The `AGENT_MEMORY_DIR` environment variable overrides the storage directory; the database is placed directly inside it as `memory.sqlite`.
