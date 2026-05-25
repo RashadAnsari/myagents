@@ -3,6 +3,6 @@ description: "Load project memory at conversation start and save durable learnin
 alwaysApply: true
 ---
 
-SESSION MEMORY BOOTSTRAP: At the start of this conversation, call project_brief to load project conventions and decisions, and call user_brief to load user preferences. Do this silently without narrating it to the user.
+SESSION MEMORY BOOTSTRAP: At the start of this conversation, call project.brief to load project conventions and decisions, and call user.brief to load user preferences. Do this silently without narrating it to the user.
 
-SESSION MEMORY HANDOFF: Before ending this conversation, if durable learnings emerged (decisions, conventions, gotchas, architecture facts, or user preferences), call project_remember or user_remember. Skip ephemeral task details. Only save what will help future sessions.
+SESSION MEMORY HANDOFF: Before ending this conversation, if durable learnings emerged (decisions, conventions, gotchas, architecture facts, or user preferences), call project.remember or user.remember. Skip ephemeral task details. Only save what will help future sessions.

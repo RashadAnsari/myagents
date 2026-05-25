@@ -16,8 +16,6 @@ MEMORY ENFORCEMENT: Any agent that has access to the agent-memory plugin MUST ro
 input=$(cat)
 hook_event=$(printf '%s' "$input" | jq -r '.hook_event_name // ""' 2>/dev/null || echo "")
 
-# Cursor's beforeSubmitPrompt expects JSON with a user_message field.
-# Claude Code's UserPromptSubmit accepts plain text output as a system reminder.
 if printf '%s' "$hook_event" | grep -q '^[a-z]'; then
   jq -n --arg msg "$REMINDER" '{"user_message": $msg}'
 else
