@@ -3,7 +3,7 @@ The model is downloaded on first run (~130 MB) and cached locally thereafter."""
 
 import pytest
 
-from agent_memory.embedding import EMBEDDING_DIM, cosine_similarity, embed, memory_embed_text
+from agent_memory.embedding import EMBEDDING_DIM, embed, memory_embed_text
 from agent_memory.memory_service import ProjectMemoryService, UserMemoryService
 
 
@@ -16,20 +16,7 @@ async def test_embed_returns_correct_dim():
 async def test_embed_same_text_is_deterministic():
     a = await embed(["hello world"])
     b = await embed(["hello world"])
-    assert len(a[0]) == EMBEDDING_DIM
-    sim = cosine_similarity(a[0], b[0])
-    assert sim == pytest.approx(1.0, abs=1e-4)
-
-
-async def test_cosine_similarity_of_identical_vector_is_1():
-    vecs = await embed(["hello world test"])
-    v = vecs[0]
-    assert cosine_similarity(v, v) == pytest.approx(1.0, abs=1e-4)
-
-
-async def test_cosine_similarity_of_different_texts_is_less_than_1():
-    vecs = await embed(["relational database SQL query optimization", "CSS styling BEM methodology naming"])
-    assert cosine_similarity(vecs[0], vecs[1]) < 1.0
+    assert a[0] == b[0]
 
 
 def test_memory_embed_text_includes_all_parts():
@@ -54,29 +41,6 @@ async def test_embed_handles_batch():
     assert len(vecs) == 2
     assert len(vecs[0]) == EMBEDDING_DIM
     assert len(vecs[1]) == EMBEDDING_DIM
-
-
-def test_cosine_similarity_zero_vector_returns_0():
-    zero = [0.0] * EMBEDDING_DIM
-    nonzero = [0.1] * EMBEDDING_DIM
-    assert cosine_similarity(zero, nonzero) == 0.0
-    assert cosine_similarity(nonzero, zero) == 0.0
-
-
-def test_cosine_similarity_mismatched_lengths_returns_0():
-    a = [0.1] * EMBEDDING_DIM
-    b = [0.1] * (EMBEDDING_DIM - 1)
-    assert cosine_similarity(a, b) == 0.0
-
-
-def test_cosine_similarity_nan_input_returns_0():
-    import math
-
-    nan = float("nan")
-    a = [nan] + [0.1] * (EMBEDDING_DIM - 1)
-    b = [0.1] * EMBEDDING_DIM
-    result = cosine_similarity(a, b)
-    assert result == 0.0 or not math.isnan(result)
 
 
 async def test_vector_search_stores_embedding(service: ProjectMemoryService, tmp_dir):

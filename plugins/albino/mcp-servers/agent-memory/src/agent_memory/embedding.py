@@ -45,16 +45,3 @@ def memory_embed_text(content: str, summary: str | None, tags: list[str]) -> str
     if tags:
         parts.append(" ".join(tags))
     return " ".join(parts)
-
-
-def cosine_similarity(a: list[float], b: list[float]) -> float:
-    import math
-
-    if len(a) != len(b) or not a:
-        return 0.0
-    dot = sum(x * y for x, y in zip(a, b))
-    mag_a = sum(x * x for x in a) ** 0.5
-    mag_b = sum(x * x for x in b) ** 0.5
-    denom = mag_a * mag_b
-    result = dot / denom if denom != 0 else 0.0
-    return 0.0 if math.isnan(result) else result
