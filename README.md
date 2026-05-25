@@ -74,6 +74,7 @@ Behavioral guidelines injected into agent prompts. The six mandatory skills are 
 | Server | Description |
 |--------|-------------|
 | `agent-memory` | Stores and retrieves durable project knowledge and user preferences across sessions. Supports semantic search so agents can recall relevant decisions, conventions, and gotchas before starting a task. Rejects vague, duplicate, or secret-containing entries. |
+| `playwright` | Browser automation via `@playwright/mcp`. Gives agents the ability to navigate, click, fill forms, take screenshots, and inspect the DOM in a real browser. Auto-installs bun if not present. |
 
 Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite` by default. User memory is stored in the same database. Set `AGENT_MEMORY_DIR` to override the storage directory. Project memories are scoped to the repository root; user memories are stored globally across all projects.
 
