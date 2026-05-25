@@ -1,9 +1,10 @@
 {
   "mcpServers": {
     "playwright": {
-      "command": "bunx",
+      "command": "bash",
       "args": [
-        "@playwright/mcp@latest"
+        "-c",
+        "PLUGIN=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$PLUGIN\" ] && PLUGIN=\"$(pwd)\"; exec \"$PLUGIN/scripts/run-with-bunx.sh\" @playwright/mcp@latest"
       ]
     },
     "agent-memory": {
