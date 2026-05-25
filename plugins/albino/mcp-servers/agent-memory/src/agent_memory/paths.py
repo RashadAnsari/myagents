@@ -22,12 +22,6 @@ def normalize_project_root(project_root: str) -> str:
     return str(Path(project_root).resolve())
 
 
-def current_project_root() -> str:
-    return normalize_project_root(
-        os.environ.get("MYAGENTS_PROJECT_ROOT") or os.environ.get("INIT_CWD") or os.environ.get("PWD") or os.getcwd()
-    )
-
-
 def project_name_from_root(root_path: str) -> str:
     return Path(root_path).name or root_path
 
