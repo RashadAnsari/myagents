@@ -5,7 +5,6 @@ from agent_memory.db import AgentMemoryStore
 
 @pytest.fixture
 def bare_store(tmp_path):
-    """Store fixture that does NOT skip when sqlite-vec is unavailable."""
     s = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
     yield s
     s.close()
@@ -220,11 +219,7 @@ def test_hard_delete_memory_removes_row(bare_store, tmp_path):
     bare_store.hard_delete_memory(memory_id, "test deletion", project.id)
 
     assert bare_store.get_memory(memory_id) is None
-    vec_row = (
-        bare_store._conn.execute("SELECT * FROM memory_vec WHERE memory_id = ?", (memory_id,)).fetchone()
-        if bare_store._vec_available
-        else None
-    )
+    vec_row = bare_store._conn.execute("SELECT * FROM memory_vec WHERE memory_id = ?", (memory_id,)).fetchone()
     assert vec_row is None
 
 
@@ -249,18 +244,3 @@ def test_hard_delete_keeps_audit_event(bare_store, tmp_path):
         (project.id,),
     ).fetchall()
     assert len(events) >= 1
-
-
-def test_search_returns_empty_when_vec_unavailable(bare_store):
-    bare_store._vec_available = False
-    results = bare_store.search_memories(
-        project_id=1,
-        query_vector=b"\x00" * 4,
-        limit=5,
-    )
-    assert results == []
-
-
-def test_upsert_embedding_noop_when_vec_unavailable(bare_store):
-    bare_store._vec_available = False
-    bare_store.upsert_embedding(999, [0.1, 0.2, 0.3])

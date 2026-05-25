@@ -19,16 +19,16 @@ def tmp_dir(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def store(tmp_path: Path) -> AgentMemoryStore:
-    s = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
-    if not s._vec_available:
-        s.close()
+    try:
+        s = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
+    except Exception as exc:
         if os.environ.get("REQUIRE_VEC"):
             pytest.fail(
-                "sqlite-vec extension failed to load but REQUIRE_VEC=1 is set. "
+                f"sqlite-vec extension failed to load but REQUIRE_VEC=1 is set: {exc}. "
                 "Use uv-managed Python or Homebrew Python on macOS."
             )
         pytest.skip(
-            "sqlite-vec extension failed to load. Vector search tests require a Python build that supports "
+            f"sqlite-vec extension failed to load ({exc}). Tests require a Python build that supports "
             "dynamic extension loading. Use uv-managed Python or Homebrew Python on macOS."
         )
     yield s

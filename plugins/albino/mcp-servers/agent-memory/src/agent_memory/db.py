@@ -47,14 +47,9 @@ class AgentMemoryStore:
             # connection at a time on the single event-loop thread.
             self._conn = sqlite3.connect(db_path, check_same_thread=False)
             self._conn.row_factory = sqlite3.Row
-            self._vec_available = False
-            try:
-                self._conn.enable_load_extension(True)
-                sqlite_vec.load(self._conn)
-                self._conn.enable_load_extension(False)
-                self._vec_available = True
-            except Exception as exc:  # broad catch is intentional: sqlite-vec may raise OSError, RuntimeError, or sqlite3.OperationalError depending on platform
-                logger.warning("sqlite-vec failed to load (%s); vector search disabled for %s", exc, db_path)
+            self._conn.enable_load_extension(True)
+            sqlite_vec.load(self._conn)
+            self._conn.enable_load_extension(False)
             self._conn.execute("PRAGMA journal_mode = WAL;")
             self._conn.execute("PRAGMA journal_size_limit = 67108864;")
             self._conn.execute("PRAGMA wal_autocheckpoint = 1000;")
@@ -229,8 +224,6 @@ class AgentMemoryStore:
         kinds: list[MemoryKind] | None = None,
         tags: list[str] | None = None,
     ) -> list[MemoryRecord]:
-        if not self._vec_available:
-            return []
         archived_where = "" if include_archived else "AND memories.archived_at IS NULL"
         kinds_where = f"AND memories.kind IN ({','.join('?' * len(kinds))})" if kinds else ""
         tags_where = (
@@ -292,8 +285,6 @@ class AgentMemoryStore:
         return len(ids)
 
     def upsert_embedding(self, memory_id: int, vector: list[float]) -> None:
-        if not self._vec_available:
-            return
         self._conn.execute("DELETE FROM memory_vec WHERE memory_id = ?", (memory_id,))
         self._conn.execute(
             "INSERT INTO memory_vec (memory_id, embedding) VALUES (?, ?)",
@@ -428,8 +419,6 @@ class AgentMemoryStore:
         kinds: list[UserMemoryKind] | None = None,
         tags: list[str] | None = None,
     ) -> list[UserMemoryRecord]:
-        if not self._vec_available:
-            return []
         archived_where = "" if include_archived else "AND user_memories.archived_at IS NULL"
         kinds_where = f"AND user_memories.kind IN ({','.join('?' * len(kinds))})" if kinds else ""
         tags_where = (
@@ -488,8 +477,6 @@ class AgentMemoryStore:
         return len(ids)
 
     def upsert_user_embedding(self, memory_id: int, vector: list[float]) -> None:
-        if not self._vec_available:
-            return
         self._conn.execute("DELETE FROM user_memory_vec WHERE memory_id = ?", (memory_id,))
         self._conn.execute(
             "INSERT INTO user_memory_vec (memory_id, embedding) VALUES (?, ?)",
@@ -597,18 +584,17 @@ class AgentMemoryStore:
             CREATE INDEX IF NOT EXISTS idx_user_memory_events_created_at ON user_memory_events(created_at);
 
         """)
-        if self._vec_available:
-            self._conn.executescript(f"""
-                CREATE VIRTUAL TABLE IF NOT EXISTS memory_vec USING vec0(
-                    memory_id INTEGER PRIMARY KEY,
-                    embedding float[{EMBEDDING_DIM}]
-                );
+        self._conn.executescript(f"""
+            CREATE VIRTUAL TABLE IF NOT EXISTS memory_vec USING vec0(
+                memory_id INTEGER PRIMARY KEY,
+                embedding float[{EMBEDDING_DIM}]
+            );
 
-                CREATE VIRTUAL TABLE IF NOT EXISTS user_memory_vec USING vec0(
-                    memory_id INTEGER PRIMARY KEY,
-                    embedding float[{EMBEDDING_DIM}]
-                );
-            """)
+            CREATE VIRTUAL TABLE IF NOT EXISTS user_memory_vec USING vec0(
+                memory_id INTEGER PRIMARY KEY,
+                embedding float[{EMBEDDING_DIM}]
+            );
+        """)
 
 
 def _map_project(row: sqlite3.Row) -> ProjectRecord:
