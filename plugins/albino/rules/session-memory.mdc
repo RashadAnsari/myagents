@@ -3,6 +3,6 @@ description: "Load project memory at conversation start and save durable learnin
 alwaysApply: true
 ---
 
-SESSION MEMORY BOOTSTRAP: At the start of this conversation, call project.brief to load project conventions and decisions, and call user.brief to load user preferences. Do this silently without narrating it to the user.
+SESSION MEMORY BOOTSTRAP: You MUST call project.brief and user.brief before your first response. These calls are required, not optional. Do not respond to the user before making them. Do this silently without narrating it to the user.
 
-SESSION MEMORY HANDOFF: Before ending this conversation, if durable learnings emerged (decisions, conventions, gotchas, architecture facts, or user preferences), call project.remember or user.remember. Skip ephemeral task details. Only save what will help future sessions.
+SESSION MEMORY WRITE-BACK: Before producing your final response each turn, ask yourself: did I learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha discovered, a convention established, an architecture fact clarified. If yes, you MUST call project.remember or user.remember before finishing. This is not optional. Do not skip it. Do not defer it. If nothing durable was learned this turn, skip the write. Only write what is genuinely non-obvious and useful to a future agent. Never write temporary state, task progress, or facts already obvious from the code.

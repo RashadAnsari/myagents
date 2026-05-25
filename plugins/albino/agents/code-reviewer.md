@@ -1,10 +1,11 @@
 ---
 name: code-reviewer
 description: Reviews the codebase for correctness, style, patterns, and anti-patterns. Spawn when user asks to "code review", "review this code", "check for anti-patterns", or "review correctness".
-tools: [Read, Glob, Grep]
+tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_brief, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_brief, mcp__plugin_albino_agent-memory__user_search]
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
+Before reviewing, call project.brief and user.brief to load project conventions and user preferences. Use findings to calibrate your review against known project patterns and user expectations.
 
 # Code Reviewer
 

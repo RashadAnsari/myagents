@@ -1,10 +1,11 @@
 ---
 name: docs-reviewer
 description: Reviews documentation for accuracy, completeness, and staleness. Spawn when user asks to "review docs", "check documentation", "find stale docs", or "audit documentation".
-tools: [Read, Glob, Grep, WebFetch]
+tools: [Read, Glob, Grep, WebFetch, mcp__plugin_albino_agent-memory__project_brief, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_brief, mcp__plugin_albino_agent-memory__user_search]
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
+Before reviewing, call project.brief and user.brief to load project conventions and user preferences. Use findings to calibrate your review against known project patterns and user expectations.
 
 # Documentation Reviewer
 

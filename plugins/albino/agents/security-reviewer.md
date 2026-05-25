@@ -1,10 +1,11 @@
 ---
 name: security-reviewer
 description: Reviews the codebase for security vulnerabilities. Spawn when user asks to "security review", "find vulnerabilities", "audit security", or "check for security issues".
-tools: [Read, Glob, Grep, WebSearch, WebFetch]
+tools: [Read, Glob, Grep, WebSearch, WebFetch, mcp__plugin_albino_agent-memory__project_brief, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_brief, mcp__plugin_albino_agent-memory__user_search]
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
+Before reviewing, call project.brief and user.brief to load project conventions and user preferences. Use findings to calibrate your review against known project patterns and user expectations.
 
 # Security Reviewer
 
