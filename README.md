@@ -65,7 +65,7 @@ Behavioral guidelines injected into agent prompts. The six mandatory skills are 
 | `dev-conventions` | General conventions: reuse, scope, localization, UI, validation, data |
 | `latest-versions` | Always look up and use the latest stable version of any dependency |
 | `research-first` | Research docs and source before answering or implementing anything non-trivial |
-| `agent-memory` | Retrieves relevant project memory before non-trivial work and stores durable learnings after the task |
+| `agent-memory` | Retrieves relevant project and user memory before non-trivial work and stores durable learnings after the task |
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 
