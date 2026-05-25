@@ -59,7 +59,7 @@ class ProjectMemoryService:
         source_ref: str | None = None,
     ) -> MemoryRecord:
         project = self._store.get_or_create_project(project_root)
-        existing = self._store.list_active_memories(project.id)
+        existing = self._store.list_active_project_memories(project.id)
         existing_contents = [m.content for m in existing]
         ok, reasons = evaluate_memory_quality(content, why_useful_later, existing_contents)
         if not ok:
@@ -73,7 +73,7 @@ class ProjectMemoryService:
         text = memory_embed_text(cleaned_content, cleaned_summary, normalized_tags)
         vector = await embed_one(text)
 
-        return self._store.create_memory(
+        return self._store.create_project_memory(
             project_id=project.id,
             kind=kind,
             content=cleaned_content,
@@ -105,7 +105,7 @@ class ProjectMemoryService:
 
         query_vector = pack_vector(await embed_one(query))
 
-        return self._store.search_memories(
+        return self._store.search_project_memories(
             project_id=project.id,
             query_vector=query_vector,
             limit=limit,
@@ -129,7 +129,7 @@ class ProjectMemoryService:
             raise ValueError(f"Project not found: {project_root}")
 
         before = (datetime.now(tz=UTC) - timedelta(days=days)).isoformat()
-        return self._store.purge_archived_memories(project.id, before)
+        return self._store.purge_archived_project_memories(project.id, before)
 
     async def update(
         self,
@@ -147,7 +147,7 @@ class ProjectMemoryService:
         if not project:
             raise ValueError(f"Project not found: {project_root}")
 
-        memory = self._store.get_memory(memory_id)
+        memory = self._store.get_project_memory(memory_id)
         if not memory or memory.project_id != project.id:
             raise ValueError(f"Memory not found for project: {memory_id}")
 
@@ -164,7 +164,7 @@ class ProjectMemoryService:
             text = memory_embed_text(content_for_embed, summary_for_embed, tags_for_embed)
             vector = await embed_one(text)
 
-        return self._store.update_memory(
+        return self._store.update_project_memory(
             memory_id=memory_id,
             content=content.strip() if content else None,
             summary=_clean_optional(summary),
@@ -181,16 +181,16 @@ class ProjectMemoryService:
         if not project:
             raise ValueError(f"Project not found: {project_root}")
 
-        memory = self._store.get_memory(memory_id)
+        memory = self._store.get_project_memory(memory_id)
         if not memory or memory.project_id != project.id:
             raise ValueError(f"Memory not found for project: {memory_id}")
 
         r = reason or "Memory forgotten by request."
         if hard_delete:
-            self._store.hard_delete_memory(memory_id, r, project.id)
+            self._store.hard_delete_project_memory(memory_id, r, project.id)
             return {"archived": False, "deleted": True}
 
-        self._store.archive_memory(memory_id, r)
+        self._store.archive_project_memory(memory_id, r)
         return {"archived": True, "deleted": False}
 
 

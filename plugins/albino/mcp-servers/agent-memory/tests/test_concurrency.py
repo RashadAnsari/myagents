@@ -1,6 +1,6 @@
 """
 Concurrency tests verifying that simultaneous asyncio coroutines sharing one
-SQLite connection do not corrupt data.  embed() is mocked so tests run without
+SQLite connection do not corrupt data. embed_one() is mocked so tests run without
 a model download and focus on the DB access pattern.
 """
 
@@ -91,7 +91,7 @@ async def test_concurrent_remember_creates_all_memories(svc, bare_store, tmp_pat
     assert len({m.id for m in memories}) == 5  # all unique IDs
 
     project = bare_store.get_or_create_project(str(tmp_path))
-    active = bare_store.list_active_memories(project.id)
+    active = bare_store.list_active_project_memories(project.id)
     assert len(active) == 5
 
 

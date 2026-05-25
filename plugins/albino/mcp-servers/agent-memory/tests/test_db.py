@@ -17,7 +17,9 @@ def test_store_initializes_schema(bare_store):
     tables = {
         row[0] for row in bare_store._conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
     }
-    assert {"projects", "memories", "memory_events", "user_memories", "user_memory_events"}.issubset(tables)
+    assert {"projects", "project_memories", "project_memory_events", "user_memories", "user_memory_events"}.issubset(
+        tables
+    )
 
 
 def test_migrate_is_idempotent(tmp_path):
@@ -47,7 +49,7 @@ def test_get_or_create_project_is_idempotent(bare_store, tmp_path):
 
 def test_create_and_get_memory(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
-    memory = bare_store.create_memory(
+    memory = bare_store.create_project_memory(
         project_id=project.id,
         kind="decision",
         content="Use postgres for all persistent storage to keep infrastructure simple.",
@@ -63,7 +65,7 @@ def test_create_and_get_memory(bare_store, tmp_path):
     assert memory.kind == "decision"
     assert memory.tags == ["database", "infrastructure"]
 
-    fetched = bare_store.get_memory(memory.id)
+    fetched = bare_store.get_project_memory(memory.id)
     assert fetched is not None
     assert fetched.id == memory.id
     assert fetched.content == memory.content
@@ -71,7 +73,7 @@ def test_create_and_get_memory(bare_store, tmp_path):
 
 def test_list_active_memories_excludes_archived(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
-    m1 = bare_store.create_memory(
+    m1 = bare_store.create_project_memory(
         project_id=project.id,
         kind="decision",
         content="Active memory that should appear in active listing for this project.",
@@ -83,7 +85,7 @@ def test_list_active_memories_excludes_archived(bare_store, tmp_path):
         source_ref=None,
         vector=_DUMMY_VECTOR,
     )
-    m2 = bare_store.create_memory(
+    m2 = bare_store.create_project_memory(
         project_id=project.id,
         kind="gotcha",
         content="Archived memory that should not appear in active listing after archival.",
@@ -95,9 +97,9 @@ def test_list_active_memories_excludes_archived(bare_store, tmp_path):
         source_ref=None,
         vector=_DUMMY_VECTOR,
     )
-    bare_store.archive_memory(m2.id, "test archive")
+    bare_store.archive_project_memory(m2.id, "test archive")
 
-    active = bare_store.list_active_memories(project.id)
+    active = bare_store.list_active_project_memories(project.id)
     ids = [m.id for m in active]
     assert m1.id in ids
     assert m2.id not in ids
@@ -105,7 +107,7 @@ def test_list_active_memories_excludes_archived(bare_store, tmp_path):
 
 def test_update_memory(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
-    memory = bare_store.create_memory(
+    memory = bare_store.create_project_memory(
         project_id=project.id,
         kind="convention",
         content="Use snake_case for all Python identifiers including functions and variables.",
@@ -117,7 +119,7 @@ def test_update_memory(bare_store, tmp_path):
         source_ref=None,
         vector=_DUMMY_VECTOR,
     )
-    updated = bare_store.update_memory(
+    updated = bare_store.update_project_memory(
         memory_id=memory.id,
         content=None,
         summary="snake_case convention",
@@ -134,7 +136,7 @@ def test_update_memory(bare_store, tmp_path):
 
 def test_update_memory_content_only(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
-    memory = bare_store.create_memory(
+    memory = bare_store.create_project_memory(
         project_id=project.id,
         kind="convention",
         content="Original content about using snake_case for all Python identifiers.",
@@ -146,7 +148,7 @@ def test_update_memory_content_only(bare_store, tmp_path):
         source_ref=None,
         vector=_DUMMY_VECTOR,
     )
-    updated = bare_store.update_memory(
+    updated = bare_store.update_project_memory(
         memory_id=memory.id,
         content="Updated content about using snake_case for all Python identifiers and module names.",
         summary=None,
@@ -164,7 +166,7 @@ def test_update_memory_content_only(bare_store, tmp_path):
 
 def test_update_memory_why_only(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
-    memory = bare_store.create_memory(
+    memory = bare_store.create_project_memory(
         project_id=project.id,
         kind="gotcha",
         content="SQLite WAL mode must be enabled before foreign keys to avoid lock contention.",
@@ -176,7 +178,7 @@ def test_update_memory_why_only(bare_store, tmp_path):
         source_ref=None,
         vector=_DUMMY_VECTOR,
     )
-    updated = bare_store.update_memory(
+    updated = bare_store.update_project_memory(
         memory_id=memory.id,
         content=None,
         summary=None,
@@ -193,7 +195,7 @@ def test_update_memory_why_only(bare_store, tmp_path):
 
 def test_archive_memory(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
-    memory = bare_store.create_memory(
+    memory = bare_store.create_project_memory(
         project_id=project.id,
         kind="gotcha",
         content="Avoid using mutable default arguments in Python function definitions.",
@@ -205,16 +207,16 @@ def test_archive_memory(bare_store, tmp_path):
         source_ref=None,
         vector=_DUMMY_VECTOR,
     )
-    archived = bare_store.archive_memory(memory.id, "no longer relevant")
+    archived = bare_store.archive_project_memory(memory.id, "no longer relevant")
     assert archived.archived_at is not None
 
-    active = bare_store.list_active_memories(project.id)
+    active = bare_store.list_active_project_memories(project.id)
     assert all(m.id != memory.id for m in active)
 
 
 def test_hard_delete_memory_removes_row(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
-    memory = bare_store.create_memory(
+    memory = bare_store.create_project_memory(
         project_id=project.id,
         kind="decision",
         content="Hard delete test memory that must be fully removed from the database.",
@@ -227,16 +229,16 @@ def test_hard_delete_memory_removes_row(bare_store, tmp_path):
         vector=_DUMMY_VECTOR,
     )
     memory_id = memory.id
-    bare_store.hard_delete_memory(memory_id, "test deletion", project.id)
+    bare_store.hard_delete_project_memory(memory_id, "test deletion", project.id)
 
-    assert bare_store.get_memory(memory_id) is None
-    vec_row = bare_store._conn.execute("SELECT * FROM memory_vec WHERE memory_id = ?", (memory_id,)).fetchone()
+    assert bare_store.get_project_memory(memory_id) is None
+    vec_row = bare_store._conn.execute("SELECT * FROM project_memory_vec WHERE memory_id = ?", (memory_id,)).fetchone()
     assert vec_row is None
 
 
 def test_hard_delete_keeps_audit_event(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
-    memory = bare_store.create_memory(
+    memory = bare_store.create_project_memory(
         project_id=project.id,
         kind="decision",
         content="Audit trail test memory verifying hard delete events are preserved.",
@@ -249,10 +251,10 @@ def test_hard_delete_keeps_audit_event(bare_store, tmp_path):
         vector=_DUMMY_VECTOR,
     )
     memory_id = memory.id
-    bare_store.hard_delete_memory(memory_id, "audit test", project.id)
+    bare_store.hard_delete_project_memory(memory_id, "audit test", project.id)
 
     events = bare_store._conn.execute(
-        "SELECT action FROM memory_events WHERE action = 'hard_deleted' AND project_id = ?",
+        "SELECT action FROM project_memory_events WHERE action = 'hard_deleted' AND project_id = ?",
         (project.id,),
     ).fetchall()
     assert len(events) >= 1

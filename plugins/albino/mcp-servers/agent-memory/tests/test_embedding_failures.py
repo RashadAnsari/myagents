@@ -39,7 +39,7 @@ async def test_project_remember_leaves_db_clean_on_embed_error(svc, bare_store, 
                 why_useful_later=_WHY,
             )
 
-    active = bare_store.list_active_memories(bare_store.get_or_create_project(str(tmp_path)).id)
+    active = bare_store.list_active_project_memories(bare_store.get_or_create_project(str(tmp_path)).id)
     assert len(active) == 0
 
 
