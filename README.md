@@ -33,6 +33,7 @@ Slash commands available in Claude Code / Cursor sessions.
 | `/statusline` | Configure the Claude Code statusline: asks global or project install, shows git branch, current directory, model, and time *(Claude Code only)* |
 | `/commit` | Stage all changes and create a git commit with an appropriate message |
 | `/caveman` | Switch to lite communication mode: drops filler/hedging/pleasantries for the session. Includes commit format, PR review style, file compression, and subagent delegation templates for spawning agents in caveman mode. |
+| `/pr-review <url>` | Review a GitHub pull request: selects relevant reviewers based on changed file types (spawning custom ones for uncovered domains), loads project and user memory, hunts for ripple effects across the codebase, humanizes all findings, then asks which to post, the verdict, and the review body before submitting on your behalf via `gh` CLI |
 
 #### Agents
 
