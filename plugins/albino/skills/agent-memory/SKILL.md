@@ -14,9 +14,9 @@ Two parallel memory systems are available. Both are indexed notes, not authority
 | Question | Action |
 |---|---|
 | What does this user prefer? | `user.brief` or `user.search` |
-| What has been decided in this project? | `memory.project_brief` or `memory.search` |
+| What has been decided in this project? | `project.brief` or `project.search` |
 | Should I store this? | Only if a future agent needs it and it passes the quality rules below |
-| Is this project-specific or cross-project? | Project-specific → `memory.remember`, cross-project → `user.remember` |
+| Is this project-specific or cross-project? | Project-specific → `project.remember`, cross-project → `user.remember` |
 
 ---
 
@@ -45,7 +45,7 @@ Write user memory when you observe something stable and cross-project about the 
 
 Do not write:
 
-- Anything project-specific: use `memory.remember` instead.
+- Anything project-specific: use `project.remember` instead.
 - Secrets, credentials, API keys, or `.env` values.
 - One-off opinions stated in frustration.
 - Temporary task details.
@@ -86,7 +86,7 @@ Every user memory must satisfy all of these:
 **At session end (when something durable was learned):**
 ```
 1. Identify stable facts observed about the user
-2. Check: is this cross-project? (if not, use memory.remember instead)
+2. Check: is this cross-project? (if not, use project.remember instead)
 3. user.remember for each durable fact
 4. Include a clear whyUsefulLater
 5. Optionally: source="agent" or source="user", source_ref=<context>
@@ -108,7 +108,7 @@ Every user memory must satisfy all of these:
 Read project memory before non-trivial work on a codebase:
 
 1. Read `memory://project/current/brief` for conventions, decisions, pitfalls, and recent entries.
-2. Call `memory.search` with task-specific terms: file names, function names, domain concepts, error messages.
+2. Call `project.search` with task-specific terms: file names, function names, domain concepts, error messages.
 3. Use findings to guide investigation: but verify against the actual repo before acting on them.
 
 Memory can be stale. Always confirm what it says against current files, tests, and docs.
@@ -160,15 +160,15 @@ Same rules as user memory:
 
 **At task start:**
 ```
-1. memory.project_brief           → load conventions, decisions, pitfalls
-2. memory.search <task-terms>     → load task-specific context
+1. project.brief           → load conventions, decisions, pitfalls
+2. project.search <task-terms>     → load task-specific context
 3. Verify findings against repo files before acting
 ```
 
 **At task end (when something durable was learned):**
 ```
 1. Identify what would help the next agent on this codebase
-2. memory.remember
+2. project.remember
 3. Include whyUsefulLater: if you cannot explain it, skip it
 4. Optionally: source="agent" or source="user", source_ref=<file path, PR, or test command>
 ```
@@ -176,14 +176,14 @@ Same rules as user memory:
 **When memory is stale or wrong:**
 ```
 1. Repo wins. Memory is a hint.
-2. memory.update to correct content or lower confidence
-3. memory.forget to archive if it no longer applies
+2. project.update to correct content or lower confidence
+3. project.forget to archive if it no longer applies
 4. Preserve useful source references when correcting
 ```
 
 **During memory cleanup (periodic housekeeping):**
 ```
-1. memory.purge <days>  → hard-delete archived project memories older than N days
+1. project.purge <days>  → hard-delete archived project memories older than N days
 2. user.purge <days>    → hard-delete archived user memories older than N days
 3. Audit events are always preserved; only the memory rows are removed
 ```
@@ -192,7 +192,7 @@ Same rules as user memory:
 
 ## Searching Effectively
 
-Both `memory.search` and `user.search` use vector KNN search. Queries and memories are embedded with `BAAI/bge-small-en-v1.5` (384-dimensional), and nearest neighbours are retrieved by cosine distance. This means search finds memories by meaning, not word overlap: "login issue" will surface "authentication problem with tokens" even though the two share no words.
+Both `project.search` and `user.search` use vector KNN search. Queries and memories are embedded with `BAAI/bge-small-en-v1.5` (384-dimensional), and nearest neighbours are retrieved by cosine distance. This means search finds memories by meaning, not word overlap: "login issue" will surface "authentication problem with tokens" even though the two share no words.
 
 **Use specific terms, not generic questions:**
 - Good: `"sqlite fts fallback"`, `"migration project_id backfill"`, `"typescript strict return types"`
@@ -215,13 +215,13 @@ Both `memory.search` and `user.search` use vector KNN search. Queries and memori
 | Situation | Store where |
 |---|---|
 | "This user always prefers functional style" | `user.remember` → `preference` |
-| "This project uses a custom error wrapper" | `memory.remember` → `convention` |
+| "This project uses a custom error wrapper" | `project.remember` → `convention` |
 | "The user is a senior engineer at a fintech" | `user.remember` → `context` |
-| "The auth module must never cache tokens" | `memory.remember` → `decision` |
+| "The auth module must never cache tokens" | `project.remember` → `decision` |
 | "User prefers bullet points in responses" | `user.remember` → `communication` |
-| "sqlite-vec extension requires uv-managed Python on macOS for extension loading" | `memory.remember` → `gotcha` |
+| "sqlite-vec extension requires uv-managed Python on macOS for extension loading" | `project.remember` → `gotcha` |
 | "User uses VS Code with Prettier" | `user.remember` → `tool_preference` |
-| "Run `uv run pytest` before any push in this repo" | `memory.remember` → `workflow` |
+| "Run `uv run pytest` before any push in this repo" | `project.remember` → `workflow` |
 
 When in doubt: if it applies only to this repo, use project memory. If it applies regardless of which repo you are in, use user memory.
 
@@ -233,11 +233,11 @@ The server exposes MCP prompts you can invoke directly to get structured instruc
 
 | Prompt | When to use | Key parameter |
 |---|---|---|
-| `memory_bootstrap` | Before starting a non-trivial task on a codebase | `task` (optional description) |
-| `memory_handoff` | After completing a task to decide what to store | `task_summary`, `tests_run` |
-| `memory_cleanup` | During housekeeping to find and fix stale entries | `topic` (optional focus area) |
-| `user_memory_bootstrap` | At session start to load the user's preferences | none |
-| `user_memory_update` | At session end to store new user knowledge | `session_summary` |
+| `project_bootstrap` | Before starting a non-trivial task on a codebase | `task` (optional description) |
+| `project_handoff` | After completing a task to decide what to store | `task_summary`, `tests_run` |
+| `project_cleanup` | During housekeeping to find and fix stale entries | `topic` (optional focus area) |
+| `user_bootstrap` | At session start to load the user's preferences | none |
+| `user_update` | At session end to store new user knowledge | `session_summary` |
 
 These prompts are shortcuts: they return the same guidance this skill describes, formatted as ready-to-follow instructions.
 

@@ -25,12 +25,12 @@ async def test_exposes_expected_project_tools_resources_prompts(mcp_server):
     prompt_names = {p.name for p in prompts}
 
     assert tool_names == {
-        "memory.remember",
-        "memory.search",
-        "memory.project_brief",
-        "memory.update",
-        "memory.forget",
-        "memory.purge",
+        "project.remember",
+        "project.search",
+        "project.brief",
+        "project.update",
+        "project.forget",
+        "project.purge",
         "user.remember",
         "user.search",
         "user.brief",
@@ -40,18 +40,18 @@ async def test_exposes_expected_project_tools_resources_prompts(mcp_server):
     }
     assert resource_uris == {"memory://project/current/brief", "memory://user/brief"}
     assert {
-        "memory_bootstrap",
-        "memory_handoff",
-        "memory_cleanup",
-        "user_memory_bootstrap",
-        "user_memory_update",
+        "project_bootstrap",
+        "project_handoff",
+        "project_cleanup",
+        "user_bootstrap",
+        "user_update",
     } <= prompt_names
 
 
 async def test_stores_and_retrieves_memory_through_mcp(mcp_server, tmp_dir):
     async with Client(mcp_server) as client:
         remember_result = await client.call_tool(
-            "memory.remember",
+            "project.remember",
             {
                 "project_root": str(tmp_dir),
                 "kind": "decision",
@@ -64,7 +64,7 @@ async def test_stores_and_retrieves_memory_through_mcp(mcp_server, tmp_dir):
         remembered = json.loads(_text(remember_result))
 
         search_result = await client.call_tool(
-            "memory.search",
+            "project.search",
             {
                 "project_root": str(tmp_dir),
                 "query": "protocol coverage",
@@ -82,7 +82,7 @@ async def test_rejects_low_quality_memory_as_error(mcp_server, tmp_dir):
     async with Client(mcp_server) as client:
         with pytest.raises(Exception, match="too short"):
             await client.call_tool(
-                "memory.remember",
+                "project.remember",
                 {
                     "project_root": str(tmp_dir),
                     "kind": "handoff",
@@ -98,7 +98,7 @@ async def test_reads_resource_and_gets_prompt(mcp_server, tmp_dir):
     root = current_project_root()
     async with Client(mcp_server) as client:
         await client.call_tool(
-            "memory.remember",
+            "project.remember",
             {
                 "project_root": root,
                 "kind": "convention",
@@ -109,7 +109,7 @@ async def test_reads_resource_and_gets_prompt(mcp_server, tmp_dir):
             },
         )
         resource = await client.read_resource("memory://project/current/brief")
-        prompt = await client.get_prompt("memory_bootstrap", {"task": "Review project memory coverage"})
+        prompt = await client.get_prompt("project_bootstrap", {"task": "Review project memory coverage"})
 
     resource_text = resource[0].text if resource else ""
     assert "conventions" in resource_text
@@ -212,13 +212,13 @@ async def test_user_forget_archives(mcp_server):
     assert forgotten["deleted"] is False
 
 
-async def test_memory_handoff_and_cleanup_prompts(mcp_server):
+async def test_project_handoff_and_cleanup_prompts(mcp_server):
     async with Client(mcp_server) as client:
         handoff = await client.get_prompt(
-            "memory_handoff",
+            "project_handoff",
             {"task_summary": "Refactored auth module", "tests_run": "pytest tests/"},
         )
-        cleanup = await client.get_prompt("memory_cleanup", {"topic": "auth"})
+        cleanup = await client.get_prompt("project_cleanup", {"topic": "auth"})
 
     handoff_text = handoff.messages[0].content.text if handoff and handoff.messages else ""
     assert "Refactored auth module" in handoff_text
@@ -240,8 +240,8 @@ async def test_reads_user_brief_resource_and_prompts(mcp_server):
             },
         )
         resource = await client.read_resource("memory://user/brief")
-        bootstrap = await client.get_prompt("user_memory_bootstrap", {})
-        update = await client.get_prompt("user_memory_update", {"session_summary": "Helped user refactor auth module."})
+        bootstrap = await client.get_prompt("user_bootstrap", {})
+        update = await client.get_prompt("user_update", {"session_summary": "Helped user refactor auth module."})
 
     brief_text = resource[0].text if resource else ""
     assert "preferences" in brief_text
@@ -253,10 +253,10 @@ async def test_reads_user_brief_resource_and_prompts(mcp_server):
     assert "Helped user refactor auth module" in update_text
 
 
-async def test_memory_update(mcp_server, tmp_dir):
+async def test_project_update(mcp_server, tmp_dir):
     async with Client(mcp_server) as client:
         remember_result = await client.call_tool(
-            "memory.remember",
+            "project.remember",
             {
                 "project_root": str(tmp_dir),
                 "kind": "convention",
@@ -268,7 +268,7 @@ async def test_memory_update(mcp_server, tmp_dir):
         remembered = json.loads(_text(remember_result))
 
         update_result = await client.call_tool(
-            "memory.update",
+            "project.update",
             {
                 "project_root": str(tmp_dir),
                 "id": remembered["id"],
@@ -281,10 +281,10 @@ async def test_memory_update(mcp_server, tmp_dir):
     assert updated["confidence"] == "high"
 
 
-async def test_memory_forget_archives(mcp_server, tmp_dir):
+async def test_project_forget_archives(mcp_server, tmp_dir):
     async with Client(mcp_server) as client:
         remember_result = await client.call_tool(
-            "memory.remember",
+            "project.remember",
             {
                 "project_root": str(tmp_dir),
                 "kind": "gotcha",
@@ -296,7 +296,7 @@ async def test_memory_forget_archives(mcp_server, tmp_dir):
         remembered = json.loads(_text(remember_result))
 
         forget_result = await client.call_tool(
-            "memory.forget",
+            "project.forget",
             {
                 "project_root": str(tmp_dir),
                 "id": remembered["id"],

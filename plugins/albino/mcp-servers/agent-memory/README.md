@@ -88,12 +88,12 @@ Bad project memory:
 
 ### Project Memory Tools
 
-- `memory.remember`: Store durable project memory after quality and secret checks. Requires `why_useful_later`. Idempotent by content: a duplicate raises an error rather than creating a second record.
-- `memory.search`: Vector search project memory with optional kind and tag filters. Supports `offset` for pagination.
-- `memory.project_brief`: Return compact conventions, decisions, pitfalls, and recent memory.
-- `memory.update`: Correct, refine, or archive an existing memory.
-- `memory.forget`: Archive by default or hard-delete when requested.
-- `memory.purge`: Hard-delete archived project memories older than N days to prevent unbounded growth. Audit events are always preserved.
+- `project.remember`: Store durable project memory after quality and secret checks. Requires `why_useful_later`. Idempotent by content: a duplicate raises an error rather than creating a second record.
+- `project.search`: Vector search project memory with optional kind and tag filters. Supports `offset` for pagination.
+- `project.brief`: Return compact conventions, decisions, pitfalls, and recent memory.
+- `project.update`: Correct, refine, or archive an existing memory.
+- `project.forget`: Archive by default or hard-delete when requested.
+- `project.purge`: Hard-delete archived project memories older than N days to prevent unbounded growth. Audit events are always preserved.
 
 ### Project Memory Resources
 
@@ -101,9 +101,9 @@ Bad project memory:
 
 ### Project Memory Prompts
 
-- `memory_bootstrap`: Fetch relevant memory before non-trivial work.
-- `memory_handoff`: Store only durable learnings after a task.
-- `memory_cleanup`: Review stale, contradictory, or low-confidence memory.
+- `project_bootstrap`: Fetch relevant memory before non-trivial work.
+- `project_handoff`: Store only durable learnings after a task.
+- `project_cleanup`: Review stale, contradictory, or low-confidence memory.
 
 ## User Memory
 
@@ -154,8 +154,8 @@ Bad user memory:
 
 ### User Memory Prompts
 
-- `user_memory_bootstrap`: Read user memory at the start of a session.
-- `user_memory_update`: Store durable user-level learnings after a session.
+- `user_bootstrap`: Read user memory at the start of a session.
+- `user_update`: Store durable user-level learnings after a session.
 
 ## Search
 

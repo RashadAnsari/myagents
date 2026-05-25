@@ -51,8 +51,8 @@ def _ser(obj: object) -> str:
 def create_server(project_service: ProjectMemoryService, user_service: UserMemoryService) -> FastMCP:
     mcp = FastMCP("agent-memory")
 
-    @mcp.tool(name="memory.remember")
-    async def memory_remember(
+    @mcp.tool(name="project.remember")
+    async def project_remember(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
         kind: Annotated[MemoryKind, Field(description=_MEMORY_KIND_DESC)],
         content: Annotated[str, Field(description=_CONTENT_DESC)],
@@ -68,7 +68,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         ] = None,
     ) -> dict:
         """Store a durable, reusable fact scoped to this project. Call this after completing work when you learned something non-obvious: a decision with rationale, a convention, an architecture fact, a gotcha, or a recurring bug cause. Rejected if content is too short, vague, or contains secrets. Idempotent by content: a second call with identical content raises MemoryQualityError (reason: 'duplicates'), confirming the memory already exists without creating a duplicate."""
-        _log_tool("memory.remember", project=project_root, kind=kind)
+        _log_tool("project.remember", project=project_root, kind=kind)
         _validate_kind(kind, MEMORY_KINDS, "memory kind")
         _validate_confidence(confidence)
         mem = await project_service.remember(
@@ -84,8 +84,8 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         )
         return dataclasses.asdict(mem)
 
-    @mcp.tool(name="memory.search")
-    async def memory_search(
+    @mcp.tool(name="project.search")
+    async def project_search(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
         query: Annotated[
             str, Field(description="Specific search terms: file names, function names, concepts, or error messages.")
@@ -99,7 +99,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         include_archived: Annotated[bool, Field(description=_INCLUDE_ARCHIVED_DESC)] = False,
     ) -> list:
         """Vector search across project memory. Call this at task start with specific terms: file names, function names, domain concepts, error messages. Do not use generic questions as queries. Returns up to k results ordered by semantic relevance, starting at offset for pagination. Raises RuntimeError if embedding fails."""
-        _log_tool("memory.search", project=project_root, query=query, k=k, offset=offset)
+        _log_tool("project.search", project=project_root, query=query, k=k, offset=offset)
         results = await project_service.search(
             project_root=project_root,
             query=query,
@@ -111,20 +111,20 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         )
         return [dataclasses.asdict(m) for m in results]
 
-    @mcp.tool(name="memory.project_brief")
-    def memory_project_brief(
+    @mcp.tool(name="project.brief")
+    def project_brief(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
         limit_per_category: Annotated[
             int, Field(description="Maximum entries per category. Default 8, max 25.", ge=1, le=25)
         ] = 8,
     ) -> dict:
-        """Return a compact summary of the most important project memory grouped into: conventions (style/preference), decisions (architecture), pitfalls (gotchas/bugs), and most recently updated entries. Read this at the start of every non-trivial task before calling memory.search for specifics. Increase limit_per_category to retrieve more entries per group."""
-        _log_tool("memory.project_brief", project=project_root, limit=limit_per_category)
+        """Return a compact summary of the most important project memory grouped into: conventions (style/preference), decisions (architecture), pitfalls (gotchas/bugs), and most recently updated entries. Read this at the start of every non-trivial task before calling project.search for specifics. Increase limit_per_category to retrieve more entries per group."""
+        _log_tool("project.brief", project=project_root, limit=limit_per_category)
         brief = project_service.project_brief(project_root, limit_per_category=limit_per_category)
         return {k: [dataclasses.asdict(m) for m in v] for k, v in brief.items()}
 
-    @mcp.tool(name="memory.update")
-    async def memory_update(
+    @mcp.tool(name="project.update")
+    async def project_update(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
         id: Annotated[int, Field(description=_ID_DESC)],
         content: Annotated[str | None, Field(description=_CONTENT_DESC)] = None,
@@ -136,7 +136,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         reason: Annotated[str | None, Field(description=_REASON_DESC)] = None,
     ) -> dict:
         """Correct, refine, or soft-delete a project memory record. Use when a stored memory is inaccurate, incomplete, or outdated: the repo always wins over memory. Prefer updating over forgetting when the core fact is still valid but needs correction. Raises MemoryQualityError if updated content contains secrets. Raises ValueError if memory not found."""
-        _log_tool("memory.update", project=project_root, id=id)
+        _log_tool("project.update", project=project_root, id=id)
         if confidence:
             _validate_confidence(confidence)
         updated = await project_service.update(
@@ -152,15 +152,15 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         )
         return dataclasses.asdict(updated)
 
-    @mcp.tool(name="memory.forget")
-    def memory_forget(
+    @mcp.tool(name="project.forget")
+    def project_forget(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
         id: Annotated[int, Field(description=_ID_DESC)],
         hard_delete: Annotated[bool, Field(description=_HARD_DELETE_DESC)] = False,
         reason: Annotated[str | None, Field(description=_REASON_DESC)] = None,
     ) -> dict:
         """Soft-delete a project memory so it no longer appears in search results. Default is archive (reversible); set hard_delete: true only when the user explicitly requests permanent removal. A project-scoped audit event is always kept. Raises ValueError if memory not found."""
-        _log_tool("memory.forget", project=project_root, id=id, hard_delete=hard_delete)
+        _log_tool("project.forget", project=project_root, id=id, hard_delete=hard_delete)
         return project_service.forget(project_root, id, hard_delete=hard_delete, reason=reason)
 
     @mcp.tool(name="user.remember")
@@ -264,15 +264,15 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         _log_tool("user.forget", id=id, hard_delete=hard_delete)
         return user_service.forget(id, hard_delete=hard_delete, reason=reason)
 
-    @mcp.tool(name="memory.purge")
-    def memory_purge(
+    @mcp.tool(name="project.purge")
+    def project_purge(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
         days: Annotated[
             int, Field(description="Permanently delete archived memories older than this many days.", ge=1)
         ] = 90,
     ) -> dict:
         """Hard-delete archived project memories older than 'days' to prevent unbounded table growth. Safe to call during memory cleanup sessions. Audit events are always preserved. Returns count of records permanently removed."""
-        _log_tool("memory.purge", project=project_root, days=days)
+        _log_tool("project.purge", project=project_root, days=days)
         count = project_service.purge_archived(project_root, days)
         return {"purged": count}
 
@@ -306,10 +306,10 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         return _ser({k: [dataclasses.asdict(m) for m in v] for k, v in brief.items()})
 
     @mcp.prompt(
-        name="memory_bootstrap",
+        name="project_bootstrap",
         description="Instructs the agent to read project memory before starting a task so it has relevant conventions, decisions, and pitfalls loaded before making any changes.",
     )
-    def _prompt_memory_bootstrap(task: str | None = None) -> str:
+    def _prompt_project_bootstrap(task: str | None = None) -> str:
         lines = [
             "Before planning this task, read memory://project/current/brief and search project memory for task-specific terms.",
             "Treat memory as indexed notes, not authority. Current user instructions, repo files, tests, and official docs override memory.",
@@ -319,10 +319,10 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         return "\n".join(lines)
 
     @mcp.prompt(
-        name="memory_handoff",
+        name="project_handoff",
         description="Instructs the agent to review what was learned during a task and store only durable, reusable project knowledge: not task status or command output.",
     )
-    def _prompt_memory_handoff(task_summary: str = "", tests_run: str | None = None) -> str:
+    def _prompt_project_handoff(task_summary: str = "", tests_run: str | None = None) -> str:
         lines = [
             "Decide whether this task produced durable project knowledge worth storing.",
             "Store only reusable decisions, conventions, gotchas, preferences, architecture facts, or recurring bug causes.",
@@ -334,10 +334,10 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         return "\n".join(lines)
 
     @mcp.prompt(
-        name="memory_cleanup",
+        name="project_cleanup",
         description="Instructs the agent to audit project memory for stale, contradictory, or low-confidence entries and update or archive them after verifying against current repo files.",
     )
-    def _prompt_memory_cleanup(topic: str | None = None) -> str:
+    def _prompt_project_cleanup(topic: str | None = None) -> str:
         lines = [
             "Search project memory for stale, contradictory, low-confidence, or no-longer-useful entries.",
             "Verify against current repo files before updating or archiving memory.",
@@ -347,10 +347,10 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         return "\n".join(lines)
 
     @mcp.prompt(
-        name="user_memory_bootstrap",
+        name="user_bootstrap",
         description="Instructs the agent to read user memory before starting work so it can apply the user's preferences, behaviors, and context throughout the session.",
     )
-    def _prompt_user_memory_bootstrap() -> str:
+    def _prompt_user_bootstrap() -> str:
         return "\n".join(
             [
                 "Before starting work, read memory://user/brief to understand the user's preferences, behaviors, and context.",
@@ -360,10 +360,10 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         )
 
     @mcp.prompt(
-        name="user_memory_update",
+        name="user_update",
         description="Instructs the agent to review the session for durable cross-project facts about the user and store them with user.remember.",
     )
-    def _prompt_user_memory_update(session_summary: str | None = None) -> str:
+    def _prompt_user_update(session_summary: str | None = None) -> str:
         lines = [
             "Decide whether this session revealed durable knowledge about the user worth storing globally.",
             "Store only stable facts: consistent preferences, recurring behaviors, background context, tool choices, or communication style.",
