@@ -10,7 +10,9 @@ Rules for all agents and subagents working in this repository.
 
 **`plugins/albino/commands/reviewcrew.md`**: add the new agent to the "Spawn All Reviewers in Parallel" list (Step 1) and add its corresponding section to the report structure (Step 3).
 
-**Failure to update this file when adding a review agent is a violation of this rule.**
+**`plugins/albino/commands/pr-review.md`**: add the new agent to the predefined reviewer list in Step 4 ("Select Relevant Reviewers"), including the detection rule that determines when it should be included based on changed file types or paths. If the agent is always relevant regardless of file type, add it to the "Always include" list.
+
+**Failure to update both files when adding a review agent is a violation of this rule.**
 
 Review agents are any agent file whose name ends in `-reviewer.md` inside `plugins/albino/agents/`.
 
