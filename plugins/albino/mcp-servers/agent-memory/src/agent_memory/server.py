@@ -1,5 +1,4 @@
 import dataclasses
-import json
 import logging
 from typing import Annotated
 
@@ -7,7 +6,6 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from .memory_service import ProjectMemoryService, UserMemoryService
-from .paths import current_project_root
 from .types import CONFIDENCE_VALUES, MEMORY_KINDS, USER_MEMORY_KINDS, Confidence, MemoryKind, UserMemoryKind
 
 logger = logging.getLogger(__name__)
@@ -37,15 +35,6 @@ _ID_DESC = "Numeric id of the memory record."
 def _log_tool(name: str, **context: object) -> None:
     parts = " ".join(f"{k}={v!r}" for k, v in context.items())
     logger.debug("tool %s %s", name, parts)
-
-
-def _ser(obj: object) -> str:
-    def _default(o: object) -> object:
-        if dataclasses.is_dataclass(o) and not isinstance(o, type):
-            return dataclasses.asdict(o)
-        raise TypeError(f"Object of type {type(o).__name__} is not JSON serializable")
-
-    return json.dumps(obj, default=_default)
 
 
 def create_server(project_service: ProjectMemoryService, user_service: UserMemoryService) -> FastMCP:
@@ -163,6 +152,18 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         _log_tool("project.forget", project=project_root, id=id, hard_delete=hard_delete)
         return project_service.forget(project_root, id, hard_delete=hard_delete, reason=reason)
 
+    @mcp.tool(name="project.purge")
+    def project_purge(
+        project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
+        days: Annotated[
+            int, Field(description="Permanently delete archived memories older than this many days.", ge=1)
+        ] = 90,
+    ) -> dict:
+        """Hard-delete archived project memories older than 'days' to prevent unbounded table growth. Safe to call during memory cleanup sessions. Audit events are always preserved. Returns count of records permanently removed."""
+        _log_tool("project.purge", project=project_root, days=days)
+        count = project_service.purge_archived(project_root, days)
+        return {"purged": count}
+
     @mcp.tool(name="user.remember")
     async def user_remember(
         kind: Annotated[UserMemoryKind, Field(description=_USER_MEMORY_KIND_DESC)],
@@ -264,18 +265,6 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         _log_tool("user.forget", id=id, hard_delete=hard_delete)
         return user_service.forget(id, hard_delete=hard_delete, reason=reason)
 
-    @mcp.tool(name="project.purge")
-    def project_purge(
-        project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
-        days: Annotated[
-            int, Field(description="Permanently delete archived memories older than this many days.", ge=1)
-        ] = 90,
-    ) -> dict:
-        """Hard-delete archived project memories older than 'days' to prevent unbounded table growth. Safe to call during memory cleanup sessions. Audit events are always preserved. Returns count of records permanently removed."""
-        _log_tool("project.purge", project=project_root, days=days)
-        count = project_service.purge_archived(project_root, days)
-        return {"purged": count}
-
     @mcp.tool(name="user.purge")
     def user_purge(
         days: Annotated[
@@ -286,92 +275,6 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         _log_tool("user.purge", days=days)
         count = user_service.purge_archived(days)
         return {"purged": count}
-
-    @mcp.resource(
-        "memory://project/current/brief",
-        description="All active project memory grouped into conventions, decisions, pitfalls, and 8 most recently updated entries. Read this at task start before searching for specifics.",
-        mime_type="application/json",
-    )
-    def _res_project_brief() -> str:
-        brief = project_service.project_brief(current_project_root())
-        return _ser({k: [dataclasses.asdict(m) for m in v] for k, v in brief.items()})
-
-    @mcp.resource(
-        "memory://user/brief",
-        description="All active user memory grouped into preferences, behaviors, context, and 8 most recent entries. Read this at session start to understand the user before doing any work.",
-        mime_type="application/json",
-    )
-    def _res_user_brief() -> str:
-        brief = user_service.brief()
-        return _ser({k: [dataclasses.asdict(m) for m in v] for k, v in brief.items()})
-
-    @mcp.prompt(
-        name="project_bootstrap",
-        description="Instructs the agent to read project memory before starting a task so it has relevant conventions, decisions, and pitfalls loaded before making any changes.",
-    )
-    def _prompt_project_bootstrap(task: str | None = None) -> str:
-        lines = [
-            "Before planning this task, read memory://project/current/brief and search project memory for task-specific terms.",
-            "Treat memory as indexed notes, not authority. Current user instructions, repo files, tests, and official docs override memory.",
-        ]
-        if task:
-            lines.append(f"Task: {task}")
-        return "\n".join(lines)
-
-    @mcp.prompt(
-        name="project_handoff",
-        description="Instructs the agent to review what was learned during a task and store only durable, reusable project knowledge: not task status or command output.",
-    )
-    def _prompt_project_handoff(task_summary: str = "", tests_run: str | None = None) -> str:
-        lines = [
-            "Decide whether this task produced durable project knowledge worth storing.",
-            "Store only reusable decisions, conventions, gotchas, preferences, architecture facts, or recurring bug causes.",
-            "Do not store secrets, command output, one-off task status, or facts obvious from current files without added interpretation.",
-            f"Task summary: {task_summary}",
-        ]
-        if tests_run:
-            lines.append(f"Tests run: {tests_run}")
-        return "\n".join(lines)
-
-    @mcp.prompt(
-        name="project_cleanup",
-        description="Instructs the agent to audit project memory for stale, contradictory, or low-confidence entries and update or archive them after verifying against current repo files.",
-    )
-    def _prompt_project_cleanup(topic: str | None = None) -> str:
-        lines = [
-            "Search project memory for stale, contradictory, low-confidence, or no-longer-useful entries.",
-            "Verify against current repo files before updating or archiving memory.",
-        ]
-        if topic:
-            lines.append(f"Topic: {topic}")
-        return "\n".join(lines)
-
-    @mcp.prompt(
-        name="user_bootstrap",
-        description="Instructs the agent to read user memory before starting work so it can apply the user's preferences, behaviors, and context throughout the session.",
-    )
-    def _prompt_user_bootstrap() -> str:
-        return "\n".join(
-            [
-                "Before starting work, read memory://user/brief to understand the user's preferences, behaviors, and context.",
-                "Apply this knowledge throughout the session: respect stated preferences, adapt to known workflows, and avoid patterns the user dislikes.",
-                "User memory is a guide, not a constraint: current instructions always take precedence.",
-            ]
-        )
-
-    @mcp.prompt(
-        name="user_update",
-        description="Instructs the agent to review the session for durable cross-project facts about the user and store them with user.remember.",
-    )
-    def _prompt_user_update(session_summary: str | None = None) -> str:
-        lines = [
-            "Decide whether this session revealed durable knowledge about the user worth storing globally.",
-            "Store only stable facts: consistent preferences, recurring behaviors, background context, tool choices, or communication style.",
-            "Do not store: secrets, one-off task details, temporary opinions, or facts specific to a single project.",
-        ]
-        if session_summary:
-            lines.append(f"Session summary: {session_summary}")
-        return "\n".join(lines)
 
     return mcp
 

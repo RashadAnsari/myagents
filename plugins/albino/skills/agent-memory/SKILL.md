@@ -26,7 +26,7 @@ Two parallel memory systems are available. Both are indexed notes, not authority
 
 Read user memory at the start of every non-trivial session:
 
-1. Read `memory://user/brief` for the full picture: preferences, behaviors, context, and communication style.
+1. Call `user.brief` for the full picture: preferences, behaviors, context, and communication style.
 2. Call `user.search` with domain terms relevant to the current task (e.g. `"typescript"`, `"git workflow"`, `"testing"`).
 3. Apply what you find throughout the session without being asked: this is the point of having it.
 
@@ -107,7 +107,7 @@ Every user memory must satisfy all of these:
 
 Read project memory before non-trivial work on a codebase:
 
-1. Read `memory://project/current/brief` for conventions, decisions, pitfalls, and recent entries.
+1. Call `project.brief` for conventions, decisions, pitfalls, and recent entries.
 2. Call `project.search` with task-specific terms: file names, function names, domain concepts, error messages.
 3. Use findings to guide investigation: but verify against the actual repo before acting on them.
 
@@ -224,22 +224,6 @@ Both `project.search` and `user.search` use vector KNN search. Queries and memor
 | "Run `uv run pytest` before any push in this repo" | `project.remember` → `workflow` |
 
 When in doubt: if it applies only to this repo, use project memory. If it applies regardless of which repo you are in, use user memory.
-
----
-
-## Prompts
-
-The server exposes MCP prompts you can invoke directly to get structured instructions injected into a task. Use these when you want the memory workflow spelled out explicitly rather than relying on the skill prose.
-
-| Prompt | When to use | Key parameter |
-|---|---|---|
-| `project_bootstrap` | Before starting a non-trivial task on a codebase | `task` (optional description) |
-| `project_handoff` | After completing a task to decide what to store | `task_summary`, `tests_run` |
-| `project_cleanup` | During housekeeping to find and fix stale entries | `topic` (optional focus area) |
-| `user_bootstrap` | At session start to load the user's preferences | none |
-| `user_update` | At session end to store new user knowledge | `session_summary` |
-
-These prompts are shortcuts: they return the same guidance this skill describes, formatted as ready-to-follow instructions.
 
 ---
 

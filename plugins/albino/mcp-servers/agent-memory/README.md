@@ -95,16 +95,6 @@ Bad project memory:
 - `project.forget`: Archive by default or hard-delete when requested.
 - `project.purge`: Hard-delete archived project memories older than N days to prevent unbounded growth. Audit events are always preserved.
 
-### Project Memory Resources
-
-- `memory://project/current/brief`: Conventions, decisions, pitfalls, and recent memory.
-
-### Project Memory Prompts
-
-- `project_bootstrap`: Fetch relevant memory before non-trivial work.
-- `project_handoff`: Store only durable learnings after a task.
-- `project_cleanup`: Review stale, contradictory, or low-confidence memory.
-
 ## User Memory
 
 User memory is global: it is not scoped to any project. It stores stable facts about the person you are working with so agents can apply them across all sessions and repositories.
@@ -147,15 +137,6 @@ Bad user memory:
 - `user.update`: Correct, refine, or archive an existing user memory.
 - `user.forget`: Archive by default or hard-delete when requested.
 - `user.purge`: Hard-delete archived user memories older than N days to prevent unbounded growth. Audit events are always preserved.
-
-### User Memory Resources
-
-- `memory://user/brief`: All four categories of user memory.
-
-### User Memory Prompts
-
-- `user_bootstrap`: Read user memory at the start of a session.
-- `user_update`: Store durable user-level learnings after a session.
 
 ## Search
 
