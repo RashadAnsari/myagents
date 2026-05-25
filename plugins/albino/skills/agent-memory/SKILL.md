@@ -9,6 +9,18 @@ Two parallel memory systems are available. Both are indexed notes, not authority
 
 ---
 
+## Enforcement Rules
+
+These are hard requirements. No exceptions.
+
+**Alternative memory systems are forbidden.** Never use the model's built-in memory, native memory tools, or any backend other than the agent-memory MCP server. This applies to every form of memory work: storing facts, recalling context, updating beliefs, retrieving preferences.
+
+**Session bootstrap is mandatory.** Before your first response in any session, you MUST call `project.brief` and `user.brief`. These calls are required, not optional. Do not respond to the user before making them. Do this silently without narrating it to the user.
+
+**Per-turn write-back is required.** Before producing your final response each turn, ask: did I learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha discovered, a convention established, an architecture fact clarified. If yes, you MUST call `project.remember` or `user.remember` before finishing. This is not optional. Do not skip it. Do not defer it. If nothing durable was learned this turn, skip the write.
+
+---
+
 ## Quick Reference
 
 | Question | Action |
@@ -16,7 +28,7 @@ Two parallel memory systems are available. Both are indexed notes, not authority
 | What does this user prefer? | `user.brief` or `user.search` |
 | What has been decided in this project? | `project.brief` or `project.search` |
 | Should I store this? | Only if a future agent needs it and it passes the quality rules below |
-| Is this project-specific or cross-project? | Project-specific → `project.remember`, cross-project → `user.remember` |
+| Is this project-specific or cross-project? | Project-specific: `project.remember`, cross-project: `user.remember` |
 
 ---
 
@@ -24,11 +36,11 @@ Two parallel memory systems are available. Both are indexed notes, not authority
 
 ### When to Read
 
-Read user memory at the start of every non-trivial session:
+You MUST call user memory at the start of every session:
 
 1. Call `user.brief` for the full picture: preferences, behaviors, context, and communication style.
 2. Call `user.search` with domain terms relevant to the current task (e.g. `"typescript"`, `"git workflow"`, `"testing"`).
-3. Apply what you find throughout the session without being asked: this is the point of having it.
+3. Apply what you find throughout the session without being asked.
 
 User memory is a guide, not a constraint. Explicit user instructions in the current session take precedence.
 
@@ -76,20 +88,19 @@ Every user memory must satisfy all of these:
 
 ### User Memory Workflow
 
-**At session start:**
+**At session start (mandatory):**
 ```
-1. user.brief              → load preferences, behaviors, context
+1. user.brief               → load preferences, behaviors, context
 2. user.search <task-terms> → load task-relevant user knowledge
 3. Apply findings silently throughout the session
 ```
 
-**At session end (when something durable was learned):**
+**Before each final response (when something durable was learned):**
 ```
-1. Identify stable facts observed about the user
-2. Check: is this cross-project? (if not, use project.remember instead)
-3. user.remember for each durable fact
-4. Include a clear whyUsefulLater
-5. Optionally: source="agent" or source="user", source_ref=<context>
+Durable = decision, preference, gotcha, convention, architecture fact, behavior pattern
+1. user.remember for each durable cross-project fact
+2. Include a clear whyUsefulLater
+3. source="agent" or source="user", source_ref=<context>
 ```
 
 **When user memory conflicts with observed behavior:**
@@ -105,11 +116,11 @@ Every user memory must satisfy all of these:
 
 ### When to Read
 
-Read project memory before non-trivial work on a codebase:
+You MUST call project memory before any work on a codebase:
 
 1. Call `project.brief` for conventions, decisions, pitfalls, and recent entries.
 2. Call `project.search` with task-specific terms: file names, function names, domain concepts, error messages.
-3. Use findings to guide investigation: but verify against the actual repo before acting on them.
+3. Verify findings against the actual repo before acting on them.
 
 Memory can be stale. Always confirm what it says against current files, tests, and docs.
 
@@ -136,16 +147,16 @@ Do not write:
 
 | Kind | What it captures | Example |
 |---|---|---|
-| `decision` | Architectural or design decisions with rationale | "Chose SQLite over Postgres because the tool is local-first and single-user." |
-| `convention` | Naming, style, or structure rules | "All MCP tool handlers must call `jsonResult()` for consistent response format." |
-| `architecture` | Module boundaries, data flow, key relationships | "The store layer owns all SQL; the service layer handles validation and business logic." |
-| `workflow` | Non-obvious build, test, or deploy steps | "Run `uv sync` before tests; the lockfile must not change." |
-| `preference` | User preferences specific to this project | "User wants all new files to use named exports, never default exports." |
-| `gotcha` | Surprising behavior or traps | "sqlite-vec must be loaded before any DDL runs; loading after table creation silently skips vector indexing." |
-| `bug` | Root causes of recurring issues | "WAL files cause read contention when the db is opened twice in the same process." |
-| `dependency` | Constraint or quirk of a library or tool | "Zod v4 changed `.optional()` chaining semantics; do not upgrade without testing." |
-| `testing` | Test patterns or required coverage | "Integration tests use InMemoryTransport; never use real stdio in tests." |
-| `handoff` | End-of-task learnings for the next agent | "Switched memory search to vector-only (KNN via sqlite-vec); removed the FTS fallback entirely." |
+| `decision` | Architectural or design decisions with rationale | "Chose REST over GraphQL because the client team is familiar with REST and the API surface is small and stable." |
+| `convention` | Naming, style, or structure rules | "All API error responses must include a `code` field with a machine-readable string; never return just an HTTP status." |
+| `architecture` | Module boundaries, data flow, key relationships | "Business logic lives in `src/services/`; `src/api/` only handles request parsing and response formatting. Never put DB calls in API handlers." |
+| `workflow` | Non-obvious build, test, or deploy steps | "Run `npm run db:migrate` before running tests locally; the test suite does not auto-migrate." |
+| `preference` | User preferences specific to this project | "User wants all new React components in `src/components/` as named exports, never default exports." |
+| `gotcha` | Surprising behavior or traps | "Prisma `findUnique` silently returns null instead of throwing when a record is not found; always check the return value." |
+| `bug` | Root causes of recurring issues | "The date picker breaks on Safari when the locale prop is omitted; always pass an explicit locale." |
+| `dependency` | Constraint or quirk of a library or tool | "Day.js `isBetween` plugin must be explicitly imported and registered before use; it is not included by default." |
+| `testing` | Test patterns or required coverage | "E2E tests must call `resetDb()` before each test; the suite shares a database and is order-dependent without it." |
+| `handoff` | End-of-task learnings for the next agent | "Migrated auth from JWT in localStorage to httpOnly cookies; old JWT validation code removed from `src/middleware/auth.ts`." |
 
 ### Quality Rules for Project Memory
 
@@ -158,19 +169,19 @@ Same rules as user memory:
 
 ### Project Memory Workflow
 
-**At task start:**
+**At task start (mandatory):**
 ```
-1. project.brief           → load conventions, decisions, pitfalls
-2. project.search <task-terms>     → load task-specific context
+1. project.brief               → load conventions, decisions, pitfalls
+2. project.search <task-terms> → load task-specific context
 3. Verify findings against repo files before acting
 ```
 
-**At task end (when something durable was learned):**
+**Before each final response (when something durable was learned):**
 ```
-1. Identify what would help the next agent on this codebase
-2. project.remember
-3. Include whyUsefulLater: if you cannot explain it, skip it
-4. Optionally: source="agent" or source="user", source_ref=<file path, PR, or test command>
+Durable = decision, convention, architecture fact, gotcha, workflow step, dependency quirk
+1. project.remember for each durable repo-scoped fact
+2. Include whyUsefulLater: if you cannot explain it, skip it
+3. source="agent" or source="user", source_ref=<file path, PR, or test command>
 ```
 
 **When memory is stale or wrong:**
@@ -183,7 +194,7 @@ Same rules as user memory:
 
 **During memory cleanup (periodic housekeeping):**
 ```
-1. project.purge <days>  → hard-delete archived project memories older than N days
+1. project.purge <days> → hard-delete archived project memories older than N days
 2. user.purge <days>    → hard-delete archived user memories older than N days
 3. Audit events are always preserved; only the memory rows are removed
 ```
@@ -219,7 +230,7 @@ Both `project.search` and `user.search` use vector KNN search. Queries and memor
 | "The user is a senior engineer at a fintech" | `user.remember` → `context` |
 | "The auth module must never cache tokens" | `project.remember` → `decision` |
 | "User prefers bullet points in responses" | `user.remember` → `communication` |
-| "sqlite-vec extension requires uv-managed Python on macOS for extension loading" | `project.remember` → `gotcha` |
+| "The payment webhook silently drops events when the queue is full instead of erroring" | `project.remember` → `gotcha` |
 | "User uses VS Code with Prettier" | `user.remember` → `tool_preference` |
 | "Run `uv run pytest` before any push in this repo" | `project.remember` → `workflow` |
 
