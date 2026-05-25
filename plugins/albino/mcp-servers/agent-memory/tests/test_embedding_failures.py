@@ -30,7 +30,7 @@ _USER_WHY = "Agents need this to verify user memory DB stays clean when the embe
 
 
 async def test_project_remember_leaves_db_clean_on_embed_error(svc, bare_store, tmp_path):
-    with patch("agent_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
+    with patch("agent_memory.memory_service.embed_one", new=AsyncMock(side_effect=RuntimeError("model down"))):
         with pytest.raises(RuntimeError, match="model down"):
             await svc.remember(
                 project_root=str(tmp_path),
@@ -44,7 +44,10 @@ async def test_project_remember_leaves_db_clean_on_embed_error(svc, bare_store, 
 
 
 async def test_project_remember_raises_on_empty_embed(svc, tmp_path):
-    with patch("agent_memory.memory_service.embed", new=AsyncMock(return_value=[])):
+    with patch(
+        "agent_memory.memory_service.embed_one",
+        new=AsyncMock(side_effect=RuntimeError("Embedding returned empty result.")),
+    ):
         with pytest.raises(RuntimeError, match="empty result"):
             await svc.remember(
                 project_root=str(tmp_path),
@@ -55,7 +58,7 @@ async def test_project_remember_raises_on_empty_embed(svc, tmp_path):
 
 
 async def test_user_remember_leaves_db_clean_on_embed_error(user_svc, bare_store):
-    with patch("agent_memory.memory_service.embed", new=AsyncMock(side_effect=RuntimeError("model down"))):
+    with patch("agent_memory.memory_service.embed_one", new=AsyncMock(side_effect=RuntimeError("model down"))):
         with pytest.raises(RuntimeError, match="model down"):
             await user_svc.remember(
                 kind="preference",
@@ -68,7 +71,10 @@ async def test_user_remember_leaves_db_clean_on_embed_error(user_svc, bare_store
 
 
 async def test_user_remember_raises_on_empty_embed(user_svc):
-    with patch("agent_memory.memory_service.embed", new=AsyncMock(return_value=[])):
+    with patch(
+        "agent_memory.memory_service.embed_one",
+        new=AsyncMock(side_effect=RuntimeError("Embedding returned empty result.")),
+    ):
         with pytest.raises(RuntimeError, match="empty result"):
             await user_svc.remember(
                 kind="preference",

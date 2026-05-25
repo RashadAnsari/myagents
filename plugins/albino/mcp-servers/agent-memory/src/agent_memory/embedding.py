@@ -31,6 +31,13 @@ async def embed(texts: list[str]) -> list[list[float]]:
     return await asyncio.to_thread(embed_sync, texts)
 
 
+async def embed_one(text: str) -> list[float]:
+    results = await embed([text])
+    if not results:
+        raise RuntimeError("Embedding returned empty result.")
+    return results[0]
+
+
 def memory_embed_text(content: str, summary: str | None, tags: list[str]) -> str:
     parts = [content]
     if summary:

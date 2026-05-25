@@ -3,7 +3,7 @@ import re
 from datetime import UTC, datetime, timedelta
 
 from .db import AgentMemoryStore, pack_vector
-from .embedding import embed, memory_embed_text
+from .embedding import embed_one, memory_embed_text
 from .quality import evaluate_memory_quality, evaluate_user_memory_quality, looks_like_secret
 from .types import (
     Confidence,
@@ -71,9 +71,7 @@ class ProjectMemoryService:
         cleaned_summary = _clean_optional(summary)
 
         text = memory_embed_text(cleaned_content, cleaned_summary, normalized_tags)
-        vectors = await embed([text])
-        if not vectors:
-            raise RuntimeError("Embedding returned empty result.")
+        vector = await embed_one(text)
 
         return self._store.create_memory(
             project_id=project.id,
@@ -85,7 +83,7 @@ class ProjectMemoryService:
             confidence=confidence,
             source=_clean_optional(source),
             source_ref=_clean_optional(source_ref),
-            vector=vectors[0],
+            vector=vector,
         )
 
     async def search(
@@ -105,10 +103,7 @@ class ProjectMemoryService:
         limit = _clamp(k, 1, 25)
         skip = _clamp(offset, 0, 100)
 
-        vectors = await embed([query])
-        if not vectors:
-            raise RuntimeError("Embedding returned empty result.")
-        query_vector = pack_vector(vectors[0])
+        query_vector = pack_vector(await embed_one(query))
 
         return self._store.search_memories(
             project_id=project.id,
@@ -167,10 +162,7 @@ class ProjectMemoryService:
             summary_for_embed = _clean_optional(summary) if summary is not None else memory.summary
             tags_for_embed = _normalize_tags(tags) if tags is not None else memory.tags
             text = memory_embed_text(content_for_embed, summary_for_embed, tags_for_embed)
-            vectors = await embed([text])
-            if not vectors:
-                raise RuntimeError("Embedding returned empty result.")
-            vector = vectors[0]
+            vector = await embed_one(text)
 
         return self._store.update_memory(
             memory_id=memory_id,
@@ -229,9 +221,7 @@ class UserMemoryService:
         cleaned_summary = _clean_optional(summary)
 
         text = memory_embed_text(cleaned_content, cleaned_summary, normalized_tags)
-        vectors = await embed([text])
-        if not vectors:
-            raise RuntimeError("Embedding returned empty result.")
+        vector = await embed_one(text)
 
         return self._store.create_user_memory(
             kind=kind,
@@ -242,7 +232,7 @@ class UserMemoryService:
             confidence=confidence,
             source=_clean_optional(source),
             source_ref=_clean_optional(source_ref),
-            vector=vectors[0],
+            vector=vector,
         )
 
     async def search(
@@ -257,10 +247,7 @@ class UserMemoryService:
         limit = _clamp(k, 1, 25)
         skip = _clamp(offset, 0, 100)
 
-        vectors = await embed([query])
-        if not vectors:
-            raise RuntimeError("Embedding returned empty result.")
-        query_vector = pack_vector(vectors[0])
+        query_vector = pack_vector(await embed_one(query))
 
         return self._store.search_user_memories(
             query_vector=query_vector,
@@ -304,10 +291,7 @@ class UserMemoryService:
             summary_for_embed = _clean_optional(summary) if summary is not None else memory.summary
             tags_for_embed = _normalize_tags(tags) if tags is not None else memory.tags
             text = memory_embed_text(content_for_embed, summary_for_embed, tags_for_embed)
-            vectors = await embed([text])
-            if not vectors:
-                raise RuntimeError("Embedding returned empty result.")
-            vector = vectors[0]
+            vector = await embed_one(text)
 
         return self._store.update_user_memory(
             memory_id=memory_id,
