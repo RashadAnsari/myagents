@@ -234,13 +234,11 @@ If findings remain after scoring, print the full numbered list to chat. If none 
   - "Approve"
   - "Comment only"
 
-**Question 3**: "Review body? Pick an option, or type your own text in Other."
+**Question 3**: "Review body? Type your own text in Other, or leave empty."
 - Options:
   - "Leave empty" — no top-level comment, only inline comments
-  - "Write it for me" — auto-generate a short summary
 
   If the user types in Other, use their text verbatim as the review body with no modifications.
-  If the user picks "Write it for me", write a short 1-3 sentence summary in plain human language. If there are findings, cover the main themes. If there are none, write a brief clean-bill statement. No bullet points, no severity tags, no AI vocabulary. Apply the humanizer skill.
   If the user picks "Leave empty", set the body to an empty string.
 
 If the user picks "Comment only" for Question 2 and "Leave empty" for Question 3 (and there are no findings or they chose "Post none"), confirm there will be nothing posted and stop.
@@ -248,8 +246,7 @@ If the user picks "Comment only" for Question 2 and "Leave empty" for Question 3
 ## Step 8: Post the Review
 
 Use the review body from Question 3 in Step 7 exactly as determined:
-- User wrote it: use their text verbatim
-- "Write it for me": a short human-written summary you generated from the findings
+- User typed in Other: use their text verbatim
 - "Leave empty": empty string
 
 GitHub allows an empty review body, so empty string is valid.
