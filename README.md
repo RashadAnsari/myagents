@@ -48,7 +48,7 @@ Slash commands available in Claude Code and Cursor sessions.
 | `/reportloop` | Walk through every issue in `REVIEW_REPORT.md` interactively: explain, fix, or skip one by one |
 | `/statusline` | Configure the Claude Code statusline: shows git branch, current directory, model, and time (Claude Code only) |
 | `/commit` | Stage all changes and create a git commit with an appropriate message |
-| `/caveman` | Switch to lite communication mode: drops filler, hedging, and pleasantries for the session. Includes commit format, PR review style, file compression, and subagent delegation templates |
+| `/caveman` | Kill verbosity for the session: drops filler, hedging, and pleasantries. Injects a brevity prefix into all spawned subagent prompts to keep tool results small |
 | `/pr-review <url>` | Review a GitHub pull request: selects relevant reviewers, loads project and user memory, hunts for ripple effects, humanizes findings, then asks which to post before submitting via `gh` |
 
 #### Agents
