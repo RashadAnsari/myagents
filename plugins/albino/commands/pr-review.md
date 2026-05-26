@@ -11,7 +11,7 @@ MANDATORY: Read the humanizer skill at `plugins/albino/skills/humanizer/SKILL.md
 
 Review the GitHub pull request: $ARGUMENTS
 
-## Step 0: Validate Input
+## Step 1: Validate Input
 
 If `$ARGUMENTS` is empty or missing, stop immediately and tell the user:
 ```
@@ -21,7 +21,7 @@ Example: /pr-review https://github.com/owner/repo/pull/123
 
 Parse `owner`, `repo`, and `number` from `$ARGUMENTS` now (URL format: `https://github.com/{owner}/{repo}/pull/{number}`). If the URL does not match this format, stop and show the usage message above.
 
-## Step 1: Pre-Review Gate
+## Step 2: Pre-Review Gate
 
 Run both in parallel:
 
@@ -39,7 +39,7 @@ Stop immediately with a clear message if any condition is true:
 - `author.login` ends in `[bot]` or is one of: `dependabot`, `renovate`, `snyk-bot`, `github-actions`
 - The authenticated user's login already appears in the reviews list (run `gh api user --jq '.login'` to get it if needed)
 
-## Step 2: Fetch PR Data
+## Step 3: Fetch PR Data
 
 Run all three in parallel:
 
@@ -63,7 +63,7 @@ Store:
 - `PR_DIFF`: full diff text from the third command
 - `HEAD_SHA`: value of `headRefOid` from `PR_META`
 
-## Step 3: Load Context
+## Step 4: Load Context
 
 Run both in parallel:
 
@@ -72,7 +72,7 @@ Run both in parallel:
 
 Combine into `PROJECT_CONTEXT`: a compact summary of active conventions, known decisions, and pitfalls that reviewers must apply.
 
-## Step 4: Select Relevant Reviewers
+## Step 5: Select Relevant Reviewers
 
 Analyze `CHANGED_FILES` and apply the rules below to build the list of reviewers to spawn. Log which reviewers were selected and why before spawning.
 
@@ -110,9 +110,9 @@ Analyze `CHANGED_FILES` and apply the rules below to build the list of reviewers
 
 When spawning a custom reviewer, write a focused system prompt for it that describes its area of expertise and what to look for, then apply the same instructions and output format as all other reviewers.
 
-## Step 5: Spawn Selected Reviewers in Parallel
+## Step 6: Spawn Selected Reviewers in Parallel
 
-Spawn all selected reviewers simultaneously, including any custom ones decided in Step 4. Do not wait for one before starting the next.
+Spawn all selected reviewers simultaneously, including any custom ones decided in Step 5. Do not wait for one before starting the next.
 
 **Model assignment per reviewer:**
 - `security-reviewer`, `architecture-reviewer`, `code-reviewer`: use **Opus**
@@ -169,7 +169,7 @@ The `history-reviewer` has a different task from the other reviewers. Its job is
 
 Output a finding only when history reveals a real problem: e.g., a line being reverted to a version that was previously removed for a known reason, or a pattern being re-introduced that was explicitly cleaned up before. Use the same output format as all other reviewers.
 
-## Step 6: Collect, Clean, and Number All Findings
+## Step 7: Collect, Clean, and Number All Findings
 
 Wait for all agents to complete. Collect every finding from every agent.
 
@@ -201,9 +201,9 @@ Assign a sequential number to every finding across both groups, sorted by severi
 5.  [LOW]      src/models/user.ts:103: Variable name `d` is too vague, use `deletedAt`
 ```
 
-## Step 6.5: Confidence Scoring
+## Step 8: Confidence Scoring
 
-For every finding collected in Step 6, spawn one **Haiku** subagent in parallel to score it. Each scorer receives:
+For every finding collected in Step 7, spawn one **Haiku** subagent in parallel to score it. Each scorer receives:
 - The finding text
 - The relevant diff hunk(s) where the root cause appears
 - The `PROJECT_CONTEXT`
@@ -217,7 +217,7 @@ The scorer must output a single integer 0–100 using this scale:
 
 **Discard any finding that scores below 80.** Do not present it to the user and do not post it.
 
-## Step 7: Present Findings and Ask What to Post
+## Step 9: Present Findings and Ask What to Post
 
 If findings remain after scoring, print the full numbered list to chat. If none remain, tell the user "No issues found." and proceed directly to the verdict questions below — do not ask Question 1.
 
@@ -243,9 +243,9 @@ If findings remain after scoring, print the full numbered list to chat. If none 
 
 If the user picks "Comment only" for Question 2 and "Leave empty" for Question 3 (and there are no findings or they chose "Post none"), confirm there will be nothing posted and stop.
 
-## Step 8: Post the Review
+## Step 10: Post the Review
 
-Use the review body from Question 3 in Step 7 exactly as determined:
+Use the review body from Question 3 in Step 9 exactly as determined:
 - User typed in Other: use their text verbatim
 - "Leave empty": empty string
 
@@ -286,7 +286,7 @@ After posting:
 
 ## Rules
 
-- Never post the review without explicit user confirmation in Step 7
+- Never post the review without explicit user confirmation in Step 9
 - Never include any mention of a review tool, AI, or automated system in the posted body or comment text. Comments must read as if a human engineer wrote them directly
 - Every comment body must pass the humanizer skill check: no hedging, no padding, no AI vocabulary ("crucial", "ensure", "leverage", "pivotal", "robust"), no significance inflation
 - Each posted comment must be 1-3 sentences (suggestion blocks do not count). If it cannot be said in 3 sentences it is probably not specific enough
@@ -299,5 +299,5 @@ After posting:
 - Deduplicate before presenting. Never show the user the same file:line twice
 - If a reviewer finds nothing, do not invent findings
 - Clean up `/tmp/pr_review_payload.json` whether or not the post succeeded
-- Never present or post any finding that scored below 80 in Step 6.5
+- Never present or post any finding that scored below 80 in Step 8
 - Never include a partial committable suggestion. If the fix cannot be expressed completely in one contiguous block, use prose only
