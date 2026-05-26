@@ -221,21 +221,12 @@ The scorer must output a single integer 0–100 using this scale:
 
 If findings remain after scoring, print the full numbered list to chat. If none remain, tell the user "No issues found." and proceed directly to the verdict questions below — do not ask Question 1.
 
-**Question 1** (skip if no findings): "Which findings should I post?"
+**Question 1** (skip if no findings): "Which findings should I post? Pick an option, or type a description in Other (e.g. 'only 1 and 3', 'only critical and high', 'skip logging findings')."
 - Options:
   - "Post all" — post every finding
   - "Post none" — submit the verdict only, no inline comments
-  - "Describe what to post" — type a natural language instruction in the Other field
 
-  For "Describe what to post", the user types freely in the Other field. Examples of what they might write:
-  - "only post 1, 2, and 5"
-  - "skip the style comments, post everything else"
-  - "only post critical and high severity"
-  - "don't post anything about logging"
-  - "post all security findings, skip the rest"
-  - "post everything except 3 and 7"
-
-  Interpret their instruction against the numbered list and select the matching subset. If their instruction is ambiguous, err on the side of posting less and tell the user which comments you included.
+  If the user types in Other, interpret it as a natural language instruction against the numbered list. If ambiguous, err on the side of posting less and tell the user which comments you included.
 
 **Question 2**: "Review verdict?"
 - Options:
@@ -243,13 +234,12 @@ If findings remain after scoring, print the full numbered list to chat. If none 
   - "Approve"
   - "Comment only"
 
-**Question 3**: "Main review body (the top-level comment on the review)?"
+**Question 3**: "Review body? Pick an option, or type your own text in Other."
 - Options:
-  - "Leave empty" — no overall review body, only inline comments
-  - "Write it for me" — auto-generate a short summary from the findings being posted (if no findings, a brief "looks good" note)
-  - "I'll write it" — user types their own text in the Other field
+  - "Leave empty" — no top-level comment, only inline comments
+  - "Write it for me" — auto-generate a short summary
 
-  If the user picks "I'll write it", use exactly what they type in the Other field as the review body verbatim, with no modifications.
+  If the user types in Other, use their text verbatim as the review body with no modifications.
   If the user picks "Write it for me", write a short 1-3 sentence summary in plain human language. If there are findings, cover the main themes. If there are none, write a brief clean-bill statement. No bullet points, no severity tags, no AI vocabulary. Apply the humanizer skill.
   If the user picks "Leave empty", set the body to an empty string.
 
