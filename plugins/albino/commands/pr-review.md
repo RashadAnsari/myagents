@@ -217,21 +217,11 @@ The scorer must output a single integer 0–100 using this scale:
 
 **Discard any finding that scores below 80.** Do not present it to the user and do not post it.
 
-If all findings are discarded after scoring, output:
-
-```
-No issues found.
-```
-
-and stop.
-
 ## Step 7: Present Findings and Ask What to Post
 
-Print the full numbered list of confidence-filtered findings to chat.
+If findings remain after scoring, print the full numbered list to chat. If none remain, tell the user "No issues found." and proceed directly to the verdict questions below — do not ask Question 1.
 
-Then ask the user three questions using AskUserQuestion:
-
-**Question 1**: "Which findings should I post?"
+**Question 1** (skip if no findings): "Which findings should I post?"
 - Options:
   - "Post all" — post every finding
   - "Post none" — submit the verdict only, no inline comments
@@ -256,14 +246,14 @@ Then ask the user three questions using AskUserQuestion:
 **Question 3**: "Main review body (the top-level comment on the review)?"
 - Options:
   - "Leave empty" — no overall review body, only inline comments
-  - "Write it for me" — auto-generate a short summary from the findings being posted
+  - "Write it for me" — auto-generate a short summary from the findings being posted (if no findings, a brief "looks good" note)
   - "I'll write it" — user types their own text in the Other field
 
   If the user picks "I'll write it", use exactly what they type in the Other field as the review body verbatim, with no modifications.
-  If the user picks "Write it for me", write a short 1-3 sentence summary in plain human language covering the main themes of the findings being posted. No bullet points, no severity tags, no AI vocabulary. Apply the humanizer skill.
+  If the user picks "Write it for me", write a short 1-3 sentence summary in plain human language. If there are findings, cover the main themes. If there are none, write a brief clean-bill statement. No bullet points, no severity tags, no AI vocabulary. Apply the humanizer skill.
   If the user picks "Leave empty", set the body to an empty string.
 
-If the user picks "Post none" for Question 1 and "Comment only" for Question 2 and "Leave empty" for Question 3, confirm there will be nothing posted and stop.
+If the user picks "Comment only" for Question 2 and "Leave empty" for Question 3 (and there are no findings or they chose "Post none"), confirm there will be nothing posted and stop.
 
 ## Step 8: Post the Review
 
