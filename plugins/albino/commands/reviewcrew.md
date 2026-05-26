@@ -9,11 +9,11 @@ MANDATORY: Read AGENTS.md and follow its rules before doing anything.
 
 Spawn all specialist review agents in parallel, collect their findings, and write a single consolidated report to `REVIEW_REPORT.md` in the project root.
 
-## Step 0: Load Memory
+## Step 1: Load Memory
 
 Before spawning any reviewer, call project.brief and user.brief to load project conventions and user preferences. Use findings to inform how you brief each reviewer and to flag known gotchas or decisions that are relevant to the review.
 
-## Step 1: Spawn All Reviewers in Parallel
+## Step 2: Spawn All Reviewers in Parallel
 
 Spawn all of the following agents simultaneously. Do not wait for one to finish before starting the next. Each agent prompt MUST begin with:
 
@@ -37,11 +37,11 @@ Agents to spawn in parallel:
 12. **database-reviewer**: schema design, migration safety, indexing, constraints, query patterns
 13. **i18n-reviewer**: hardcoded strings, date/number formatting, pluralization, RTL, locale handling
 
-## Step 2: Collect All Results
+## Step 3: Collect All Results
 
 Wait for all agents to complete. Collect every finding from every agent. Do not discard or summarize findings: preserve the full output of each reviewer.
 
-## Step 3: Write Consolidated Report
+## Step 4: Write Consolidated Report
 
 Write the full consolidated report to `REVIEW_REPORT.md` in the project root. Use this exact structure:
 

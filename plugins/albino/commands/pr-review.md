@@ -19,10 +19,27 @@ Usage: /pr-review <github-pr-url>
 Example: /pr-review https://github.com/owner/repo/pull/123
 ```
 
-Parse the PR URL to extract `owner`, `repo`, and `number`:
-- URL format: `https://github.com/{owner}/{repo}/pull/{number}`
+Parse `owner`, `repo`, and `number` from `$ARGUMENTS` now (URL format: `https://github.com/{owner}/{repo}/pull/{number}`). If the URL does not match this format, stop and show the usage message above.
 
-## Step 2: Fetch PR Data
+## Step 2: Pre-Review Gate
+
+Run both in parallel:
+
+```bash
+gh pr view "$ARGUMENTS" --json state,isDraft,author --jq '{state: .state, isDraft: .isDraft, author: .author.login}'
+```
+
+```bash
+gh api repos/{owner}/{repo}/pulls/{number}/reviews --jq '[.[].user.login]'
+```
+
+Stop immediately with a clear message if any condition is true:
+- `state` is not `"OPEN"` (PR is closed or merged)
+- `isDraft` is `true`
+- `author.login` ends in `[bot]` or is one of: `dependabot`, `renovate`, `snyk-bot`, `github-actions`
+- The authenticated user's login already appears in the reviews list (run `gh api user --jq '.login'` to get it if needed)
+
+## Step 3: Fetch PR Data
 
 Run all three in parallel:
 
@@ -46,7 +63,7 @@ Store:
 - `PR_DIFF`: full diff text from the third command
 - `HEAD_SHA`: value of `headRefOid` from `PR_META`
 
-## Step 3: Load Context
+## Step 4: Load Context
 
 Run both in parallel:
 
@@ -55,7 +72,7 @@ Run both in parallel:
 
 Combine into `PROJECT_CONTEXT`: a compact summary of active conventions, known decisions, and pitfalls that reviewers must apply.
 
-## Step 4: Select Relevant Reviewers
+## Step 5: Select Relevant Reviewers
 
 Analyze `CHANGED_FILES` and apply the rules below to build the list of reviewers to spawn. Log which reviewers were selected and why before spawning.
 
@@ -66,6 +83,7 @@ Analyze `CHANGED_FILES` and apply the rules below to build the list of reviewers
 - `performance-reviewer`
 - `test-reviewer`
 - `logging-reviewer`
+- `history-reviewer`
 
 **Include `dependency-reviewer`** if any changed file matches: `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `bun.lockb`, `pyproject.toml`, `requirements*.txt`, `setup.py`, `setup.cfg`, `Pipfile`, `go.mod`, `go.sum`, `Cargo.toml`, `Cargo.lock`, `Gemfile`, `Gemfile.lock`, `pom.xml`, `build.gradle`, `build.gradle.kts`, or `*.podspec`.
 
@@ -88,13 +106,17 @@ Analyze `CHANGED_FILES` and apply the rules below to build the list of reviewers
 - CI/CD pipeline files: spawn a "ci-reviewer" focused on secret exposure, caching correctness, and pipeline reliability
 - Cryptography or key management code: spawn a "crypto-reviewer" focused on algorithm choices, key handling, and entropy
 - Data serialization or protocol buffer changes: spawn a "serialization-reviewer" focused on backward compatibility and field ordering
-- Any other domain where a specialist eye would catch things the core six reviewers would miss
+- Any other domain where a specialist eye would catch things the core reviewers would miss
 
 When spawning a custom reviewer, write a focused system prompt for it that describes its area of expertise and what to look for, then apply the same instructions and output format as all other reviewers.
 
-## Step 5: Spawn Selected Reviewers in Parallel
+## Step 6: Spawn Selected Reviewers in Parallel
 
-Spawn all selected reviewers simultaneously, including any custom ones decided in Step 4. Do not wait for one before starting the next.
+Spawn all selected reviewers simultaneously, including any custom ones decided in Step 5. Do not wait for one before starting the next.
+
+**Model assignment per reviewer:**
+- `security-reviewer`, `architecture-reviewer`, `code-reviewer`: use **Opus**
+- All other reviewers (including `history-reviewer`, conditional, and custom): use **Sonnet**
 
 Each agent prompt MUST:
 - Begin with: `MANDATORY: Read AGENTS.md and follow its rules before doing anything.`
@@ -107,11 +129,28 @@ Each agent prompt MUST:
 - Instruct the agent to flag anything in the changed lines that conflicts with the conventions and decisions in `PROJECT_CONTEXT`
 - Instruct the agent to only flag real, confirmed issues. No speculation, no "consider whether", no low-confidence nitpicks
 - Instruct the agent to write each finding the way a senior engineer writes a PR comment: direct, specific, and short. Max 2 sentences. State what is wrong and why it matters. No padding, no hedging, no "it's worth noting that", no significance inflation
+- **DO NOT FLAG** — instruct every agent to skip without exception:
+  - Pre-existing issues in code this PR never touched
+  - Code that looks wrong but is correct given context or surrounding comments
+  - Issues a linter (eslint, tsc, ruff, mypy, etc.) will catch automatically
+  - Issues already silenced with a lint-ignore, `eslint-disable`, or `# type: ignore` comment
+  - Pedantic style concerns a senior engineer would not raise in a real review
+  - General code quality suggestions not backed by a specific rule in `PROJECT_CONTEXT`
+- For any finding that is a small, self-contained fix (6 lines or fewer, no structural changes, no edits required in multiple locations), include a GitHub committable suggestion block immediately after the finding text:
+
+  ````
+  ```suggestion
+  <corrected line(s)>
+  ```
+  ````
+
+  If the fix cannot be expressed completely and correctly in a single contiguous suggestion block, omit it and use prose only. Never include a partial suggestion that only fixes part of the problem.
+
 - Instruct the agent to output each finding in this exact format (one finding per line):
 
 For file-specific findings:
 ```
-[SEVERITY] path/to/file:line | <finding text>
+[SEVERITY] path/to/file:line | <finding text, including suggestion block if applicable>
 ```
 
 For general findings with no specific location:
@@ -119,9 +158,18 @@ For general findings with no specific location:
 [SEVERITY] (general) | <finding text>
 ```
 
-Where SEVERITY is one of: CRITICAL, HIGH, MEDIUM, LOW. The `[SEVERITY]` tag and location are metadata for the orchestrator only. They must NOT appear in the finding text itself. The finding text is what will be posted as the comment body after humanizing.
+Where SEVERITY is one of: CRITICAL, HIGH, MEDIUM, LOW. The `[SEVERITY]` tag and location are metadata for the orchestrator only. They must NOT appear in the finding text itself.
 
-## Step 6: Collect, Clean, and Number All Findings
+**History reviewer instructions:**
+
+The `history-reviewer` has a different task from the other reviewers. Its job is not to find new bugs but to provide context that reveals real problems hidden in history. For each changed hunk in `PR_DIFF`:
+
+1. Run `git log --follow -p -- <file>` to understand the commit history of changed files
+2. Run `git blame -L <start>,<end> -- <file>` on the changed lines to see who introduced them and when
+
+Output a finding only when history reveals a real problem: e.g., a line being reverted to a version that was previously removed for a known reason, or a pattern being re-introduced that was explicitly cleaned up before. Use the same output format as all other reviewers.
+
+## Step 7: Collect, Clean, and Number All Findings
 
 Wait for all agents to complete. Collect every finding from every agent.
 
@@ -141,7 +189,7 @@ Separate findings into:
 - Cut filler openers: "In order to", "Due to the fact that", "It should be noted that"
 - Cut padding -ing phrases: "ensuring that", "highlighting the need for", "contributing to"
 - Make it direct and specific. If the finding says "this function could potentially cause issues in some cases", rewrite it as "this function panics if X is nil"
-- Max 2 sentences per finding. If it's longer, cut it down
+- Max 2 sentences per finding body (suggestion blocks do not count toward this limit)
 
 Assign a sequential number to every finding across both groups, sorted by severity (CRITICAL first, then HIGH, MEDIUM, LOW). Example:
 
@@ -153,27 +201,32 @@ Assign a sequential number to every finding across both groups, sorted by severi
 5.  [LOW]      src/models/user.ts:103: Variable name `d` is too vague, use `deletedAt`
 ```
 
-## Step 7: Present Findings and Ask What to Post
+## Step 8: Confidence Scoring
 
-Print the full numbered list to chat.
+For every finding collected in Step 7, spawn one **Haiku** subagent in parallel to score it. Each scorer receives:
+- The finding text
+- The relevant diff hunk(s) where the root cause appears
+- The `PROJECT_CONTEXT`
 
-Then ask the user three questions using AskUserQuestion:
+The scorer must output a single integer 0–100 using this scale:
+- 0–25: likely false positive — code is probably correct, issue is speculative or pre-existing
+- 26–50: possible issue but uncertain — depends on runtime context or unstated assumptions
+- 51–79: real issue but low confidence — something is off but not conclusive
+- 80–94: high confidence — confirmed problem with clear evidence in the diff
+- 95–100: certain — will break in production, unambiguous bug, or clear rule violation
 
-**Question 1**: "Which findings should I post?"
+**Discard any finding that scores below 80.** Do not present it to the user and do not post it.
+
+## Step 9: Present Findings and Ask What to Post
+
+If findings remain after scoring, print the full numbered list to chat. If none remain, tell the user "No issues found." and proceed directly to the verdict questions below — do not ask Question 1.
+
+**Question 1** (skip if no findings): "Which findings should I post? Pick an option, or type a description in Other (e.g. 'only 1 and 3', 'only critical and high', 'skip logging findings')."
 - Options:
   - "Post all" — post every finding
   - "Post none" — submit the verdict only, no inline comments
-  - "Describe what to post" — type a natural language instruction in the Other field
 
-  For "Describe what to post", the user types freely in the Other field. Examples of what they might write:
-  - "only post 1, 2, and 5"
-  - "skip the style comments, post everything else"
-  - "only post critical and high severity"
-  - "don't post anything about logging"
-  - "post all security findings, skip the rest"
-  - "post everything except 3 and 7"
-
-  Interpret their instruction against the numbered list and select the matching subset. If their instruction is ambiguous, err on the side of posting less and tell the user which comments you included.
+  If the user types in Other, interpret it as a natural language instruction against the numbered list. If ambiguous, err on the side of posting less and tell the user which comments you included.
 
 **Question 2**: "Review verdict?"
 - Options:
@@ -181,23 +234,19 @@ Then ask the user three questions using AskUserQuestion:
   - "Approve"
   - "Comment only"
 
-**Question 3**: "Main review body (the top-level comment on the review)?"
+**Question 3**: "Review body? Type your own text in Other, or leave empty."
 - Options:
-  - "Leave empty" — no overall review body, only inline comments
-  - "Write it for me" — auto-generate a short summary from the findings being posted
-  - "I'll write it" — user types their own text in the Other field
+  - "Leave empty" — no top-level comment, only inline comments
 
-  If the user picks "I'll write it", use exactly what they type in the Other field as the review body verbatim, with no modifications.
-  If the user picks "Write it for me", write a short 1-3 sentence summary in plain human language covering the main themes of the findings being posted. No bullet points, no severity tags, no AI vocabulary. Apply the humanizer skill.
+  If the user types in Other, use their text verbatim as the review body with no modifications.
   If the user picks "Leave empty", set the body to an empty string.
 
-If the user picks "Post none" for Question 1 and "Comment only" for Question 2 and "Leave empty" for Question 3, confirm there will be nothing posted and stop.
+If the user picks "Comment only" for Question 2 and "Leave empty" for Question 3 (and there are no findings or they chose "Post none"), confirm there will be nothing posted and stop.
 
-## Step 8: Post the Review
+## Step 10: Post the Review
 
-Use the review body from Question 3 in Step 7 exactly as determined:
-- User wrote it: use their text verbatim
-- "Write it for me": a short human-written summary you generated from the findings
+Use the review body from Question 3 in Step 9 exactly as determined:
+- User typed in Other: use their text verbatim
 - "Leave empty": empty string
 
 GitHub allows an empty review body, so empty string is valid.
@@ -216,12 +265,12 @@ Build the payload and write it to `/tmp/pr_review_payload.json`:
   "event": "<REQUEST_CHANGES|APPROVE|COMMENT>",
   "comments": [
     { "path": "src/auth/login.ts", "line": 42, "body": "Unsanitized input goes straight into the query builder here. Use parameterized queries." },
-    { "path": "src/api/users.ts", "line": 88, "body": "This endpoint has no rate limiting and is publicly accessible." }
+    { "path": "src/api/users.ts", "line": 88, "body": "This endpoint has no rate limiting and is publicly accessible.\n\n```suggestion\nrouter.get('/users', rateLimiter({ max: 100 }), usersHandler);\n```" }
   ]
 }
 ```
 
-Include in `comments` only the inline findings the user chose to post.
+Include in `comments` only the inline findings the user chose to post. If a finding includes a committable suggestion block, include it verbatim in the `body` field after the finding text, separated by a blank line.
 
 Post via:
 ```bash
@@ -237,10 +286,10 @@ After posting:
 
 ## Rules
 
-- Never post the review without explicit user confirmation in Step 7
+- Never post the review without explicit user confirmation in Step 9
 - Never include any mention of a review tool, AI, or automated system in the posted body or comment text. Comments must read as if a human engineer wrote them directly
 - Every comment body must pass the humanizer skill check: no hedging, no padding, no AI vocabulary ("crucial", "ensure", "leverage", "pivotal", "robust"), no significance inflation
-- Each posted comment must be 1-3 sentences. If it cannot be said in 3 sentences it is probably not specific enough
+- Each posted comment must be 1-3 sentences (suggestion blocks do not count). If it cannot be said in 3 sentences it is probably not specific enough
 - Only flag real, confirmed issues. Do not post speculative or low-confidence findings
 - Do not use em dashes anywhere in comment text or the review body. Use commas or periods instead
 - Every finding must trace back to a `+` or `-` line in the diff as its root cause. Pre-existing bugs with no connection to what this PR changed must be discarded
@@ -250,3 +299,5 @@ After posting:
 - Deduplicate before presenting. Never show the user the same file:line twice
 - If a reviewer finds nothing, do not invent findings
 - Clean up `/tmp/pr_review_payload.json` whether or not the post succeeded
+- Never present or post any finding that scored below 80 in Step 8
+- Never include a partial committable suggestion. If the fix cannot be expressed completely in one contiguous block, use prose only
