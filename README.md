@@ -57,16 +57,23 @@ Specialist review agents: spawned in parallel by `/reviewcrew` and available for
 
 #### Skills
 
-Behavioral guidelines injected into agent prompts. The six mandatory skills are always active; the rest are opt-in.
+Behavioral guidelines injected into agent prompts.
+
+**Mandatory** — always active, injected before every prompt via the `user-prompt-submit` hook:
 
 | Skill | Description |
 |-------|-------------|
-| `agent-protocol` | Mandatory: enforces `AGENTS.md` rules on every agent spawn |
+| `agent-protocol` | Enforces `AGENTS.md` rules on every agent spawn |
 | `code-reusability` | Spots duplication and applies extraction patterns |
 | `dev-conventions` | General conventions: reuse, scope, localization, UI, validation, data |
 | `latest-versions` | Always look up and use the latest stable version of any dependency |
 | `research-first` | Research docs and source before answering or implementing anything non-trivial |
 | `agent-memory` | Retrieves relevant project and user memory before non-trivial work and stores durable learnings after the task |
+
+**Opt-in** — activate manually as needed:
+
+| Skill | Description |
+|-------|-------------|
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 
