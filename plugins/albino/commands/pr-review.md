@@ -11,9 +11,17 @@ MANDATORY: Read the humanizer skill at `plugins/albino/skills/humanizer/SKILL.md
 
 Review the GitHub pull request: $ARGUMENTS
 
-## Step 0: Pre-Review Gate
+## Step 0: Validate Input
 
-Parse `owner`, `repo`, and `number` from `$ARGUMENTS` now (URL format: `https://github.com/{owner}/{repo}/pull/{number}`).
+If `$ARGUMENTS` is empty or missing, stop immediately and tell the user:
+```
+Usage: /pr-review <github-pr-url>
+Example: /pr-review https://github.com/owner/repo/pull/123
+```
+
+Parse `owner`, `repo`, and `number` from `$ARGUMENTS` now (URL format: `https://github.com/{owner}/{repo}/pull/{number}`). If the URL does not match this format, stop and show the usage message above.
+
+## Step 1: Pre-Review Gate
 
 Run both in parallel:
 
@@ -30,16 +38,6 @@ Stop immediately with a clear message if any condition is true:
 - `isDraft` is `true`
 - `author.login` ends in `[bot]` or is one of: `dependabot`, `renovate`, `snyk-bot`, `github-actions`
 - The authenticated user's login already appears in the reviews list (run `gh api user --jq '.login'` to get it if needed)
-
-## Step 1: Validate Input
-
-If `$ARGUMENTS` is empty or missing, stop immediately and tell the user:
-```
-Usage: /pr-review <github-pr-url>
-Example: /pr-review https://github.com/owner/repo/pull/123
-```
-
-`owner`, `repo`, and `number` were already parsed in Step 0.
 
 ## Step 2: Fetch PR Data
 
