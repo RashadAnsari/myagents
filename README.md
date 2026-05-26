@@ -2,6 +2,8 @@
 
 Personal plugin marketplace for Claude Code and Cursor. Brings Rashad's workflows, review agents, and development conventions to any project.
 
+---
+
 ## Install
 
 ```bash
@@ -9,6 +11,7 @@ curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/instal
 ```
 
 Installs for whichever platforms are detected:
+
 - **Claude Code**: registers the marketplace and installs the plugin
 - **Cursor**: symlinks the plugin to `~/.cursor/plugins/local/albino`
 
@@ -16,61 +19,74 @@ Rerun to update. Reload your editor after install.
 
 ---
 
+## Contents
+
+- [Plugins](#plugins)
+  - [Commands](#commands)
+  - [Agents](#agents)
+  - [Skills](#skills)
+  - [MCP Servers](#mcp-servers)
+  - [Hooks](#hooks)
+  - [Cursor Rules](#cursor-rules)
+- [Repository Rules](#repository-rules)
+
+---
+
 ## Plugins
 
 ### albino
 
-Personal productivity plugin.
+Personal productivity plugin for Claude Code and Cursor.
 
 #### Commands
 
-Slash commands available in Claude Code / Cursor sessions.
+Slash commands available in Claude Code and Cursor sessions.
 
 | Command | Description |
 |---------|-------------|
 | `/reviewcrew` | Full codebase audit: runs all review agents in parallel and writes `REVIEW_REPORT.md` |
-| `/reportloop` | Walk through every issue in `REVIEW_REPORT.md` interactively: explain, fix or skip, one by one |
-| `/statusline` | Configure the Claude Code statusline: asks global or project install, shows git branch, current directory, model, and time *(Claude Code only)* |
+| `/reportloop` | Walk through every issue in `REVIEW_REPORT.md` interactively: explain, fix, or skip one by one |
+| `/statusline` | Configure the Claude Code statusline: shows git branch, current directory, model, and time (Claude Code only) |
 | `/commit` | Stage all changes and create a git commit with an appropriate message |
-| `/caveman` | Switch to lite communication mode: drops filler/hedging/pleasantries for the session. Includes commit format, PR review style, file compression, and subagent delegation templates for spawning agents in caveman mode. |
-| `/pr-review <url>` | Review a GitHub pull request: selects relevant reviewers based on changed file types (spawning custom ones for uncovered domains), loads project and user memory, hunts for ripple effects across the codebase, humanizes all findings, then asks which to post, the verdict, and the review body before submitting on your behalf via `gh` CLI |
+| `/caveman` | Switch to lite communication mode: drops filler, hedging, and pleasantries for the session. Includes commit format, PR review style, file compression, and subagent delegation templates |
+| `/pr-review <url>` | Review a GitHub pull request: selects relevant reviewers, loads project and user memory, hunts for ripple effects, humanizes findings, then asks which to post before submitting via `gh` |
 
 #### Agents
 
-Specialist review agents: spawned in parallel by `/reviewcrew` and available for individual use.
+Specialist review agents spawned in parallel by `/reviewcrew`, also available individually.
 
-| Agent | Description |
-|-------|-------------|
-| `security-reviewer` | Audits for security vulnerabilities: injection, XSS, auth, SSRF, JWT, supply chain, and more |
-| `code-reviewer` | Reviews correctness, style, anti-patterns, performance, memory, and concurrency |
-| `architecture-reviewer` | Reviews structure, coupling, cohesion, SOLID, duplication, and observability |
-| `performance-reviewer` | Reviews bottlenecks, complexity, queries, caching, and scalability |
-| `test-reviewer` | Reviews coverage, assertion quality, flakiness, mocking, and test data |
-| `logging-reviewer` | Reviews logging gaps, audit trail, monitoring, and sensitive data in logs |
-| `dependency-reviewer` | Reviews vulnerable, outdated, unused packages and supply chain risk |
-| `docs-reviewer` | Reviews documentation accuracy, completeness, and staleness |
-| `agents-md-reviewer` | Reviews codebase against `AGENTS.md` rules |
-| `accessibility-reviewer` | Reviews WCAG compliance, ARIA usage, keyboard navigation, and screen reader compatibility. Use when: adding interactive components, building forms, or auditing UI for assistive-technology support. |
-| `api-design-reviewer` | Reviews REST/GraphQL naming, HTTP semantics, versioning, error shape, and backward compatibility. Use when: designing new endpoints, changing existing API contracts, or reviewing client-facing interfaces. |
-| `database-reviewer` | Reviews schema design, migration safety, indexing strategy, constraints, and query patterns. Use when: adding tables, writing migrations, or auditing existing schema for correctness and safety. |
-| `i18n-reviewer` | Reviews hardcoded strings, date/number formatting, pluralization, RTL layout, and locale handling. Use when: adding user-visible text, date or number formatting, or preparing the app for a new locale. |
+| Agent | Covers |
+|-------|--------|
+| `security-reviewer` | Injection, XSS, auth, SSRF, JWT, and supply chain vulnerabilities |
+| `code-reviewer` | Correctness, style, anti-patterns, performance, memory, and concurrency |
+| `architecture-reviewer` | Structure, coupling, cohesion, SOLID, duplication, and observability |
+| `performance-reviewer` | Bottlenecks, complexity, queries, caching, and scalability |
+| `test-reviewer` | Coverage, assertion quality, flakiness, mocking, and test data |
+| `logging-reviewer` | Logging gaps, audit trail, monitoring, and sensitive data in logs |
+| `dependency-reviewer` | Vulnerable, outdated, and unused packages plus supply chain risk |
+| `docs-reviewer` | Documentation accuracy, completeness, and staleness |
+| `agents-md-reviewer` | Codebase compliance with `AGENTS.md` rules |
+| `accessibility-reviewer` | WCAG compliance, ARIA usage, keyboard navigation, and screen reader support |
+| `api-design-reviewer` | REST/GraphQL naming, HTTP semantics, versioning, error shape, and backward compatibility |
+| `database-reviewer` | Schema design, migration safety, indexing strategy, constraints, and query patterns |
+| `i18n-reviewer` | Hardcoded strings, date/number formatting, pluralization, RTL layout, and locale handling |
 
 #### Skills
 
 Behavioral guidelines injected into agent prompts.
 
-**Mandatory** — always active, injected before every prompt via the `user-prompt-submit` hook:
+**Mandatory** (always active, injected before every prompt via the `user-prompt-submit` hook):
 
 | Skill | Description |
 |-------|-------------|
 | `agent-protocol` | Enforces `AGENTS.md` rules on every agent spawn |
 | `code-reusability` | Spots duplication and applies extraction patterns |
-| `dev-conventions` | General conventions: reuse, scope, localization, UI, validation, data |
+| `dev-conventions` | General conventions: reuse, scope, localization, UI, validation, and data |
 | `latest-versions` | Always look up and use the latest stable version of any dependency |
 | `research-first` | Research docs and source before answering or implementing anything non-trivial |
-| `agent-memory` | Retrieves relevant project and user memory before non-trivial work and stores durable learnings after the task |
+| `agent-memory` | Retrieves relevant project and user memory before non-trivial work and stores durable learnings after |
 
-**Opt-in** — activate manually as needed:
+**Opt-in** (activate manually as needed):
 
 | Skill | Description |
 |-------|-------------|
@@ -81,28 +97,28 @@ Behavioral guidelines injected into agent prompts.
 
 | Server | Description |
 |--------|-------------|
-| `agent-memory` | Stores and retrieves durable project knowledge and user preferences across sessions. Supports semantic search so agents can recall relevant decisions, conventions, and gotchas before starting a task. Rejects vague, duplicate, or secret-containing entries. |
-| `playwright` | Browser automation via `@playwright/mcp`. Gives agents the ability to navigate, click, fill forms, take screenshots, and inspect the DOM in a real browser. Auto-installs bun if not present. |
+| `agent-memory` | Stores and retrieves durable project knowledge and user preferences across sessions using semantic search. Rejects vague, duplicate, or secret-containing entries. |
+| `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Auto-installs bun if not present. |
 
-Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite` by default. User memory is stored in the same database. Set `AGENT_MEMORY_DIR` to override the storage directory. Project memories are scoped to the repository root; user memories are stored globally across all projects.
+Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite` by default. User memory is stored in the same database. Set `AGENT_MEMORY_DIR` to override. Project memories are scoped to the repository root; user memories are global across all projects.
 
 #### Hooks
 
 | Hook | Event | Description |
 |------|-------|-------------|
 | `session-start` | `SessionStart` / `sessionStart` | Bootstraps project memory and user preferences before the first prompt |
-| `user-prompt-submit` | `UserPromptSubmit` / `beforeSubmitPrompt` | Injects mandatory `AGENTS.md` reminder and active skill list before every prompt |
+| `user-prompt-submit` | `UserPromptSubmit` / `beforeSubmitPrompt` | Injects the mandatory `AGENTS.md` reminder and active skill list before every prompt |
 
-#### Rules
+#### Cursor Rules
 
-Cursor rules (`.mdc` files): always applied to every Cursor agent session.
+`.mdc` files applied to every Cursor agent session.
 
 | Rule | Description |
 |------|-------------|
-| `session-memory` | Bootstraps project memory at conversation start and prompts memory handoff at conversation end *(covers Cursor `stop` gap)* |
+| `session-memory` | Bootstraps project memory at conversation start and prompts memory handoff at the end (covers the Cursor `stop` gap) |
 
 ---
 
-## Rules
+## Repository Rules
 
 See `AGENTS.md` for agent and convention rules that apply to this repository.
