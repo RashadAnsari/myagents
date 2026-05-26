@@ -82,33 +82,6 @@ Then continue:
 
 Do not fix an issue without explicit user confirmation. Do not move to the next issue until the user has said fix or skip for the current one.
 
-## Step 4: Final Summary
-
-After all issues are processed, append a session summary block to the end of `REVIEW_REPORT.md`:
-
-```markdown
----
-
-## Session Summary
-
-Completed: <timestamp>
-
-| Status        | Count |
-|---------------|-------|
-| Fixed         | N     |
-| Skipped       | N     |
-| Auto-advanced | N     |
-| **Total**     | **N** |
-
-### Fixed
-- `path/to/file:line`: <brief description>
-
-### Skipped
-- `path/to/file:line`: <brief description>
-```
-
-Also print the same summary to the chat so the user sees it inline.
-
 ## Rules
 
 - Process issues in severity order: CRITICAL → HIGH → MEDIUM → LOW
