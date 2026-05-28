@@ -26,6 +26,33 @@ def project_name_from_root(root_path: str) -> str:
     return Path(root_path).name or root_path
 
 
+def get_git_root(root_path: str) -> str | None:
+    if not Path(root_path).exists():
+        return None
+    try:
+        result = subprocess.run(
+            ["git", "-C", root_path, "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+        )
+        git_root = result.stdout.strip()
+        return str(Path(git_root).resolve()) if git_root else None
+    except (subprocess.SubprocessError, OSError) as exc:
+        logger.warning("git root lookup failed for %s: %s", root_path, exc)
+        return None
+
+
+def canonical_project_root(project_root: str) -> str:
+    """Return the git repo root for any path inside a repo. Raises ValueError if the path is not inside a git repo."""
+    normalized = normalize_project_root(project_root)
+    git_root = get_git_root(normalized)
+    if git_root is None:
+        raise ValueError(
+            f"Project root is not a git repository: {normalized}. Only git repositories can have project memory."
+        )
+    return git_root
+
+
 def get_git_remote(root_path: str) -> str | None:
     if not Path(root_path).exists():
         return None

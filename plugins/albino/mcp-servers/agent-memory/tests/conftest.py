@@ -1,4 +1,5 @@
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,7 @@ def pytest_configure(config):
 
 @pytest.fixture
 def tmp_dir(tmp_path: Path) -> Path:
+    subprocess.run(["git", "init"], cwd=str(tmp_path), capture_output=True, check=False)
     return tmp_path
 
 

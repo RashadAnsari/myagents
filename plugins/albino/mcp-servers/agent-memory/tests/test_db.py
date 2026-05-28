@@ -1,3 +1,5 @@
+import subprocess
+
 import pytest
 
 from agent_memory.db import AgentMemoryStore
@@ -8,6 +10,7 @@ _DUMMY_VECTOR = [0.0] * EMBEDDING_DIM
 
 @pytest.fixture
 def bare_store(tmp_path):
+    subprocess.run(["git", "init"], cwd=str(tmp_path), capture_output=True, check=False)
     s = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
     yield s
     s.close()

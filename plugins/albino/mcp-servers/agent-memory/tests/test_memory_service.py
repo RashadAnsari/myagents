@@ -9,6 +9,48 @@ from agent_memory.paths import (
 )
 
 
+async def test_remember_rejects_non_git_directory(service: ProjectMemoryService, tmp_dir, monkeypatch):
+    import agent_memory.paths as paths_module
+
+    monkeypatch.setattr(paths_module, "get_git_root", lambda _: None)
+    with pytest.raises(ValueError, match="not a git repository"):
+        await service.remember(
+            project_root=str(tmp_dir),
+            kind="convention",
+            content="This memory should be rejected because the directory has no git repository initialized.",
+            why_useful_later="Tests that non-git directories cannot accumulate project memory.",
+        )
+
+
+async def test_subdirectory_path_shares_project_with_git_root(service: ProjectMemoryService, tmp_dir):
+    subdir = tmp_dir / "src" / "module"
+    subdir.mkdir(parents=True)
+
+    mem_root = await service.remember(
+        project_root=str(tmp_dir),
+        kind="convention",
+        content="All public functions must have a corresponding unit test in the tests directory at the repo root.",
+        why_useful_later="Future agents need this to know where to place new tests without asking.",
+    )
+    mem_sub = await service.remember(
+        project_root=str(subdir),
+        kind="decision",
+        content="The module layer owns all business logic and must never import directly from the API handlers layer.",
+        why_useful_later="Future agents need this boundary rule to avoid coupling the domain layer to HTTP concerns.",
+    )
+
+    assert mem_root.project_id == mem_sub.project_id
+
+    results_from_root = await service.search(project_root=str(tmp_dir), query="unit test convention module decision")
+    results_from_sub = await service.search(project_root=str(subdir), query="unit test convention module decision")
+
+    root_ids = {m.id for m in results_from_root}
+    sub_ids = {m.id for m in results_from_sub}
+    assert mem_root.id in root_ids
+    assert mem_sub.id in root_ids
+    assert root_ids == sub_ids
+
+
 async def test_stores_and_searches_durable_memory(service: ProjectMemoryService, tmp_dir):
     memory = await service.remember(
         project_root=str(tmp_dir),

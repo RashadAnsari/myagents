@@ -8,7 +8,7 @@ from pathlib import Path
 import sqlite_vec
 
 from .embedding import EMBEDDING_DIM
-from .paths import fingerprint_remote, get_git_remote, normalize_project_root, project_name_from_root
+from .paths import canonical_project_root, fingerprint_remote, get_git_remote, project_name_from_root
 from .types import (
     Confidence,
     MemoryKind,
@@ -70,7 +70,7 @@ class AgentMemoryStore:
             raise
 
     def get_or_create_project(self, project_root: str) -> ProjectRecord:
-        root_path = normalize_project_root(project_root)
+        root_path = canonical_project_root(project_root)
         git_remote = get_git_remote(root_path)
         remote_fingerprint = fingerprint_remote(git_remote)
         now = _now()
@@ -95,7 +95,7 @@ class AgentMemoryStore:
         return _map_project(row)
 
     def get_project(self, project_root: str) -> ProjectRecord | None:
-        root_path = normalize_project_root(project_root)
+        root_path = canonical_project_root(project_root)
         row = self._conn.execute("SELECT * FROM projects WHERE root_path = ?", (root_path,)).fetchone()
         return _map_project(row) if row else None
 

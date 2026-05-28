@@ -1,3 +1,4 @@
+import subprocess
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -8,6 +9,7 @@ from agent_memory.memory_service import ProjectMemoryService, UserMemoryService
 
 @pytest.fixture
 def bare_store(tmp_path):
+    subprocess.run(["git", "init"], cwd=str(tmp_path), capture_output=True, check=False)
     s = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
     yield s
     s.close()

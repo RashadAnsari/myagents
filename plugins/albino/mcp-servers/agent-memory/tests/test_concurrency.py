@@ -5,6 +5,7 @@ a model download and focus on the DB access pattern.
 """
 
 import asyncio
+import subprocess
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -18,6 +19,7 @@ _VECTOR = [0.1] * EMBEDDING_DIM
 
 @pytest.fixture
 def bare_store(tmp_path):
+    subprocess.run(["git", "init"], cwd=str(tmp_path), capture_output=True, check=False)
     s = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
     yield s
     s.close()
