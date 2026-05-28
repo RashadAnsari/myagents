@@ -206,31 +206,18 @@ For every finding collected in Step 7, spawn one **Haiku** subagent in parallel 
 - The relevant diff hunk(s) where the root cause appears
 - The `PROJECT_CONTEXT`
 
-The scorer must output a single integer 0–100 using this scale:
-- 0–25: likely false positive — code is probably correct, issue is speculative or pre-existing
-- 26–50: possible issue but uncertain — depends on runtime context or unstated assumptions
-- 51–79: real issue but low confidence — something is off but not conclusive
-- 80–94: high confidence — confirmed problem with clear evidence in the diff
-- 95–100: certain — will break in production, unambiguous bug, or clear rule violation
+The scorer must output a single integer 0-100 using this scale:
+- 0-25: likely false positive. Code is probably correct, issue is speculative or pre-existing.
+- 26-50: possible issue but uncertain. Depends on runtime context or unstated assumptions.
+- 51-79: real issue but low confidence. Something is off but not conclusive.
+- 80-94: high confidence. Confirmed problem with clear evidence in the diff.
+- 95-100: certain. Will break in production, unambiguous bug, or clear rule violation.
 
 **Discard any finding that scores below 80.** Do not present it to the user and do not post it.
 
 ## Step 9: Present PR Brief, Findings, and Ask What to Post
 
-Before listing any findings, print a **PR Brief** to give the user clear context. Format it as a short structured block using data from `PR_META` and `CHANGED_FILES`:
-
-```
-## PR #<number>: <title>
-
-Author:   <author.login>
-Branch:   <headRefName> → <baseRefName>
-Changes:  +<additions> / -<deletions> across <changedFiles> file(s)
-
-<2–4 sentence plain-English summary of what this PR does, derived from the PR body and diff. Cover: the problem or goal, the approach taken, and any notable side-effects or risks. Do not copy the PR body verbatim — synthesise it. If the PR body is empty, derive the summary from the diff alone.>
-
-Changed files:
-  - <list each path in CHANGED_FILES, one per line>
-```
+Before listing any findings, print a **PR Brief**: 2 to 4 sentences of plain-English summary of what this PR does, derived from the PR body and diff. Cover the problem or goal, the approach taken, and any notable side effects or risks. Do not copy the PR body verbatim; synthesise it. If the PR body is empty, derive the summary from the diff alone.
 
 Apply the humanizer skill to the summary sentences before printing.
 
