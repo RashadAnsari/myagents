@@ -127,7 +127,7 @@ Each agent prompt MUST:
 - Instruct the agent to flag anything in the changed lines that conflicts with the conventions and decisions in `PROJECT_CONTEXT`
 - Instruct the agent to only flag real, confirmed issues. No speculation, no "consider whether", no low-confidence nitpicks
 - Instruct the agent to write each finding the way a senior engineer writes a PR comment: direct, specific, and short. Max 2 sentences. State what is wrong and why it matters. No padding, no hedging, no "it's worth noting that", no significance inflation
-- **DO NOT FLAG** — instruct every agent to skip without exception:
+- **DO NOT FLAG** - instruct every agent to skip without exception:
   - Pre-existing issues in code this PR never touched
   - Code that looks wrong but is correct given context or surrounding comments
   - Issues a linter (eslint, tsc, ruff, mypy, etc.) will catch automatically
@@ -221,12 +221,12 @@ Before listing any findings, print a **PR Brief**: 2 to 4 sentences of plain-Eng
 
 Apply the humanizer skill to the summary sentences before printing.
 
-If findings remain after scoring, print the full numbered list below the PR Brief. If none remain, tell the user "No issues found." and proceed directly to the verdict questions below — do not ask Question 1.
+If findings remain after scoring, print the full numbered list below the PR Brief. If none remain, tell the user "No issues found." and proceed directly to the verdict questions below - do not ask Question 1.
 
 **Question 1** (skip if no findings): "Which findings should I post? Pick an option, or type a description in Other (e.g. 'only 1 and 3', 'only critical and high', 'skip logging findings')."
 - Options:
-  - "Post all" — post every finding
-  - "Post none" — submit the verdict only, no inline comments
+  - "Post all" - post every finding
+  - "Post none" - submit the verdict only, no inline comments
 
   If the user types in Other, interpret it as a natural language instruction against the numbered list. If ambiguous, err on the side of posting less and tell the user which comments you included.
 
@@ -238,7 +238,7 @@ If findings remain after scoring, print the full numbered list below the PR Brie
 
 **Question 3**: "Review body? Type your own text in Other, or leave empty."
 - Options:
-  - "Leave empty" — no top-level comment, only inline comments
+  - "Leave empty" - no top-level comment, only inline comments
 
   If the user types in Other, use their text verbatim as the review body with no modifications.
   If the user picks "Leave empty", set the body to an empty string.

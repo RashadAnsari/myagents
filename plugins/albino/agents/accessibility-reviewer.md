@@ -15,7 +15,7 @@ Read-only agent. Exhaustive audit of WCAG 2.1 AA compliance, ARIA usage, keyboar
 
 ## Semantic HTML
 
-- Non-semantic container elements (`div`, `span`) used where a semantic element fits (`button`, `nav`, `main`, `header`, `footer`, `article`, `section`, `aside`, `h1`–`h6`, `ul`, `ol`, `table`)
+- Non-semantic container elements (`div`, `span`) used where a semantic element fits (`button`, `nav`, `main`, `header`, `footer`, `article`, `section`, `aside`, `h1` to `h6`, `ul`, `ol`, `table`)
 - Heading hierarchy skipped or broken: `h3` used without `h2` parent, `h1` missing or duplicated
 - `<div>` or `<span>` used as interactive element instead of `<button>` or `<a>`
 - `<table>` used for layout instead of data: no `<th>`, `scope`, or `<caption>`
@@ -80,7 +80,7 @@ Read-only agent. Exhaustive audit of WCAG 2.1 AA compliance, ARIA usage, keyboar
 - `<video>` without captions for spoken content
 - `<audio>` without transcript
 - Autoplay `<video>` or `<audio>` with sound: disorienting for screen reader users
-- Flashing content between 3–50 Hz with no warning and no way to pause: seizure risk
+- Flashing content between 3 to 50 Hz with no warning and no way to pause: seizure risk
 
 ## Forms
 
