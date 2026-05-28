@@ -1,5 +1,5 @@
 ---
-description: Save something to agent memory — picks project or user scope automatically from context
+description: Save something to agent memory - picks project or user scope automatically from context
 allowed-tools: [Bash, mcp__plugin_albino_agent-memory__project_remember, mcp__plugin_albino_agent-memory__user_remember]
 ---
 
@@ -11,7 +11,7 @@ Subject: $ARGUMENTS
 
 ## Step 1: Determine what to remember
 
-**If `$ARGUMENTS` is not empty**, use it as the subject. Enrich it with any relevant details from the current conversation: decisions made, conventions stated, preferences expressed, gotchas discovered, or architecture facts established. Produce a concrete, specific memory content (at least 40 characters) — do not store the raw argument text verbatim if it is vague.
+**If `$ARGUMENTS` is not empty**, use it as the subject. Enrich it with any relevant details from the current conversation: decisions made, conventions stated, preferences expressed, gotchas discovered, or architecture facts established. Produce a concrete, specific memory content (at least 40 characters) - do not store the raw argument text verbatim if it is vague.
 
 **If `$ARGUMENTS` is empty**, scan the full conversation history and identify every durable learning from this session worth storing. A learning is durable if a future agent in a fresh session would benefit from it. Skip anything temporary, vague, or already obvious from reading the code. If nothing qualifies, tell the user and stop.
 
@@ -19,8 +19,8 @@ Subject: $ARGUMENTS
 
 For each item, decide scope using this rule:
 
-- **Project memory** — the fact is meaningful only in this repository: architecture decisions, code conventions, non-obvious workflow steps, dependency quirks, recurring bug root causes, gotchas, testing requirements, or handoff notes.
-- **User memory** — the fact applies regardless of which project you are in: coding preferences, global conventions, background context, tool choices, communication style, or recurring behavioral patterns.
+- **Project memory** - the fact is meaningful only in this repository: architecture decisions, code conventions, non-obvious workflow steps, dependency quirks, recurring bug root causes, gotchas, testing requirements, or handoff notes.
+- **User memory** - the fact applies regardless of which project you are in: coding preferences, global conventions, background context, tool choices, communication style, or recurring behavioral patterns.
 
 When in doubt: if removing the project would make the fact meaningless, it is project memory. If it still applies anywhere, it is user memory.
 
@@ -39,7 +39,7 @@ Store as `PROJECT_ROOT`.
 For **project memory**, call `mcp__plugin_albino_agent-memory__project_remember` with:
 - `project_root`: value of `PROJECT_ROOT`
 - `kind`: most accurate kind from `decision`, `convention`, `architecture`, `workflow`, `preference`, `gotcha`, `bug`, `dependency`, `testing`, `handoff`
-- `content`: specific, concrete content — at least 40 characters, no secrets, no command output
+- `content`: specific, concrete content - at least 40 characters, no secrets, no command output
 - `why_useful_later`: explain exactly how a future agent benefits from knowing this
 - `summary`: short title (used in listings)
 - `confidence`: `high` if the user stated it directly, `medium` if inferred from context
@@ -47,7 +47,7 @@ For **project memory**, call `mcp__plugin_albino_agent-memory__project_remember`
 
 For **user memory**, call `mcp__plugin_albino_agent-memory__user_remember` with:
 - `kind`: most accurate kind from `preference`, `behavior`, `context`, `workflow`, `convention`, `tool_preference`, `communication`
-- `content`: specific, concrete content — at least 40 characters, no secrets
+- `content`: specific, concrete content - at least 40 characters, no secrets
 - `why_useful_later`: explain exactly how a future agent benefits
 - `summary`: short title
 - `confidence`: `high` if stated directly, `medium` if inferred

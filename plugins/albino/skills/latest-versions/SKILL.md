@@ -26,9 +26,9 @@ Always use the latest stable version. Never suggest, pin, or write an old versio
 ## How to Find the Latest Version
 
 1. **npm**: `https://registry.npmjs.org/<package>/latest` or `npm show <package> version`
-2. **PyPI**: `https://pypi.org/pypi/<package>/json` → `.info.version`
+2. **PyPI**: `https://pypi.org/pypi/<package>/json` -> `.info.version`
 3. **Go**: `https://pkg.go.dev/<module>` or `go list -m -versions`
-4. **Crates.io**: `https://crates.io/api/v1/crates/<name>` → `.crate.newest_version`
+4. **Crates.io**: `https://crates.io/api/v1/crates/<name>` -> `.crate.newest_version`
 5. **GitHub Actions**: check the action's releases page for latest tag or pinned SHA
 6. **Docker base images**: check the official image page on Docker Hub for latest stable tag
 7. **Everything else**: official GitHub releases page or package registry

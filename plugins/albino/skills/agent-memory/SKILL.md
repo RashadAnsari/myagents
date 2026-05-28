@@ -89,7 +89,7 @@ Every user memory must satisfy all of these:
 
 **At session start (mandatory):**
 ```
-1. user.search <task-terms> → load task-relevant user knowledge
+1. user.search <task-terms> -> load task-relevant user knowledge
 2. Apply findings silently throughout the session
 ```
 
@@ -168,7 +168,7 @@ Same rules as user memory:
 
 **At task start (mandatory):**
 ```
-1. project.search <task-terms> → load task-specific context
+1. project.search <task-terms> -> load task-specific context
 2. Verify findings against repo files before acting
 ```
 
@@ -190,8 +190,8 @@ Durable = decision, convention, architecture fact, gotcha, workflow step, depend
 
 **During memory cleanup (periodic housekeeping):**
 ```
-1. project.purge <days> → hard-delete archived project memories older than N days
-2. user.purge <days>    → hard-delete archived user memories older than N days
+1. project.purge <days> -> hard-delete archived project memories older than N days
+2. user.purge <days>    -> hard-delete archived user memories older than N days
 3. Audit events are always preserved; only the memory rows are removed
 ```
 
@@ -221,14 +221,14 @@ Both `project.search` and `user.search` use vector KNN search. Queries and memor
 
 | Situation | Store where |
 |---|---|
-| "This user always prefers functional style" | `user.remember` → `preference` |
-| "This project uses a custom error wrapper" | `project.remember` → `convention` |
-| "The user is a senior engineer at a fintech" | `user.remember` → `context` |
-| "The auth module must never cache tokens" | `project.remember` → `decision` |
-| "User prefers bullet points in responses" | `user.remember` → `communication` |
-| "The payment webhook silently drops events when the queue is full instead of erroring" | `project.remember` → `gotcha` |
-| "User uses VS Code with Prettier" | `user.remember` → `tool_preference` |
-| "Run `uv run pytest` before any push in this repo" | `project.remember` → `workflow` |
+| "This user always prefers functional style" | `user.remember` -> `preference` |
+| "This project uses a custom error wrapper" | `project.remember` -> `convention` |
+| "The user is a senior engineer at a fintech" | `user.remember` -> `context` |
+| "The auth module must never cache tokens" | `project.remember` -> `decision` |
+| "User prefers bullet points in responses" | `user.remember` -> `communication` |
+| "The payment webhook silently drops events when the queue is full instead of erroring" | `project.remember` -> `gotcha` |
+| "User uses VS Code with Prettier" | `user.remember` -> `tool_preference` |
+| "Run `uv run pytest` before any push in this repo" | `project.remember` -> `workflow` |
 
 When in doubt: if it applies only to this repo, use project memory. If it applies regardless of which repo you are in, use user memory.
 
