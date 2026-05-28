@@ -131,7 +131,7 @@ if [ -d "$HOME/.cursor" ]; then
   cursor_detected=true
   mkdir -p "$CURSOR_PLUGINS_DIR"
   ln -sf "$PLUGIN_SRC" "$CURSOR_PLUGIN_LINK"
-  echo "  • Cursor found! Reload your Cursor window to activate the plugin (press Ctrl+Shift+P, then select 'Reload Window')."
+  echo "  • Cursor found! Reload your Cursor window to activate the plugin (Ctrl+Shift+P → 'Reload Window')."
 fi
 
 # Summary

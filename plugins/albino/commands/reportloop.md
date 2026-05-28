@@ -14,7 +14,7 @@ Read `REVIEW_REPORT.md` from the project root. If it does not exist, stop and te
 Parse all issues across all sections. For each issue, check whether it already carries a status marker (see Step 3d for the format). Issues that already have a status were handled in a previous session.
 
 Collect all issues into two lists:
-- **Pending**: issues with no status marker, sorted: CRITICAL -> HIGH -> MEDIUM -> LOW. Within each severity, preserve report order.
+- **Pending**: issues with no status marker, sorted: CRITICAL → HIGH → MEDIUM → LOW. Within each severity, preserve report order.
 - **Already processed**: issues that already have a status marker (FIXED, SKIPPED, AUTO-ADVANCED).
 
 ## Step 2: Show Progress Header
@@ -82,7 +82,7 @@ Do not fix an issue without explicit user confirmation. Do not move to the next 
 
 ## Rules
 
-- Process issues in severity order: CRITICAL -> HIGH -> MEDIUM -> LOW
+- Process issues in severity order: CRITICAL → HIGH → MEDIUM → LOW
 - Never apply a fix without user confirmation
 - Never skip an issue without user confirmation
 - Stay on the current issue until user decides: do not advance unilaterally
