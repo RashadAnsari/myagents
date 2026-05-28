@@ -215,9 +215,26 @@ The scorer must output a single integer 0–100 using this scale:
 
 **Discard any finding that scores below 80.** Do not present it to the user and do not post it.
 
-## Step 9: Present Findings and Ask What to Post
+## Step 9: Present PR Brief, Findings, and Ask What to Post
 
-If findings remain after scoring, print the full numbered list to chat. If none remain, tell the user "No issues found." and proceed directly to the verdict questions below — do not ask Question 1.
+Before listing any findings, print a **PR Brief** to give the user clear context. Format it as a short structured block using data from `PR_META` and `CHANGED_FILES`:
+
+```
+## PR #<number>: <title>
+
+Author:   <author.login>
+Branch:   <headRefName> → <baseRefName>
+Changes:  +<additions> / -<deletions> across <changedFiles> file(s)
+
+<2–4 sentence plain-English summary of what this PR does, derived from the PR body and diff. Cover: the problem or goal, the approach taken, and any notable side-effects or risks. Do not copy the PR body verbatim — synthesise it. If the PR body is empty, derive the summary from the diff alone.>
+
+Changed files:
+  - <list each path in CHANGED_FILES, one per line>
+```
+
+Apply the humanizer skill to the summary sentences before printing.
+
+If findings remain after scoring, print the full numbered list below the PR Brief. If none remain, tell the user "No issues found." and proceed directly to the verdict questions below — do not ask Question 1.
 
 **Question 1** (skip if no findings): "Which findings should I post? Pick an option, or type a description in Other (e.g. 'only 1 and 3', 'only critical and high', 'skip logging findings')."
 - Options:
