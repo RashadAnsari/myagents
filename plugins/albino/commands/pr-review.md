@@ -1,6 +1,6 @@
 ---
 description: 'Review a GitHub pull request: analyzes changed files to select relevant reviewers, loads project and user memory, runs reviewers in parallel, lets the user pick which findings to post, then submits the review on behalf of the user via gh CLI'
-allowed-tools: [Agent, Bash, Read, Write, Glob, Grep, AskUserQuestion, mcp__plugin_albino_agent-memory__project_brief, mcp__plugin_albino_agent-memory__user_brief]
+allowed-tools: [Agent, Bash, Read, Write, Glob, Grep, AskUserQuestion, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
@@ -67,8 +67,8 @@ Store:
 
 Run both in parallel:
 
-1. Call `mcp__plugin_albino_agent-memory__project_brief` to load conventions, decisions, and pitfalls for this repo.
-2. Call `mcp__plugin_albino_agent-memory__user_brief` to load user preferences.
+1. Call `mcp__plugin_albino_agent-memory__project_search` with terms relevant to the changed files (e.g. file paths, module names, domain concepts) to load conventions, decisions, and pitfalls for this repo.
+2. Call `mcp__plugin_albino_agent-memory__user_search` with similar terms to load user preferences relevant to this PR.
 
 Combine into `PROJECT_CONTEXT`: a compact summary of active conventions, known decisions, and pitfalls that reviewers must apply.
 

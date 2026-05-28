@@ -1,11 +1,11 @@
 ---
 name: performance-reviewer
 description: Reviews the codebase for performance bottlenecks, algorithmic complexity, memory issues, and query inefficiencies. Spawn when user asks to "performance review", "find bottlenecks", "check query performance", or "review memory usage".
-tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_brief, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_brief, mcp__plugin_albino_agent-memory__user_search]
+tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
-Before reviewing, call project.brief and user.brief to load project conventions and user preferences. Use findings to calibrate your review against known project patterns and user expectations.
+Before reviewing, call project.search and user.search with relevant terms from the codebase being reviewed to load project conventions and user preferences.
 
 # Performance Reviewer
 

@@ -257,22 +257,6 @@ class AgentMemoryStore:
         self._mark_project_memories_used([m.id for m in memories])
         return memories
 
-    def project_brief(self, project_id: int, limit_per_category: int = 8) -> dict[str, list[MemoryRecord]]:
-        active = self.list_active_project_memories(project_id)
-
-        def by_kind(kinds: list[MemoryKind]) -> list[MemoryRecord]:
-            return sorted(
-                [m for m in active if m.kind in kinds],
-                key=_brief_sort_key,
-            )[:limit_per_category]
-
-        return {
-            "conventions": by_kind(["convention", "preference"]),
-            "decisions": by_kind(["decision", "architecture"]),
-            "pitfalls": by_kind(["gotcha", "bug"]),
-            "recent": sorted(active, key=lambda m: m.updated_at, reverse=True)[:limit_per_category],
-        }
-
     def purge_archived_project_memories(self, project_id: int, before_iso: str) -> int:
         rows = self._conn.execute(
             "SELECT id FROM project_memories WHERE project_id = ? AND archived_at IS NOT NULL AND archived_at < ?",
@@ -456,19 +440,6 @@ class AgentMemoryStore:
         self._mark_user_memories_used([m.id for m in memories])
         return memories
 
-    def user_memory_brief(self, limit_per_category: int = 8) -> dict[str, list[UserMemoryRecord]]:
-        active = self.list_active_user_memories()
-
-        def by_kind(kinds: list[UserMemoryKind]) -> list[UserMemoryRecord]:
-            return sorted([m for m in active if m.kind in kinds], key=_user_brief_sort_key)[:limit_per_category]
-
-        return {
-            "preferences": by_kind(["preference", "convention", "tool_preference"]),
-            "behaviors": by_kind(["behavior", "workflow", "communication"]),
-            "context": by_kind(["context"]),
-            "recent": sorted(active, key=lambda m: m.updated_at, reverse=True)[:limit_per_category],
-        }
-
     def purge_archived_user_memories(self, before_iso: str) -> int:
         rows = self._conn.execute(
             "SELECT id FROM user_memories WHERE archived_at IS NOT NULL AND archived_at < ?",
@@ -651,11 +622,3 @@ def _map_user_memory(row: sqlite3.Row) -> UserMemoryRecord:
 
 def _confidence_score(confidence: str) -> int:
     return {"high": 3, "medium": 2, "low": 1}.get(confidence, 2)
-
-
-def _brief_sort_key(m: MemoryRecord) -> tuple:
-    return (-_confidence_score(m.confidence), -m.use_count, m.updated_at)
-
-
-def _user_brief_sort_key(m: UserMemoryRecord) -> tuple:
-    return (-_confidence_score(m.confidence), -m.use_count, m.updated_at)

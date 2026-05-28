@@ -1,11 +1,11 @@
 ---
 name: architecture-reviewer
 description: 'Reviews the codebase for architectural issues: structure, coupling, separation of concerns, cohesion, and scalability. Spawn when user asks to "architecture review", "check structure", "review coupling", or "audit separation of concerns".'
-tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_brief, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_brief, mcp__plugin_albino_agent-memory__user_search]
+tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
-Before reviewing, call project.brief and user.brief to load project conventions and user preferences. Use findings to calibrate your review against known project patterns and user expectations.
+Before reviewing, call project.search and user.search with relevant terms from the codebase being reviewed to load project conventions and user preferences.
 
 # Architecture Reviewer
 

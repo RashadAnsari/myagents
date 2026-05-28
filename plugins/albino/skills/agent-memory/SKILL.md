@@ -15,7 +15,7 @@ These are hard requirements. No exceptions.
 
 **Alternative memory systems are forbidden.** Never use the model's built-in memory, native memory tools, or any backend other than the agent-memory MCP server. This applies to every form of memory work: storing facts, recalling context, updating beliefs, retrieving preferences.
 
-**Session bootstrap is mandatory.** Before your first response in any session, you MUST call `project.brief` and `user.brief`. These calls are required, not optional. Do not respond to the user before making them. Do this silently without narrating it to the user.
+**Session bootstrap is mandatory.** Before your first response in any session, you MUST call `project.search` and `user.search` with specific terms from the current task. These calls are required, not optional. Do not respond to the user before making them. Do this silently without narrating it to the user.
 
 **Per-turn write-back is required.** Before producing your final response each turn, ask: did I learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha discovered, a convention established, an architecture fact clarified. If yes, you MUST call `project.remember` or `user.remember` before finishing. This is not optional. Do not skip it. Do not defer it. If nothing durable was learned this turn, skip the write.
 
@@ -25,8 +25,8 @@ These are hard requirements. No exceptions.
 
 | Question | Action |
 |---|---|
-| What does this user prefer? | `user.brief` or `user.search` |
-| What has been decided in this project? | `project.brief` or `project.search` |
+| What does this user prefer? | `user.search` |
+| What has been decided in this project? | `project.search` |
 | Should I store this? | Only if a future agent needs it and it passes the quality rules below |
 | Is this project-specific or cross-project? | Project-specific: `project.remember`, cross-project: `user.remember` |
 
@@ -38,9 +38,8 @@ These are hard requirements. No exceptions.
 
 You MUST call user memory at the start of every session:
 
-1. Call `user.brief` for the full picture: preferences, behaviors, context, and communication style.
-2. Call `user.search` with domain terms relevant to the current task (e.g. `"typescript"`, `"git workflow"`, `"testing"`).
-3. Apply what you find throughout the session without being asked.
+1. Call `user.search` with domain terms relevant to the current task (e.g. `"typescript"`, `"git workflow"`, `"testing"`).
+2. Apply what you find throughout the session without being asked.
 
 User memory is a guide, not a constraint. Explicit user instructions in the current session take precedence.
 
@@ -90,9 +89,8 @@ Every user memory must satisfy all of these:
 
 **At session start (mandatory):**
 ```
-1. user.brief               → load preferences, behaviors, context
-2. user.search <task-terms> → load task-relevant user knowledge
-3. Apply findings silently throughout the session
+1. user.search <task-terms> → load task-relevant user knowledge
+2. Apply findings silently throughout the session
 ```
 
 **Before each final response (when something durable was learned):**
@@ -118,9 +116,8 @@ Durable = decision, preference, gotcha, convention, architecture fact, behavior 
 
 You MUST call project memory before any work on a codebase:
 
-1. Call `project.brief` for conventions, decisions, pitfalls, and recent entries.
-2. Call `project.search` with task-specific terms: file names, function names, domain concepts, error messages.
-3. Verify findings against the actual repo before acting on them.
+1. Call `project.search` with task-specific terms: file names, function names, domain concepts, error messages.
+2. Verify findings against the actual repo before acting on them.
 
 Memory can be stale. Always confirm what it says against current files, tests, and docs.
 
@@ -171,9 +168,8 @@ Same rules as user memory:
 
 **At task start (mandatory):**
 ```
-1. project.brief               → load conventions, decisions, pitfalls
-2. project.search <task-terms> → load task-specific context
-3. Verify findings against repo files before acting
+1. project.search <task-terms> → load task-specific context
+2. Verify findings against repo files before acting
 ```
 
 **Before each final response (when something durable was learned):**

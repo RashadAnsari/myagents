@@ -3,8 +3,8 @@ description: "Load project memory at conversation start and save durable learnin
 alwaysApply: true
 ---
 
-SESSION MEMORY BOOTSTRAP: You MUST call project.brief and user.brief before your first response. Then call project.search and user.search with specific terms from the current task (file names, function names, domain concepts, error messages). These calls are required, not optional. Do not respond to the user before making them. Do this silently without narrating it to the user.
+SESSION MEMORY BOOTSTRAP: Before your first response, you MUST call project.search and user.search with specific terms from the current task (file names, function names, domain concepts, error messages). These calls are required, not optional. Do not respond to the user before making them. Do this silently without narrating it to the user.
 
-SESSION MEMORY READ PATTERN: Brief calls are orientation only. Search calls are task-specific. For every non-trivial task you MUST run both steps: (1) project.brief + user.brief for general context, then (2) project.search + user.search with specific terms from this task. Do not rely on brief alone. Brief without search misses targeted knowledge.
+SESSION MEMORY READ PATTERN: For every non-trivial task you MUST call project.search + user.search with specific terms from this task: file names, function names, domain concepts, error messages.
 
 SESSION MEMORY WRITE-BACK: Before producing your final response each turn, ask yourself: did I learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha discovered, a convention established, an architecture fact clarified. If yes, you MUST call project.remember or user.remember before finishing. This is not optional. Do not skip it. Do not defer it. If nothing durable was learned this turn, skip the write. Only write what is genuinely non-obvious and useful to a future agent. Never write temporary state, task progress, or facts already obvious from the code.

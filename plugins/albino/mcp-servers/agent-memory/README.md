@@ -90,7 +90,6 @@ Bad project memory:
 
 - `project.remember`: Store durable project memory after quality and secret checks. Requires `why_useful_later`. Idempotent by content: a duplicate raises an error rather than creating a second record.
 - `project.search`: Vector search project memory with optional kind and tag filters. Supports `offset` for pagination.
-- `project.brief`: Return compact conventions, decisions, pitfalls, and recent memory.
 - `project.update`: Correct, refine, or archive an existing memory.
 - `project.forget`: Archive by default or hard-delete when requested.
 - `project.purge`: Hard-delete archived project memories older than N days to prevent unbounded growth. Audit events are always preserved.
@@ -133,7 +132,6 @@ Bad user memory:
 
 - `user.remember`: Store durable user memory after quality and secret checks. Requires `why_useful_later`. Idempotent by content.
 - `user.search`: Vector search user memory with optional kind and tag filters. Supports `offset` for pagination.
-- `user.brief`: Return compact preferences, behaviors, context, and recent user memories.
 - `user.update`: Correct, refine, or archive an existing user memory.
 - `user.forget`: Archive by default or hard-delete when requested.
 - `user.purge`: Hard-delete archived user memories older than N days to prevent unbounded growth. Audit events are always preserved.

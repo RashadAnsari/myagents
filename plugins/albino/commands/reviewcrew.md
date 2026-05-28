@@ -1,6 +1,6 @@
 ---
 description: 'Run a full codebase audit: spawns all specialist reviewers in parallel and writes a consolidated report to REVIEW_REPORT.md'
-allowed-tools: [Agent, Read, Write, Glob, Grep, mcp__plugin_albino_agent-memory__project_brief, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_brief, mcp__plugin_albino_agent-memory__user_search]
+allowed-tools: [Agent, Read, Write, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
@@ -11,7 +11,7 @@ Spawn all specialist review agents in parallel, collect their findings, and writ
 
 ## Step 1: Load Memory
 
-Before spawning any reviewer, call project.brief and user.brief to load project conventions and user preferences. Use findings to inform how you brief each reviewer and to flag known gotchas or decisions that are relevant to the review.
+Before spawning any reviewer, call project.search and user.search with relevant terms to load project conventions and user preferences. Use findings to inform how you brief each reviewer and to flag known gotchas or decisions that are relevant to the review.
 
 ## Step 2: Spawn All Reviewers in Parallel
 

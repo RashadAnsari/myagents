@@ -115,14 +115,6 @@ class ProjectMemoryService:
             tags=_normalize_tags(tags) or None,
         )
 
-    def project_brief(self, project_root: str, limit_per_category: int = 8) -> dict[str, list[MemoryRecord]]:
-        project = self._store.get_project(project_root)
-        if not project:
-            raise ValueError(f"Project not found: {project_root}")
-
-        limit = _clamp(limit_per_category, 1, 25)
-        return self._store.project_brief(project.id, limit_per_category=limit)
-
     def purge_archived(self, project_root: str, days: int = 90) -> int:
         project = self._store.get_project(project_root)
         if not project:
@@ -257,9 +249,6 @@ class UserMemoryService:
             kinds=kinds or None,
             tags=_normalize_tags(tags) or None,
         )
-
-    def brief(self) -> dict[str, list[UserMemoryRecord]]:
-        return self._store.user_memory_brief()
 
     def purge_archived(self, days: int = 90) -> int:
         before = (datetime.now(tz=UTC) - timedelta(days=days)).isoformat()

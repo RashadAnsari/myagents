@@ -100,18 +100,6 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         )
         return [dataclasses.asdict(m) for m in results]
 
-    @mcp.tool(name="project.brief")
-    def project_brief(
-        project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
-        limit_per_category: Annotated[
-            int, Field(description="Maximum entries per category. Default 8, max 25.", ge=1, le=25)
-        ] = 8,
-    ) -> dict:
-        """Return a compact summary of the most important project memory grouped into: conventions (style/preference), decisions (architecture), pitfalls (gotchas/bugs), and most recently updated entries. Read this at the start of every non-trivial task before calling project.search for specifics. Increase limit_per_category to retrieve more entries per group."""
-        _log_tool("project.brief", project=project_root, limit=limit_per_category)
-        brief = project_service.project_brief(project_root, limit_per_category=limit_per_category)
-        return {k: [dataclasses.asdict(m) for m in v] for k, v in brief.items()}
-
     @mcp.tool(name="project.update")
     async def project_update(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
@@ -209,7 +197,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         tags: Annotated[list[str] | None, Field(description=_TAGS_DESC)] = None,
         include_archived: Annotated[bool, Field(description=_INCLUDE_ARCHIVED_DESC)] = False,
     ) -> list:
-        """Vector search across global user memory. Use at session start alongside user.brief to load context relevant to the current task domain. Returns up to k results ordered by semantic relevance, starting at offset for pagination. Raises RuntimeError if embedding fails."""
+        """Vector search across global user memory. Use at session start with task-specific terms to load relevant context. Returns up to k results ordered by semantic relevance, starting at offset for pagination. Raises RuntimeError if embedding fails."""
         _log_tool("user.search", query=query, k=k, offset=offset)
         results = await user_service.search(
             query=query,
@@ -220,13 +208,6 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
             include_archived=include_archived,
         )
         return [dataclasses.asdict(m) for m in results]
-
-    @mcp.tool(name="user.brief")
-    def user_brief() -> dict:
-        """Return a compact summary of all active user memory grouped into: preferences (preference/convention/tool_preference), behaviors (behavior/workflow/communication), context, and 8 most recently updated entries. Read this at the start of every session before doing any work: it is the primary way to understand the user."""
-        _log_tool("user.brief")
-        brief = user_service.brief()
-        return {k: [dataclasses.asdict(m) for m in v] for k, v in brief.items()}
 
     @mcp.tool(name="user.update")
     async def user_update(

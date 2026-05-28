@@ -125,28 +125,6 @@ async def test_update_memory(service: ProjectMemoryService, tmp_dir):
     assert updated.confidence == "high"
 
 
-async def test_project_brief_groups_by_kind(service: ProjectMemoryService, tmp_dir):
-    await service.remember(
-        project_root=str(tmp_dir),
-        kind="decision",
-        content="The project uses event sourcing with CQRS pattern for the core domain logic and command handling.",
-        why_useful_later="Future agents need this architectural decision to avoid implementing conflicting patterns.",
-        confidence="high",
-    )
-    await service.remember(
-        project_root=str(tmp_dir),
-        kind="gotcha",
-        content="SQLite WAL mode must be enabled before any other PRAGMA to avoid locking issues on concurrent reads.",
-        why_useful_later="Future agents need to know WAL mode setup order to avoid database locking problems.",
-        confidence="high",
-    )
-    brief = service.project_brief(str(tmp_dir))
-    assert "decisions" in brief
-    assert "pitfalls" in brief
-    assert any("event sourcing" in m.content for m in brief["decisions"])
-    assert any("WAL mode" in m.content for m in brief["pitfalls"])
-
-
 async def test_default_database_path_uses_home():
     import os
 
@@ -214,24 +192,6 @@ async def test_user_rejects_duplicate(user_service: UserMemoryService):
         await user_service.remember(kind="preference", content=content, why_useful_later=why)
 
 
-async def test_user_brief_groups_correctly(user_service: UserMemoryService):
-    await user_service.remember(
-        kind="preference",
-        content="User prefers TypeScript strict mode enabled in all projects and treats type errors as build failures.",
-        why_useful_later="Agents should enable strict mode and never use any-casts when writing TypeScript for this user.",
-        confidence="high",
-    )
-    await user_service.remember(
-        kind="context",
-        content="User is a senior backend engineer with eight years of experience primarily in Go and TypeScript systems.",
-        why_useful_later="Agents can assume deep language knowledge and skip basic explanations for this user.",
-        confidence="high",
-    )
-    brief = user_service.brief()
-    assert any("strict mode" in m.content for m in brief["preferences"])
-    assert any("senior" in m.content for m in brief["context"])
-
-
 async def test_user_forget_archives(user_service: UserMemoryService):
     memory = await user_service.remember(
         kind="tool_preference",
@@ -270,35 +230,6 @@ async def test_archive_excludes_from_search(service: ProjectMemoryService, tmp_d
         project_root=str(tmp_dir), query="SQLite WAL journal mode foreign keys", include_archived=True
     )
     assert any(r.id == memory.id for r in results_with_archived)
-
-
-async def test_project_brief_orders_by_confidence(service: ProjectMemoryService, tmp_dir):
-    await service.remember(
-        project_root=str(tmp_dir),
-        kind="decision",
-        content="The project stores all configuration in environment variables and never commits secrets to the repository.",
-        why_useful_later="Future agents need this to keep credentials out of version control across all environments.",
-        confidence="low",
-    )
-    await service.remember(
-        project_root=str(tmp_dir),
-        kind="decision",
-        content="The project uses a monorepo layout with all packages under the packages directory at the root level.",
-        why_useful_later="Future agents need this layout knowledge to place new packages in the correct directory.",
-        confidence="high",
-    )
-    await service.remember(
-        project_root=str(tmp_dir),
-        kind="decision",
-        content="The project deploys to Kubernetes using Helm charts and all deployments require a staging promotion step.",
-        why_useful_later="Future agents need this to generate correct deployment manifests and avoid skipping staging.",
-        confidence="medium",
-    )
-    brief = service.project_brief(str(tmp_dir))
-    decisions = brief["decisions"]
-    assert len(decisions) == 3
-    confidences = [m.confidence for m in decisions]
-    assert confidences == ["high", "medium", "low"]
 
 
 async def test_remember_defaults(service: ProjectMemoryService, tmp_dir):

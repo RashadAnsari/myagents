@@ -21,13 +21,11 @@ async def test_exposes_expected_tools(mcp_server):
     assert {t.name for t in tools} == {
         "project.remember",
         "project.search",
-        "project.brief",
         "project.update",
         "project.forget",
         "project.purge",
         "user.remember",
         "user.search",
-        "user.brief",
         "user.update",
         "user.forget",
         "user.purge",
