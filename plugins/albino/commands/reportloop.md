@@ -3,8 +3,6 @@ description: 'Interactively walk through all issues in REVIEW_REPORT.md: explain
 allowed-tools: [Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion]
 ---
 
-MANDATORY: Read AGENTS.md and follow its rules before doing anything.
-
 # Report Loop
 
 Read `REVIEW_REPORT.md`, walk through every issue one by one, explain it, ask the user to fix or skip, handle follow-up questions, apply fixes, and write the outcome of every decision back into the report.

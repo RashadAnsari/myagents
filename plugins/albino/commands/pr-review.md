@@ -3,8 +3,6 @@ description: 'Review a GitHub pull request: analyzes changed files to select rel
 allowed-tools: [Agent, Bash, Read, Write, Glob, Grep, AskUserQuestion, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
 ---
 
-MANDATORY: Read AGENTS.md and follow its rules before doing anything.
-
 MANDATORY: Read the humanizer skill at `plugins/albino/skills/humanizer/SKILL.md` now and keep all its rules active for the entire session. Every piece of text you write or post, including comment bodies, the review body, and any output to the user, must pass the humanizer check before it leaves your context.
 
 # PR Review

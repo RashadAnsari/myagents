@@ -3,8 +3,6 @@ description: 'Run a full codebase audit: spawns all specialist reviewers in para
 allowed-tools: [Agent, Read, Write, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
 ---
 
-MANDATORY: Read AGENTS.md and follow its rules before doing anything.
-
 # Review Crew
 
 Spawn all specialist review agents in parallel, collect their findings, and write a single consolidated report to `REVIEW_REPORT.md` in the project root.

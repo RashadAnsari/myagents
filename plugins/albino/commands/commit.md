@@ -3,8 +3,6 @@ description: Create a git commit
 allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*)
 ---
 
-MANDATORY: Read AGENTS.md and follow its rules before doing anything.
-
 ## Context
 
 The `!` prefix on each line below runs the shell command inline and injects its output before the prompt is submitted.
