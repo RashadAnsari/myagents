@@ -25,7 +25,7 @@ failed_registry=false
 
 need() {
   if ! command -v "$1" &>/dev/null; then
-    echo "✗ Required tool not found: $1"
+    echo "✗ '$1' is not installed. Please install it and try again."
     exit 1
   fi
 }
@@ -36,18 +36,18 @@ need git
 need python3
 
 if [ -d "$INSTALL_DIR/.git" ]; then
-  echo "→ Updating $INSTALL_DIR..."
+  echo "Updating to the latest version..."
   git -C "$INSTALL_DIR" pull --ff-only
 else
-  echo "→ Cloning $REPO_URL → $INSTALL_DIR..."
+  echo "Downloading myagents for the first time..."
   git clone "$REPO_URL" "$INSTALL_DIR"
 fi
 
-[ -d "$PLUGIN_SRC" ] || { echo "✗ Plugin source not found at $PLUGIN_SRC"; exit 1; }
+[ -d "$PLUGIN_SRC" ] || { echo "✗ Something went wrong: plugin files are missing after download."; exit 1; }
 
 # Register plugin in ~/.claude/
 
-echo "→ Registering plugin..."
+echo "Setting up the plugin..."
 mkdir -p "$CLAUDE_PLUGINS_DIR"
 
 if python3 - \
@@ -114,9 +114,9 @@ save(settings_path, settings)
 PY
 then
   registered=true
-  echo "  ✓ Registered $PLUGIN_ID → $PLUGIN_SRC"
+  echo "  ✓ Plugin installed successfully"
 else
-  echo "  ✗ Registration failed"
+  echo "  ✗ Setup failed — could not save plugin settings"
   failed_registry=true
 fi
 
@@ -124,32 +124,32 @@ fi
 
 if command -v claude &>/dev/null; then
   claude_detected=true
-  echo "  • Claude Code detected: restart open sessions to pick up the plugin"
+  echo "  • Claude Code found! Restart any open Claude Code sessions to activate the plugin."
 fi
 
 if [ -d "$HOME/.cursor" ]; then
   cursor_detected=true
   mkdir -p "$CURSOR_PLUGINS_DIR"
   ln -sf "$PLUGIN_SRC" "$CURSOR_PLUGIN_LINK"
-  echo "  • Cursor detected: reload Cursor window (Developer: Reload Window)"
+  echo "  • Cursor found! Reload your Cursor window to activate the plugin (Ctrl+Shift+P → 'Reload Window')."
 fi
 
 # Summary
 
 echo ""
 echo "────────────────────────────────"
-echo " myagents: $PLUGIN_NAME plugin"
+echo " myagents installation summary"
 echo "────────────────────────────────"
-printf " Registry    : %s\n" "$( [ "$registered" = true ] && echo "✓ written" || echo "✗ FAILED" )"
-printf " Claude Code : %s\n" "$( [ "$claude_detected" = true ] && echo "✓ detected" || echo "– not detected" )"
-printf " Cursor      : %s\n" "$( [ "$cursor_detected" = true ] && echo "✓ symlinked" || echo "– not detected" )"
+printf " Plugin saved  : %s\n" "$( [ "$registered" = true ] && echo "✓ yes" || echo "✗ failed" )"
+printf " Claude Code   : %s\n" "$( [ "$claude_detected" = true ] && echo "✓ found" || echo "not found" )"
+printf " Cursor        : %s\n" "$( [ "$cursor_detected" = true ] && echo "✓ found" || echo "not found" )"
 echo "────────────────────────────────"
 
 if [ "$claude_detected" = false ] && [ "$cursor_detected" = false ]; then
   echo ""
-  echo "Registration written but neither Claude Code nor Cursor was detected."
-  echo "Install Claude Code: https://claude.ai/download"
-  echo "Install Cursor:      https://cursor.com/download"
+  echo "The plugin was installed, but we could not find Claude Code or Cursor on your computer."
+  echo "Get Claude Code: https://claude.ai/download"
+  echo "Get Cursor:      https://cursor.com/download"
 fi
 
 if [ "$failed_registry" = true ]; then
