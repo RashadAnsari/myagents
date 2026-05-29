@@ -127,7 +127,7 @@ else
   failed_registry=true
 fi
 
-# Editor detection
+# Platform setup
 
 if command -v claude &>/dev/null; then
   claude_detected=true
@@ -144,7 +144,6 @@ fi
 if [ -d "$CLAUDE_DESKTOP_CONFIG_DIR" ]; then
   claude_desktop_detected=true
   echo "Setting up Claude Desktop integration..."
-  mkdir -p "$CLAUDE_DESKTOP_CONFIG_DIR"
   if python3 - "$CLAUDE_DESKTOP_SRC/mcp.json" "$CLAUDE_DESKTOP_CONFIG" <<'PY'
 import json, os, sys
 
@@ -183,8 +182,11 @@ PY
   fi
   if [ -d "$CLAUDE_DESKTOP_SRC/skills" ]; then
     mkdir -p "$CLAUDE_DESKTOP_SKILLS_DIR"
-    cp -r "$CLAUDE_DESKTOP_SRC/skills/." "$CLAUDE_DESKTOP_SKILLS_DIR/"
-    echo "  ✓ Skills installed into Claude Desktop"
+    if cp -r "$CLAUDE_DESKTOP_SRC/skills/." "$CLAUDE_DESKTOP_SKILLS_DIR/"; then
+      echo "  ✓ Skills installed into Claude Desktop"
+    else
+      echo "  ✗ Failed to install skills into Claude Desktop"
+    fi
   fi
   echo "  • Restart Claude Desktop to activate."
 fi

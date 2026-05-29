@@ -1,18 +1,17 @@
 {
   "mcpServers": {
     "agent-memory": {
-      "command": "uv",
+      "command": "/bin/bash",
       "args": [
-        "run",
-        "--project",
-        "~/.myagents/plugins/albino/mcp-servers/agent-memory",
-        "agent-memory"
+        "-c",
+        "~/.myagents/plugins/albino/scripts/run-with-uv.sh run --project ~/.myagents/plugins/albino/mcp-servers/agent-memory agent-memory"
       ]
     },
     "playwright": {
-      "command": "bunx",
+      "command": "/bin/bash",
       "args": [
-        "@playwright/mcp@latest"
+        "-c",
+        "~/.myagents/plugins/albino/scripts/run-with-bunx.sh @playwright/mcp@latest"
       ]
     }
   }
