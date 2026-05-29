@@ -16,9 +16,15 @@ CLAUDE_SETTINGS_JSON="$HOME/.claude/settings.json"
 CURSOR_PLUGINS_DIR="$HOME/.cursor/plugins/local"
 CURSOR_PLUGIN_LINK="$CURSOR_PLUGINS_DIR/$PLUGIN_NAME"
 
+CLAUDE_DESKTOP_SRC="$INSTALL_DIR/.claude-desktop"
+CLAUDE_DESKTOP_CONFIG_DIR="$HOME/Library/Application Support/Claude"
+CLAUDE_DESKTOP_CONFIG="$CLAUDE_DESKTOP_CONFIG_DIR/claude_desktop_config.json"
+CLAUDE_DESKTOP_SKILLS_DIR="$CLAUDE_DESKTOP_CONFIG_DIR/skills"
+
 registered=false
 claude_detected=false
 cursor_detected=false
+claude_desktop_detected=false
 failed_registry=false
 
 # Helpers
@@ -121,7 +127,7 @@ else
   failed_registry=true
 fi
 
-# Editor detection
+# Platform setup
 
 if command -v claude &>/dev/null; then
   claude_detected=true
@@ -135,23 +141,67 @@ if [ -d "$HOME/.cursor" ]; then
   echo "  • Cursor found! Reload your Cursor window to activate the plugin (Ctrl+Shift+P → 'Reload Window')."
 fi
 
+if [ -d "$CLAUDE_DESKTOP_CONFIG_DIR" ]; then
+  claude_desktop_detected=true
+  echo "Setting up Claude Desktop integration..."
+  if python3 - "$CLAUDE_DESKTOP_SRC/mcp.json" "$CLAUDE_DESKTOP_CONFIG" <<'PY'
+import json, os, sys
+
+src_path, config_path = sys.argv[1], sys.argv[2]
+
+
+def load(path):
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save(path, data):
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+    os.replace(tmp, path)
+
+
+src = load(src_path)
+config = load(config_path)
+src_servers = src.get("mcpServers", {})
+config.setdefault("mcpServers", {}).update(src_servers)
+save(config_path, config)
+PY
+  then
+    echo "  ✓ MCP servers installed into Claude Desktop config"
+  else
+    echo "  ✗ Failed to update Claude Desktop config"
+  fi
+  if [ -d "$CLAUDE_DESKTOP_SRC/skills" ]; then
+    mkdir -p "$CLAUDE_DESKTOP_SKILLS_DIR"
+    if cp -r "$CLAUDE_DESKTOP_SRC/skills/." "$CLAUDE_DESKTOP_SKILLS_DIR/"; then
+      echo "  ✓ Skills installed into Claude Desktop"
+    else
+      echo "  ✗ Failed to install skills into Claude Desktop"
+    fi
+  fi
+  echo "  • Restart Claude Desktop to activate."
+fi
+
 # Summary
 
 echo ""
 echo "────────────────────────────────"
 echo " myagents installation summary"
 echo "────────────────────────────────"
-printf " Plugin saved  : %s\n" "$( [ "$registered" = true ] && echo "✓ yes" || echo "✗ failed" )"
-printf " Claude Code   : %s\n" "$( [ "$claude_detected" = true ] && echo "✓ found" || echo "not found" )"
-printf " Cursor        : %s\n" "$( [ "$cursor_detected" = true ] && echo "✓ found" || echo "not found" )"
+printf " Plugin saved    : %s\n" "$( [ "$registered" = true ] && echo "✓ yes" || echo "✗ failed" )"
+printf " Claude Code     : %s\n" "$( [ "$claude_detected" = true ] && echo "✓ found" || echo "not found" )"
+printf " Cursor          : %s\n" "$( [ "$cursor_detected" = true ] && echo "✓ found" || echo "not found" )"
+printf " Claude Desktop  : %s\n" "$( [ "$claude_desktop_detected" = true ] && echo "✓ found" || echo "not found" )"
 echo "────────────────────────────────"
-
-if [ "$claude_detected" = false ] && [ "$cursor_detected" = false ]; then
-  echo ""
-  echo "The plugin was installed, but we could not find Claude Code or Cursor on your computer."
-  echo "Get Claude Code: https://claude.ai/download"
-  echo "Get Cursor:      https://cursor.com/download"
-fi
 
 if [ "$failed_registry" = true ]; then
   exit 1
