@@ -53,6 +53,7 @@ Slash commands available in Claude Code and Cursor sessions.
 | `/pr-review <url>` | Review a GitHub pull request: selects relevant reviewers, loads project and user memory, hunts for ripple effects, humanizes findings, then asks which to post before submitting via `gh` |
 | `/remember <what>` | Save something to agent memory: classifies the input (or current session learnings if omitted) as project or user memory and stores it via the agent-memory MCP server |
 | `/forget <what>` | Remove something from agent memory: searches both project and user memory and immediately soft-deletes all matching entries |
+| `/enrich` | Enrich project memory by mining the 100 most recently merged PRs: spawns parallel extractor agents to pull decisions, conventions, gotchas, and architectural facts from PR bodies, review comments, and discussions, then writes durable learnings to project memory |
 
 #### Agents
 
