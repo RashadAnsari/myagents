@@ -1,14 +1,14 @@
 {
   "mcpServers": {
     "agent-memory": {
-      "command": "/bin/bash",
+      "command": "bash",
       "args": [
         "-c",
         "~/.myagents/plugins/albino/scripts/run-with-uv.sh run --project ~/.myagents/plugins/albino/mcp-servers/agent-memory agent-memory"
       ]
     },
     "playwright": {
-      "command": "/bin/bash",
+      "command": "bash",
       "args": [
         "-c",
         "~/.myagents/plugins/albino/scripts/run-with-bunx.sh @playwright/mcp@latest"

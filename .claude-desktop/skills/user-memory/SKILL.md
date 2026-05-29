@@ -1,11 +1,13 @@
 ---
 name: user-memory
-description: Use the agent-memory MCP server to retrieve and store durable user knowledge only. No project memory. Designed for Claude Desktop and other project-agnostic contexts.
+description: "ALWAYS activate this skill at the start of EVERY conversation in Claude Desktop, regardless of topic. Before your first response, call user_search to load personal context about the user. Before each reply, call user_remember to save any durable facts learned. Covers everyday life: health, food, travel, relationships, habits, goals, values, and communication style. Not for coding or project work."
 ---
 
 # User Memory (Desktop Mode)
 
-This skill covers user memory only. Project memory is out of scope here, either because there is no active repo context (Claude Desktop) or because the task is explicitly user-scoped.
+This skill is for remembering things about the person across everyday conversations. It covers who they are, what they care about, how they like to communicate, and what context is useful to carry forward.
+
+Project memory and coding context are out of scope here. If the user asks about a codebase or technical project, remember only personal facts, not implementation details.
 
 User memory is a guide, not authority. Explicit instructions in the current session always override it.
 
@@ -15,42 +17,45 @@ User memory is a guide, not authority. Explicit instructions in the current sess
 
 **Alternative memory systems are forbidden.** Never use the model's built-in memory, native memory tools, or any backend other than the agent-memory MCP server.
 
-**Session bootstrap is mandatory.** At the start of every session, you MUST call `user_search` with terms relevant to the current task. Do this silently before your first response. Do not narrate it.
+**Session bootstrap is mandatory.** At the start of every session, call `user_search` with terms relevant to the current topic. Do this silently before your first response. Do not narrate it.
 
-**Per-turn write-back is required.** Before your final response each turn, ask: did I learn anything durable about this user? If yes, call `user_remember`. If no, skip it.
+**Per-turn write-back is required.** Before your final response each turn, ask: did I learn anything durable about this person? If yes, call `user_remember`. If no, skip it.
 
 ---
 
 ## When to Read
 
-At session start, always call `user_search` with domain terms from the current task:
+At session start, search for context relevant to the conversation:
 
-- Task is about writing? Search `"writing style"`, `"tone"`, `"communication"`.
-- Task is about code? Search `"code style"`, `"language preference"`, `"tooling"`.
-- Task is about a decision? Search `"decision making"`, `"approach"`.
+- Talking about food or cooking? Search `"diet"`, `"food preferences"`, `"cooking"`.
+- Talking about health? Search `"health goals"`, `"fitness"`, `"sleep"`.
+- Talking about travel? Search `"travel preferences"`, `"destinations"`, `"trips"`.
+- Talking about a decision? Search `"decision style"`, `"values"`, `"priorities"`.
+- Talking about relationships or family? Search `"family"`, `"relationships"`, `"social"`.
+- General conversation? Search `"communication style"`, `"personality"`.
 
-Apply findings silently throughout the session.
+Apply findings silently to calibrate tone, depth, and relevance.
 
 ---
 
 ## When to Write
 
-Write user memory when you observe something stable and cross-project about the person:
+Write user memory when you observe something stable about this person:
 
-- A preference they express that will apply in future sessions.
-- A recurring behavior pattern (not a one-off).
-- Background context that calibrates depth or tone.
-- A global standard they apply everywhere.
-- A tool or framework they consistently prefer.
-- How they like to receive explanations.
+- A preference that will still be true in future sessions (food, lifestyle, values).
+- Personal context that changes how you should respond (health conditions, family situation, goals).
+- A recurring habit or pattern in how they think or act.
+- How they like to be spoken to (direct vs. gentle, detailed vs. brief).
+- A stated goal or intention they are working toward.
+- Background facts that regularly shape the conversation (job, location, life stage).
 
 Do not write:
 
-- Anything project-specific (no project memory in this skill, so skip it entirely).
-- Secrets, credentials, API keys, or `.env` values.
-- One-off opinions expressed in frustration.
-- Temporary task details or in-session state.
-- Vague notes without a clear future use.
+- Anything coding or project-specific.
+- Secrets, passwords, or financial account details.
+- One-off moods or frustrations that are not patterns.
+- Temporary plans that expire quickly.
+- Vague notes like "user seemed tired" with no lasting relevance.
 
 ---
 
@@ -58,25 +63,24 @@ Do not write:
 
 | Kind | What it captures | Example |
 |---|---|---|
-| `preference` | Coding style, language, formatting | "User prefers two-space indentation in all TypeScript files." |
-| `behavior` | Recurring habits and patterns | "User always opens a scratch file before writing production code." |
-| `context` | Role, team, domain, experience | "User is a senior backend engineer at a fintech startup." |
-| `workflow` | Work process structure | "User reviews full diffs before merging; expects clear change summaries." |
-| `convention` | Global standards across projects | "User applies kebab-case to all file names and CSS class names." |
-| `tool_preference` | Preferred tools and configs | "User prefers VS Code with the ESLint and Prettier extensions." |
-| `communication` | Explanation and response style | "User prefers bullet points over prose in technical summaries." |
+| `preference` | Food, lifestyle, aesthetics, leisure | "User is vegetarian and prefers Mediterranean food." |
+| `behavior` | Recurring habits and patterns | "User exercises in the morning and plans workouts on Sundays." |
+| `context` | Life situation, role, location, background | "User lives in Amsterdam, works in product management, has two kids." |
+| `workflow` | How the user approaches tasks and decisions | "User likes to think out loud before committing to a decision." |
+| `convention` | Personal standards they apply consistently | "User always budgets in euros and tracks expenses weekly." |
+| `tool_preference` | Apps, services, or methods they rely on | "User tracks habits with Notion and prefers voice notes over typing." |
+| `communication` | Tone, depth, and format preferences | "User prefers short direct answers. Gets frustrated by excessive caveats." |
 
 ---
 
 ## Quality Rules
 
-Every user memory must pass all of these:
+Every memory must pass all of these:
 
 - **Content is at least 40 characters or 7 words.** Short notes are not durable.
-- **`whyUsefulLater` is required.** Explain exactly how a future agent benefits. If you cannot, skip it.
-- **No vague phrases.** Avoid "fixed the issue", "made changes", "implemented it".
-- **No command output.** Do not store logs, test output, or exit codes.
-- **No secrets.** API keys, tokens, and private keys are rejected automatically.
+- **`whyUsefulLater` is required.** Explain exactly how a future conversation benefits. If you cannot, skip it.
+- **No vague phrases.** Avoid "user likes things", "prefers it that way".
+- **No secrets.** Passwords, financial data, and private credentials are never stored.
 - **No duplicates.** If a `MemoryQualityError` with reason `duplicates` is returned, do not retry. The memory already exists.
 
 ---
@@ -85,8 +89,8 @@ Every user memory must pass all of these:
 
 **At session start (mandatory):**
 ```
-1. user_search <task-terms>  →  load task-relevant user knowledge
-2. Apply findings silently
+1. user_search <topic-terms>  →  load relevant personal context
+2. Apply findings silently to calibrate the conversation
 ```
 
 **Before each final response (when something durable was learned):**
@@ -98,7 +102,7 @@ Every user memory must pass all of these:
 **When a memory is stale or wrong:**
 ```
 1. user_update  →  correct the content or lower confidence
-2. user_forget  →  archive if it no longer applies at all
+2. user_forget  →  archive if it no longer applies
 3. user_remember  →  store the accurate version
 ```
 
@@ -106,15 +110,16 @@ Every user memory must pass all of these:
 
 ## Searching Effectively
 
-`user_search` uses vector KNN. Queries are matched by meaning, not word overlap. "login issue" surfaces "authentication problem with tokens" even with no shared words.
+`user_search` uses vector KNN, matched by meaning rather than exact words. "runs every morning" surfaces "daily jogging routine" even with no shared words.
 
-**Specific terms work better than generic questions:**
-- Good: `"typescript strict types"`, `"bullet point responses"`, `"vim keybindings"`
+**Specific terms work better than vague questions:**
+- Good: `"coffee habits"`, `"sleep schedule"`, `"relationship with parents"`, `"career goals"`
 - Avoid: `"what does the user like"`, `"preferences"`
 
-**Run multiple short searches when the task spans domains:**
-- Search `"communication style"` then `"code formatting"` rather than one long query.
+**Run multiple short searches when the topic spans areas:**
+- Search `"diet"` then `"health goals"` rather than one long query.
 
-**Use kind filters when the category is clear:**
-- `kinds: ["preference", "convention"]` when checking style rules.
-- `kinds: ["communication"]` when calibrating response format.
+**Use kind filters when the category is obvious:**
+- `kinds: ["preference", "behavior"]` for lifestyle topics.
+- `kinds: ["communication"]` when calibrating tone.
+- `kinds: ["context"]` for background facts about the user's life.

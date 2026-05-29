@@ -21,10 +21,9 @@ CLAUDE_SETTINGS_JSON="$HOME/.claude/settings.json"
 CURSOR_PLUGINS_DIR="$HOME/.cursor/plugins/local"
 CURSOR_PLUGIN_LINK="$CURSOR_PLUGINS_DIR/$PLUGIN_NAME"
 
-CLAUDE_DESKTOP_SRC="$INSTALL_DIR/.claude-desktop"
 CLAUDE_DESKTOP_CONFIG_DIR="$HOME/Library/Application Support/Claude"
 CLAUDE_DESKTOP_CONFIG="$CLAUDE_DESKTOP_CONFIG_DIR/claude_desktop_config.json"
-CLAUDE_DESKTOP_SKILLS_DIR="$CLAUDE_DESKTOP_CONFIG_DIR/skills"
+CLAUDE_DESKTOP_MCP_SRC="$INSTALL_DIR/.claude-desktop/mcp.json"
 
 registered=false
 claude_detected=false
@@ -147,7 +146,7 @@ fi
 if [ -d "$CLAUDE_DESKTOP_CONFIG_DIR" ]; then
   claude_desktop_detected=true
   echo "Setting up Claude Desktop integration..."
-  if python3 - "$CLAUDE_DESKTOP_SRC/mcp.json" "$CLAUDE_DESKTOP_CONFIG" <<'PY'
+  if python3 - "$CLAUDE_DESKTOP_MCP_SRC" "$CLAUDE_DESKTOP_CONFIG" <<'PY'
 import json, os, sys
 
 src_path, config_path = sys.argv[1], sys.argv[2]
@@ -179,14 +178,6 @@ PY
     echo "  ✓ MCP servers merged into Claude Desktop config"
   else
     echo "  ✗ Could not update Claude Desktop config. Check $CLAUDE_DESKTOP_CONFIG"
-  fi
-  if [ -d "$CLAUDE_DESKTOP_SRC/skills" ]; then
-    mkdir -p "$CLAUDE_DESKTOP_SKILLS_DIR"
-    if cp -r "$CLAUDE_DESKTOP_SRC/skills/." "$CLAUDE_DESKTOP_SKILLS_DIR/"; then
-      echo "  ✓ Skills copied to Claude Desktop"
-    else
-      echo "  ✗ Could not copy skills. Check $CLAUDE_DESKTOP_SKILLS_DIR"
-    fi
   fi
   echo "  • Restart Claude Desktop to load the changes."
 fi

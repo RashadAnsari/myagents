@@ -14,7 +14,7 @@ Installs for whichever platforms are detected:
 
 - **Claude Code**: registers the marketplace and installs the plugin
 - **Cursor**: symlinks the plugin to `~/.cursor/plugins/local/albino`
-- **Claude Desktop**: merges MCP servers into `claude_desktop_config.json` and installs skills
+- **Claude Desktop**: merges MCP servers into `claude_desktop_config.json`
 
 Rerun to update. Restart your editor after install.
 
@@ -127,7 +127,7 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 
 ## Claude Desktop
 
-`install.sh` detects Claude Desktop automatically, merges MCP servers into `claude_desktop_config.json`, and copies skills into the Claude Desktop config directory. Restart Claude Desktop after running it.
+`install.sh` detects Claude Desktop automatically and merges MCP servers into `claude_desktop_config.json`. Restart Claude Desktop after running it.
 
 ### MCP Servers
 
@@ -138,9 +138,7 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 
 ### Skills
 
-| Skill | Description |
-|-------|-------------|
-| `user-memory` | User-memory-only variant of the `agent-memory` skill. No project memory. Designed for Claude Desktop where there is no active repo context. Calls `user_search` at session start and `user_remember` when durable facts are learned. |
+Skills for Claude Desktop are managed directly inside the app. Go to **Customize > Skills** to add, remove, or reorder skills. The installer does not manage skills for Claude Desktop.
 
 ---
 
