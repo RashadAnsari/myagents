@@ -14,6 +14,7 @@ Installs for whichever platforms are detected:
 
 - **Claude Code**: registers the marketplace and installs the plugin
 - **Cursor**: symlinks the plugin to `~/.cursor/plugins/local/albino`
+- **Claude Desktop**: merges MCP servers into `claude_desktop_config.json`
 
 Rerun to update. Reload your editor after install.
 
@@ -130,9 +131,9 @@ The `.claude-desktop/` directory contains ready-to-use configuration for Claude 
 
 ### Setup
 
-1. Open Claude Desktop settings and go to the **MCP** section.
-2. Copy the contents of `.claude-desktop/mcp.json` into your `claude_desktop_config.json` under the `mcpServers` key, or merge the two files manually.
-3. Restart Claude Desktop.
+Run `install.sh` — it detects Claude Desktop automatically and merges the MCP servers into `claude_desktop_config.json`. Restart Claude Desktop afterwards.
+
+Manual alternative: copy the contents of `.claude-desktop/mcp.json` into your `claude_desktop_config.json` under the `mcpServers` key.
 
 ### MCP Servers
 

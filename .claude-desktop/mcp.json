@@ -8,7 +8,6 @@
         "~/.myagents/plugins/albino/mcp-servers/agent-memory",
         "agent-memory"
       ]
-    }
     },
     "playwright": {
       "command": "bunx",
