@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  echo "✗ This installer only supports macOS. Linux and Windows are not supported yet."
+  exit 1
+fi
+
 REPO_URL="https://github.com/RashadAnsari/myagents"
 INSTALL_DIR="$HOME/.myagents"
 PLUGIN_NAME="albino"
@@ -31,30 +36,31 @@ failed_registry=false
 
 need() {
   if ! command -v "$1" &>/dev/null; then
-    echo "✗ '$1' is not installed. Please install it and try again."
+    echo "✗ '$1' is required but not installed."
+    echo "  Run: brew install $1"
     exit 1
   fi
 }
 
 # Fetch repo
 
-need jq
+need jq # used by plugin hooks at runtime, not this script
 need git
 need python3
 
 if [ -d "$INSTALL_DIR/.git" ]; then
-  echo "Updating to the latest version..."
+  echo "Updating myagents in $INSTALL_DIR..."
   git -C "$INSTALL_DIR" pull --ff-only
 else
-  echo "Downloading myagents for the first time..."
+  echo "Downloading myagents into $INSTALL_DIR..."
   git clone "$REPO_URL" "$INSTALL_DIR"
 fi
 
-[ -d "$PLUGIN_SRC" ] || { echo "✗ Something went wrong: plugin files are missing after download."; exit 1; }
+[ -d "$PLUGIN_SRC" ] || { echo "✗ Install failed: plugin files are missing after download. Try deleting $INSTALL_DIR and rerunning."; exit 1; }
 
 # Register plugin in ~/.claude/
 
-echo "Setting up the plugin..."
+echo "Registering plugin with Claude Code..."
 mkdir -p "$CLAUDE_PLUGINS_DIR"
 
 if python3 - \
@@ -66,7 +72,6 @@ import datetime, json, os, sys
 (install_dir, plugin_src, mkt_name, plugin_id,
  known_path, installed_path, settings_path) = sys.argv[1:8]
 
-
 def load(path):
     if not os.path.exists(path):
         return {}
@@ -76,7 +81,6 @@ def load(path):
     except (OSError, ValueError):
         return {}
 
-
 def save(path, data):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     tmp = path + ".tmp"
@@ -84,7 +88,6 @@ def save(path, data):
         json.dump(data, f, indent=2)
         f.write("\n")
     os.replace(tmp, path)
-
 
 known = load(known_path)
 now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
@@ -121,9 +124,9 @@ save(settings_path, settings)
 PY
 then
   registered=true
-  echo "  ✓ Plugin installed successfully"
+  echo "  ✓ Plugin registered"
 else
-  echo "  ✗ Setup failed: could not save plugin settings"
+  echo "  ✗ Could not save plugin settings to ~/.claude/. Check file permissions and try again."
   failed_registry=true
 fi
 
@@ -131,14 +134,14 @@ fi
 
 if command -v claude &>/dev/null; then
   claude_detected=true
-  echo "  • Claude Code found! Restart any open Claude Code sessions to activate the plugin."
+  echo "  • Claude Code detected. Restart any open sessions to load the plugin."
 fi
 
 if [ -d "$HOME/.cursor" ]; then
   cursor_detected=true
   mkdir -p "$CURSOR_PLUGINS_DIR"
   ln -sf "$PLUGIN_SRC" "$CURSOR_PLUGIN_LINK"
-  echo "  • Cursor found! Reload your Cursor window to activate the plugin (Ctrl+Shift+P → 'Reload Window')."
+  echo "  • Cursor detected. Reload your window to load the plugin (Ctrl+Shift+P - 'Reload Window')."
 fi
 
 if [ -d "$CLAUDE_DESKTOP_CONFIG_DIR" ]; then
@@ -149,7 +152,6 @@ import json, os, sys
 
 src_path, config_path = sys.argv[1], sys.argv[2]
 
-
 def load(path):
     if not os.path.exists(path):
         return {}
@@ -159,7 +161,6 @@ def load(path):
     except (OSError, ValueError):
         return {}
 
-
 def save(path, data):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     tmp = path + ".tmp"
@@ -168,7 +169,6 @@ def save(path, data):
         f.write("\n")
     os.replace(tmp, path)
 
-
 src = load(src_path)
 config = load(config_path)
 src_servers = src.get("mcpServers", {})
@@ -176,32 +176,34 @@ config.setdefault("mcpServers", {}).update(src_servers)
 save(config_path, config)
 PY
   then
-    echo "  ✓ MCP servers installed into Claude Desktop config"
+    echo "  ✓ MCP servers merged into Claude Desktop config"
   else
-    echo "  ✗ Failed to update Claude Desktop config"
+    echo "  ✗ Could not update Claude Desktop config. Check $CLAUDE_DESKTOP_CONFIG"
   fi
   if [ -d "$CLAUDE_DESKTOP_SRC/skills" ]; then
     mkdir -p "$CLAUDE_DESKTOP_SKILLS_DIR"
     if cp -r "$CLAUDE_DESKTOP_SRC/skills/." "$CLAUDE_DESKTOP_SKILLS_DIR/"; then
-      echo "  ✓ Skills installed into Claude Desktop"
+      echo "  ✓ Skills copied to Claude Desktop"
     else
-      echo "  ✗ Failed to install skills into Claude Desktop"
+      echo "  ✗ Could not copy skills. Check $CLAUDE_DESKTOP_SKILLS_DIR"
     fi
   fi
-  echo "  • Restart Claude Desktop to activate."
+  echo "  • Restart Claude Desktop to load the changes."
 fi
 
 # Summary
 
 echo ""
 echo "────────────────────────────────"
-echo " myagents installation summary"
+echo "   myagents install summary"
 echo "────────────────────────────────"
-printf " Plugin saved    : %s\n" "$( [ "$registered" = true ] && echo "✓ yes" || echo "✗ failed" )"
-printf " Claude Code     : %s\n" "$( [ "$claude_detected" = true ] && echo "✓ found" || echo "not found" )"
-printf " Cursor          : %s\n" "$( [ "$cursor_detected" = true ] && echo "✓ found" || echo "not found" )"
-printf " Claude Desktop  : %s\n" "$( [ "$claude_desktop_detected" = true ] && echo "✓ found" || echo "not found" )"
+printf " Plugin registered : %s\n" "$( [ "$registered" = true ] && echo "✓ yes" || echo "✗ failed" )"
+printf " Claude Code       : %s\n" "$( [ "$claude_detected" = true ] && echo "✓ detected" || echo "not found" )"
+printf " Cursor            : %s\n" "$( [ "$cursor_detected" = true ] && echo "✓ detected" || echo "not found" )"
+printf " Claude Desktop    : %s\n" "$( [ "$claude_desktop_detected" = true ] && echo "✓ detected" || echo "not found" )"
 echo "────────────────────────────────"
+echo " Rerun this script at any time to update."
+echo ""
 
 if [ "$failed_registry" = true ]; then
   exit 1
