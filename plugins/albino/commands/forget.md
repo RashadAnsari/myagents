@@ -67,4 +67,4 @@ Run all forget calls in parallel.
 
 ## Step 6: Report
 
-Tell the user how many memories were forgotten and list their summaries. Mention that the deletions are soft (reversible via `project.update archive:false` or `user.update archive:false`) unless the user requests permanent removal.
+Tell the user how many memories were forgotten and list their summaries. Mention that the deletions are soft (reversible via `project_update archive:false` or `user_update archive:false`) unless the user requests permanent removal.

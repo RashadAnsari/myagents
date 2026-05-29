@@ -27,7 +27,7 @@ Store `PROJECT_ROOT` (from `git rev-parse`) and `REPO` (e.g. `owner/repo`). If `
 
 ## Step 2: Load Existing Memory
 
-Call `project.search` with these two queries in parallel to understand what is already captured:
+Call `project_search` with these two queries in parallel to understand what is already captured:
 
 - `"architecture decision convention pattern"`
 - `"gotcha bug workflow dependency"`
@@ -153,7 +153,7 @@ Store the deduplicated result as `FINAL_CANDIDATES`.
 
 ## Step 7: Write to Project Memory
 
-For each candidate in `FINAL_CANDIDATES`, call `project.remember` with:
+For each candidate in `FINAL_CANDIDATES`, call `project_remember` with:
 
 - `project_root`: `PROJECT_ROOT`
 - `kind`: candidate's `kind`
@@ -188,5 +188,5 @@ If nothing was written, say so and explain why (all duplicates, no signal in PRs
 - Never write temporary state, WIP markers, or facts obvious from reading the code.
 - Inline review comments often carry more signal than PR bodies: extractors should weight them accordingly.
 - Prefer specificity: 5 high-quality memories beat 50 vague ones.
-- If `project.remember` returns any error other than `duplicates`, log it and continue.
+- If `project_remember` returns any error other than `duplicates`, log it and continue.
 - Never write user memories from PR analysis. PR discussions are project-scoped.

@@ -40,7 +40,7 @@ def _log_tool(name: str, **context: object) -> None:
 def create_server(project_service: ProjectMemoryService, user_service: UserMemoryService) -> FastMCP:
     mcp = FastMCP("agent-memory")
 
-    @mcp.tool(name="project.remember")
+    @mcp.tool(name="project_remember")
     async def project_remember(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
         kind: Annotated[MemoryKind, Field(description=_MEMORY_KIND_DESC)],
@@ -57,7 +57,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         ] = None,
     ) -> dict:
         """Store a durable, reusable fact scoped to this project. Call this after completing work when you learned something non-obvious: a decision with rationale, a convention, an architecture fact, a gotcha, or a recurring bug cause. Rejected if content is too short, vague, or contains secrets. Idempotent by content: a second call with identical content raises MemoryQualityError (reason: 'duplicates'), confirming the memory already exists without creating a duplicate."""
-        _log_tool("project.remember", project=project_root, kind=kind)
+        _log_tool("project_remember", project=project_root, kind=kind)
         _validate_kind(kind, MEMORY_KINDS, "memory kind")
         _validate_confidence(confidence)
         mem = await project_service.remember(
@@ -73,7 +73,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         )
         return dataclasses.asdict(mem)
 
-    @mcp.tool(name="project.search")
+    @mcp.tool(name="project_search")
     async def project_search(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
         query: Annotated[
@@ -88,7 +88,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         include_archived: Annotated[bool, Field(description=_INCLUDE_ARCHIVED_DESC)] = False,
     ) -> list:
         """Vector search across project memory. Call this at task start with specific terms: file names, function names, domain concepts, error messages. Do not use generic questions as queries. Returns up to k results ordered by semantic relevance, starting at offset for pagination. Raises RuntimeError if embedding fails."""
-        _log_tool("project.search", project=project_root, query=query, k=k, offset=offset)
+        _log_tool("project_search", project=project_root, query=query, k=k, offset=offset)
         results = await project_service.search(
             project_root=project_root,
             query=query,
@@ -100,7 +100,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         )
         return [dataclasses.asdict(m) for m in results]
 
-    @mcp.tool(name="project.update")
+    @mcp.tool(name="project_update")
     async def project_update(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
         id: Annotated[int, Field(description=_ID_DESC)],
@@ -113,7 +113,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         reason: Annotated[str | None, Field(description=_REASON_DESC)] = None,
     ) -> dict:
         """Correct, refine, or soft-delete a project memory record. Use when a stored memory is inaccurate, incomplete, or outdated: the repo always wins over memory. Prefer updating over forgetting when the core fact is still valid but needs correction. Raises MemoryQualityError if updated content contains secrets. Raises ValueError if memory not found."""
-        _log_tool("project.update", project=project_root, id=id)
+        _log_tool("project_update", project=project_root, id=id)
         if confidence:
             _validate_confidence(confidence)
         updated = await project_service.update(
@@ -129,7 +129,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         )
         return dataclasses.asdict(updated)
 
-    @mcp.tool(name="project.forget")
+    @mcp.tool(name="project_forget")
     def project_forget(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
         id: Annotated[int, Field(description=_ID_DESC)],
@@ -137,10 +137,10 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         reason: Annotated[str | None, Field(description=_REASON_DESC)] = None,
     ) -> dict:
         """Soft-delete a project memory so it no longer appears in search results. Default is archive (reversible); set hard_delete: true only when the user explicitly requests permanent removal. A project-scoped audit event is always kept. Raises ValueError if memory not found."""
-        _log_tool("project.forget", project=project_root, id=id, hard_delete=hard_delete)
+        _log_tool("project_forget", project=project_root, id=id, hard_delete=hard_delete)
         return project_service.forget(project_root, id, hard_delete=hard_delete, reason=reason)
 
-    @mcp.tool(name="project.purge")
+    @mcp.tool(name="project_purge")
     def project_purge(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
         days: Annotated[
@@ -148,11 +148,11 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         ] = 90,
     ) -> dict:
         """Hard-delete archived project memories older than 'days' to prevent unbounded table growth. Safe to call during memory cleanup sessions. Audit events are always preserved. Returns count of records permanently removed."""
-        _log_tool("project.purge", project=project_root, days=days)
+        _log_tool("project_purge", project=project_root, days=days)
         count = project_service.purge_archived(project_root, days)
         return {"purged": count}
 
-    @mcp.tool(name="user.remember")
+    @mcp.tool(name="user_remember")
     async def user_remember(
         kind: Annotated[UserMemoryKind, Field(description=_USER_MEMORY_KIND_DESC)],
         content: Annotated[str, Field(description=_CONTENT_DESC)],
@@ -164,7 +164,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         source_ref: Annotated[str | None, Field(description="Optional contextual reference.")] = None,
     ) -> dict:
         """Store a durable, cross-project fact about the user: their preferences, recurring behaviors, background context, global conventions, tool choices, or communication style. Applied across all projects and sessions. Rejected if content is too short, vague, a duplicate, or contains secrets."""
-        _log_tool("user.remember", kind=kind)
+        _log_tool("user_remember", kind=kind)
         _validate_kind(kind, USER_MEMORY_KINDS, "user memory kind")
         _validate_confidence(confidence)
         mem = await user_service.remember(
@@ -179,7 +179,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         )
         return dataclasses.asdict(mem)
 
-    @mcp.tool(name="user.search")
+    @mcp.tool(name="user_search")
     async def user_search(
         query: Annotated[
             str,
@@ -198,7 +198,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         include_archived: Annotated[bool, Field(description=_INCLUDE_ARCHIVED_DESC)] = False,
     ) -> list:
         """Vector search across global user memory. Use at session start with task-specific terms to load relevant context. Returns up to k results ordered by semantic relevance, starting at offset for pagination. Raises RuntimeError if embedding fails."""
-        _log_tool("user.search", query=query, k=k, offset=offset)
+        _log_tool("user_search", query=query, k=k, offset=offset)
         results = await user_service.search(
             query=query,
             k=k,
@@ -209,7 +209,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         )
         return [dataclasses.asdict(m) for m in results]
 
-    @mcp.tool(name="user.update")
+    @mcp.tool(name="user_update")
     async def user_update(
         id: Annotated[int, Field(description=_ID_DESC)],
         content: Annotated[str | None, Field(description=_CONTENT_DESC)] = None,
@@ -221,7 +221,7 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         reason: Annotated[str | None, Field(description=_REASON_DESC)] = None,
     ) -> dict:
         """Correct, refine, or soft-delete a user memory record. Use when observed behavior contradicts a stored memory: update rather than ignore stale entries. Secret-containing updates are rejected."""
-        _log_tool("user.update", id=id)
+        _log_tool("user_update", id=id)
         if confidence:
             _validate_confidence(confidence)
         updated = await user_service.update(
@@ -236,24 +236,24 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         )
         return dataclasses.asdict(updated)
 
-    @mcp.tool(name="user.forget")
+    @mcp.tool(name="user_forget")
     def user_forget(
         id: Annotated[int, Field(description=_ID_DESC)],
         hard_delete: Annotated[bool, Field(description=_HARD_DELETE_DESC)] = False,
         reason: Annotated[str | None, Field(description=_REASON_DESC)] = None,
     ) -> dict:
         """Soft-delete a user memory so it no longer appears in search results. Default is archive (reversible); set hard_delete: true only when the user explicitly requests permanent removal."""
-        _log_tool("user.forget", id=id, hard_delete=hard_delete)
+        _log_tool("user_forget", id=id, hard_delete=hard_delete)
         return user_service.forget(id, hard_delete=hard_delete, reason=reason)
 
-    @mcp.tool(name="user.purge")
+    @mcp.tool(name="user_purge")
     def user_purge(
         days: Annotated[
             int, Field(description="Permanently delete archived user memories older than this many days.", ge=1)
         ] = 90,
     ) -> dict:
         """Hard-delete archived user memories older than 'days' to prevent unbounded growth. Audit events are always preserved. Returns count of records permanently removed."""
-        _log_tool("user.purge", days=days)
+        _log_tool("user_purge", days=days)
         count = user_service.purge_archived(days)
         return {"purged": count}
 

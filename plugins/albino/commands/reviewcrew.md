@@ -9,7 +9,7 @@ Spawn all specialist review agents in parallel, collect their findings, and writ
 
 ## Step 1: Load Memory
 
-Before spawning any reviewer, call project.search and user.search with relevant terms to load project conventions and user preferences. Use findings to inform how you brief each reviewer and to flag known gotchas or decisions that are relevant to the review.
+Before spawning any reviewer, call project_search and user_search with relevant terms to load project conventions and user preferences. Use findings to inform how you brief each reviewer and to flag known gotchas or decisions that are relevant to the review.
 
 ## Step 2: Spawn All Reviewers in Parallel
 

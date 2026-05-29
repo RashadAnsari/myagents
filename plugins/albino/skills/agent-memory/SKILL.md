@@ -15,9 +15,9 @@ These are hard requirements. No exceptions.
 
 **Alternative memory systems are forbidden.** Never use the model's built-in memory, native memory tools, or any backend other than the agent-memory MCP server. This applies to every form of memory work: storing facts, recalling context, updating beliefs, retrieving preferences.
 
-**Session bootstrap is mandatory.** Before your first response in any session, you MUST call `project.search` and `user.search` with specific terms from the current task. These calls are required, not optional. Do not respond to the user before making them. Do this silently without narrating it to the user.
+**Session bootstrap is mandatory.** Before your first response in any session, you MUST call `project_search` and `user_search` with specific terms from the current task. These calls are required, not optional. Do not respond to the user before making them. Do this silently without narrating it to the user.
 
-**Per-turn write-back is required.** Before producing your final response each turn, ask: did I learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha discovered, a convention established, an architecture fact clarified. If yes, you MUST call `project.remember` or `user.remember` before finishing. This is not optional. Do not skip it. Do not defer it. If nothing durable was learned this turn, skip the write.
+**Per-turn write-back is required.** Before producing your final response each turn, ask: did I learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha discovered, a convention established, an architecture fact clarified. If yes, you MUST call `project_remember` or `user_remember` before finishing. This is not optional. Do not skip it. Do not defer it. If nothing durable was learned this turn, skip the write.
 
 ---
 
@@ -25,10 +25,10 @@ These are hard requirements. No exceptions.
 
 | Question | Action |
 |---|---|
-| What does this user prefer? | `user.search` |
-| What has been decided in this project? | `project.search` |
+| What does this user prefer? | `user_search` |
+| What has been decided in this project? | `project_search` |
 | Should I store this? | Only if a future agent needs it and it passes the quality rules below |
-| Is this project-specific or cross-project? | Project-specific: `project.remember`, cross-project: `user.remember` |
+| Is this project-specific or cross-project? | Project-specific: `project_remember`, cross-project: `user_remember` |
 
 ---
 
@@ -38,7 +38,7 @@ These are hard requirements. No exceptions.
 
 You MUST call user memory at the start of every session:
 
-1. Call `user.search` with domain terms relevant to the current task (e.g. `"typescript"`, `"git workflow"`, `"testing"`).
+1. Call `user_search` with domain terms relevant to the current task (e.g. `"typescript"`, `"git workflow"`, `"testing"`).
 2. Apply what you find throughout the session without being asked.
 
 User memory is a guide, not a constraint. Explicit user instructions in the current session take precedence.
@@ -56,7 +56,7 @@ Write user memory when you observe something stable and cross-project about the 
 
 Do not write:
 
-- Anything project-specific: use `project.remember` instead.
+- Anything project-specific: use `project_remember` instead.
 - Secrets, credentials, API keys, or `.env` values.
 - One-off opinions stated in frustration.
 - Temporary task details.
@@ -89,23 +89,23 @@ Every user memory must satisfy all of these:
 
 **At session start (mandatory):**
 ```
-1. user.search <task-terms> → load task-relevant user knowledge
+1. user_search <task-terms> → load task-relevant user knowledge
 2. Apply findings silently throughout the session
 ```
 
 **Before each final response (when something durable was learned):**
 ```
 Durable = decision, preference, gotcha, convention, architecture fact, behavior pattern
-1. user.remember for each durable cross-project fact
+1. user_remember for each durable cross-project fact
 2. Include a clear whyUsefulLater
 3. source="agent" or source="user", source_ref=<context>
 ```
 
 **When user memory conflicts with observed behavior:**
 ```
-1. user.update to correct the existing memory
-2. Or user.forget to archive it if it no longer applies
-3. Then user.remember with the accurate version
+1. user_update to correct the existing memory
+2. Or user_forget to archive it if it no longer applies
+3. Then user_remember with the accurate version
 ```
 
 ---
@@ -116,7 +116,7 @@ Durable = decision, preference, gotcha, convention, architecture fact, behavior 
 
 You MUST call project memory before any work on a codebase:
 
-1. Call `project.search` with task-specific terms: file names, function names, domain concepts, error messages.
+1. Call `project_search` with task-specific terms: file names, function names, domain concepts, error messages.
 2. Verify findings against the actual repo before acting on them.
 
 Memory can be stale. Always confirm what it says against current files, tests, and docs.
@@ -168,14 +168,14 @@ Same rules as user memory:
 
 **At task start (mandatory):**
 ```
-1. project.search <task-terms> → load task-specific context
+1. project_search <task-terms> → load task-specific context
 2. Verify findings against repo files before acting
 ```
 
 **Before each final response (when something durable was learned):**
 ```
 Durable = decision, convention, architecture fact, gotcha, workflow step, dependency quirk
-1. project.remember for each durable repo-scoped fact
+1. project_remember for each durable repo-scoped fact
 2. Include whyUsefulLater: if you cannot explain it, skip it
 3. source="agent" or source="user", source_ref=<file path, PR, or test command>
 ```
@@ -183,15 +183,15 @@ Durable = decision, convention, architecture fact, gotcha, workflow step, depend
 **When memory is stale or wrong:**
 ```
 1. Repo wins. Memory is a hint.
-2. project.update to correct content or lower confidence
-3. project.forget to archive if it no longer applies
+2. project_update to correct content or lower confidence
+3. project_forget to archive if it no longer applies
 4. Preserve useful source references when correcting
 ```
 
 **During memory cleanup (periodic housekeeping):**
 ```
-1. project.purge <days> → hard-delete archived project memories older than N days
-2. user.purge <days>    → hard-delete archived user memories older than N days
+1. project_purge <days> → hard-delete archived project memories older than N days
+2. user_purge <days>    → hard-delete archived user memories older than N days
 3. Audit events are always preserved; only the memory rows are removed
 ```
 
@@ -199,7 +199,7 @@ Durable = decision, convention, architecture fact, gotcha, workflow step, depend
 
 ## Searching Effectively
 
-Both `project.search` and `user.search` use vector KNN search. Queries and memories are embedded with `BAAI/bge-small-en-v1.5` (384-dimensional), and nearest neighbours are retrieved by cosine distance. This means search finds memories by meaning, not word overlap: "login issue" will surface "authentication problem with tokens" even though the two share no words.
+Both `project_search` and `user_search` use vector KNN search. Queries and memories are embedded with `BAAI/bge-small-en-v1.5` (384-dimensional), and nearest neighbours are retrieved by cosine distance. This means search finds memories by meaning, not word overlap: "login issue" will surface "authentication problem with tokens" even though the two share no words.
 
 **Use specific terms, not generic questions:**
 - Good: `"sqlite fts fallback"`, `"migration project_id backfill"`, `"typescript strict return types"`
@@ -221,14 +221,14 @@ Both `project.search` and `user.search` use vector KNN search. Queries and memor
 
 | Situation | Store where |
 |---|---|
-| "This user always prefers functional style" | `user.remember` → `preference` |
-| "This project uses a custom error wrapper" | `project.remember` → `convention` |
-| "The user is a senior engineer at a fintech" | `user.remember` → `context` |
-| "The auth module must never cache tokens" | `project.remember` → `decision` |
-| "User prefers bullet points in responses" | `user.remember` → `communication` |
-| "The payment webhook silently drops events when the queue is full instead of erroring" | `project.remember` → `gotcha` |
-| "User uses VS Code with Prettier" | `user.remember` → `tool_preference` |
-| "Run `uv run pytest` before any push in this repo" | `project.remember` → `workflow` |
+| "This user always prefers functional style" | `user_remember` → `preference` |
+| "This project uses a custom error wrapper" | `project_remember` → `convention` |
+| "The user is a senior engineer at a fintech" | `user_remember` → `context` |
+| "The auth module must never cache tokens" | `project_remember` → `decision` |
+| "User prefers bullet points in responses" | `user_remember` → `communication` |
+| "The payment webhook silently drops events when the queue is full instead of erroring" | `project_remember` → `gotcha` |
+| "User uses VS Code with Prettier" | `user_remember` → `tool_preference` |
+| "Run `uv run pytest` before any push in this repo" | `project_remember` → `workflow` |
 
 When in doubt: if it applies only to this repo, use project memory. If it applies regardless of which repo you are in, use user memory.
 

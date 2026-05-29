@@ -19,23 +19,23 @@ async def test_exposes_expected_tools(mcp_server):
         tools = await client.list_tools()
 
     assert {t.name for t in tools} == {
-        "project.remember",
-        "project.search",
-        "project.update",
-        "project.forget",
-        "project.purge",
-        "user.remember",
-        "user.search",
-        "user.update",
-        "user.forget",
-        "user.purge",
+        "project_remember",
+        "project_search",
+        "project_update",
+        "project_forget",
+        "project_purge",
+        "user_remember",
+        "user_search",
+        "user_update",
+        "user_forget",
+        "user_purge",
     }
 
 
 async def test_stores_and_retrieves_memory_through_mcp(mcp_server, tmp_dir):
     async with Client(mcp_server) as client:
         remember_result = await client.call_tool(
-            "project.remember",
+            "project_remember",
             {
                 "project_root": str(tmp_dir),
                 "kind": "decision",
@@ -48,7 +48,7 @@ async def test_stores_and_retrieves_memory_through_mcp(mcp_server, tmp_dir):
         remembered = json.loads(_text(remember_result))
 
         search_result = await client.call_tool(
-            "project.search",
+            "project_search",
             {
                 "project_root": str(tmp_dir),
                 "query": "protocol coverage",
@@ -66,7 +66,7 @@ async def test_rejects_low_quality_memory_as_error(mcp_server, tmp_dir):
     async with Client(mcp_server) as client:
         with pytest.raises(Exception, match="too short"):
             await client.call_tool(
-                "project.remember",
+                "project_remember",
                 {
                     "project_root": str(tmp_dir),
                     "kind": "handoff",
@@ -79,7 +79,7 @@ async def test_rejects_low_quality_memory_as_error(mcp_server, tmp_dir):
 async def test_stores_and_retrieves_user_memory_through_mcp(mcp_server):
     async with Client(mcp_server) as client:
         remember_result = await client.call_tool(
-            "user.remember",
+            "user_remember",
             {
                 "kind": "preference",
                 "content": "User prefers verbose commit messages that explain the why behind changes rather than just the what was done.",
@@ -91,7 +91,7 @@ async def test_stores_and_retrieves_user_memory_through_mcp(mcp_server):
         remembered = json.loads(_text(remember_result))
 
         search_result = await client.call_tool(
-            "user.search",
+            "user_search",
             {
                 "query": "commit messages why reasoning",
                 "k": 5,
@@ -109,7 +109,7 @@ async def test_rejects_low_quality_user_memory(mcp_server):
     async with Client(mcp_server) as client:
         with pytest.raises(Exception, match="too short"):
             await client.call_tool(
-                "user.remember",
+                "user_remember",
                 {
                     "kind": "behavior",
                     "content": "fixed the issue",
@@ -121,7 +121,7 @@ async def test_rejects_low_quality_user_memory(mcp_server):
 async def test_user_update_confidence(mcp_server):
     async with Client(mcp_server) as client:
         remember_result = await client.call_tool(
-            "user.remember",
+            "user_remember",
             {
                 "kind": "tool_preference",
                 "content": "User strongly prefers Visual Studio Code as their primary editor over other IDEs for all development work.",
@@ -132,7 +132,7 @@ async def test_user_update_confidence(mcp_server):
         remembered = json.loads(_text(remember_result))
 
         update_result = await client.call_tool(
-            "user.update",
+            "user_update",
             {
                 "id": remembered["id"],
                 "confidence": "high",
@@ -147,7 +147,7 @@ async def test_user_update_confidence(mcp_server):
 async def test_user_forget_archives(mcp_server):
     async with Client(mcp_server) as client:
         remember_result = await client.call_tool(
-            "user.remember",
+            "user_remember",
             {
                 "kind": "workflow",
                 "content": "User prefers to work in short focused sessions of ninety minutes followed by a break before switching tasks.",
@@ -158,7 +158,7 @@ async def test_user_forget_archives(mcp_server):
         remembered = json.loads(_text(remember_result))
 
         forget_result = await client.call_tool(
-            "user.forget",
+            "user_forget",
             {
                 "id": remembered["id"],
                 "reason": "Outdated workflow preference.",
@@ -173,7 +173,7 @@ async def test_user_forget_archives(mcp_server):
 async def test_project_update(mcp_server, tmp_dir):
     async with Client(mcp_server) as client:
         remember_result = await client.call_tool(
-            "project.remember",
+            "project_remember",
             {
                 "project_root": str(tmp_dir),
                 "kind": "convention",
@@ -185,7 +185,7 @@ async def test_project_update(mcp_server, tmp_dir):
         remembered = json.loads(_text(remember_result))
 
         update_result = await client.call_tool(
-            "project.update",
+            "project_update",
             {
                 "project_root": str(tmp_dir),
                 "id": remembered["id"],
@@ -201,7 +201,7 @@ async def test_project_update(mcp_server, tmp_dir):
 async def test_project_forget_archives(mcp_server, tmp_dir):
     async with Client(mcp_server) as client:
         remember_result = await client.call_tool(
-            "project.remember",
+            "project_remember",
             {
                 "project_root": str(tmp_dir),
                 "kind": "gotcha",
@@ -213,7 +213,7 @@ async def test_project_forget_archives(mcp_server, tmp_dir):
         remembered = json.loads(_text(remember_result))
 
         forget_result = await client.call_tool(
-            "project.forget",
+            "project_forget",
             {
                 "project_root": str(tmp_dir),
                 "id": remembered["id"],

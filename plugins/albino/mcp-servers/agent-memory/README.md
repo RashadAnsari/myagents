@@ -88,11 +88,11 @@ Bad project memory:
 
 ### Project Memory Tools
 
-- `project.remember`: Store durable project memory after quality and secret checks. Requires `why_useful_later`. Idempotent by content: a duplicate raises an error rather than creating a second record.
-- `project.search`: Vector search project memory with optional kind and tag filters. Supports `offset` for pagination.
-- `project.update`: Correct, refine, or archive an existing memory.
-- `project.forget`: Archive by default or hard-delete when requested.
-- `project.purge`: Hard-delete archived project memories older than N days to prevent unbounded growth. Audit events are always preserved.
+- `project_remember`: Store durable project memory after quality and secret checks. Requires `why_useful_later`. Idempotent by content: a duplicate raises an error rather than creating a second record.
+- `project_search`: Vector search project memory with optional kind and tag filters. Supports `offset` for pagination.
+- `project_update`: Correct, refine, or archive an existing memory.
+- `project_forget`: Archive by default or hard-delete when requested.
+- `project_purge`: Hard-delete archived project memories older than N days to prevent unbounded growth. Audit events are always preserved.
 
 ## User Memory
 
@@ -130,11 +130,11 @@ Bad user memory:
 
 ### User Memory Tools
 
-- `user.remember`: Store durable user memory after quality and secret checks. Requires `why_useful_later`. Idempotent by content.
-- `user.search`: Vector search user memory with optional kind and tag filters. Supports `offset` for pagination.
-- `user.update`: Correct, refine, or archive an existing user memory.
-- `user.forget`: Archive by default or hard-delete when requested.
-- `user.purge`: Hard-delete archived user memories older than N days to prevent unbounded growth. Audit events are always preserved.
+- `user_remember`: Store durable user memory after quality and secret checks. Requires `why_useful_later`. Idempotent by content.
+- `user_search`: Vector search user memory with optional kind and tag filters. Supports `offset` for pagination.
+- `user_update`: Correct, refine, or archive an existing user memory.
+- `user_forget`: Archive by default or hard-delete when requested.
+- `user_purge`: Hard-delete archived user memories older than N days to prevent unbounded growth. Audit events are always preserved.
 
 ## Search
 
