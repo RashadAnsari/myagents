@@ -1,4 +1,7 @@
+import json
+import sqlite3
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -261,3 +264,152 @@ def test_hard_delete_keeps_audit_event(bare_store, tmp_path):
         (project.id,),
     ).fetchall()
     assert len(events) >= 1
+
+
+def test_cross_device_same_remote_shares_project(tmp_path, monkeypatch):
+    """Two clones at different paths with the same git remote return the same project_id."""
+    import agent_memory.db as db_module
+
+    path_a = tmp_path / "clone_a"
+    path_b = tmp_path / "clone_b"
+    path_a.mkdir()
+    path_b.mkdir()
+    for p in (path_a, path_b):
+        subprocess.run(["git", "init"], cwd=str(p), capture_output=True, check=False)
+
+    monkeypatch.setattr(db_module, "get_git_remote", lambda _: "https://github.com/org/myapp")
+    monkeypatch.setattr(db_module, "fingerprint_remote", lambda r: "abc123" if r else None)
+    monkeypatch.setattr(db_module, "canonical_project_root", lambda p: str(Path(p).resolve()))
+
+    store = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
+    proj_a = store.get_or_create_project(str(path_a))
+    proj_b = store.get_or_create_project(str(path_b))
+    store.close()
+
+    assert proj_a.id == proj_b.id
+
+
+def test_cross_device_updates_known_paths(tmp_path, monkeypatch):
+    """The second device's root_path is added to known_paths on first lookup."""
+    import agent_memory.db as db_module
+
+    path_a = tmp_path / "clone_a"
+    path_b = tmp_path / "clone_b"
+    path_a.mkdir()
+    path_b.mkdir()
+    for p in (path_a, path_b):
+        subprocess.run(["git", "init"], cwd=str(p), capture_output=True, check=False)
+
+    monkeypatch.setattr(db_module, "get_git_remote", lambda _: "https://github.com/org/myapp")
+    monkeypatch.setattr(db_module, "fingerprint_remote", lambda r: "abc123" if r else None)
+    monkeypatch.setattr(db_module, "canonical_project_root", lambda p: str(Path(p).resolve()))
+
+    store = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
+    store.get_or_create_project(str(path_a))
+    proj = store.get_or_create_project(str(path_b))
+    store.close()
+
+    assert str(path_a.resolve()) in proj.known_paths
+    assert str(path_b.resolve()) in proj.known_paths
+
+
+def test_migration_v2_merges_duplicate_projects(tmp_path):
+    """A v1 database with two rows sharing a fingerprint is merged by migration v2."""
+    db_path = str(tmp_path / "memory.sqlite")
+
+    # Build a v1-style database manually (root_path UNIQUE, no schema_migrations).
+    conn = sqlite3.connect(db_path)
+    conn.executescript("""
+        CREATE TABLE projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            root_path TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
+            git_remote TEXT,
+            remote_fingerprint TEXT,
+            known_paths_json TEXT NOT NULL DEFAULT '[]',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE project_memories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            content TEXT NOT NULL,
+            summary TEXT,
+            why_useful_later TEXT NOT NULL,
+            tags_json TEXT NOT NULL DEFAULT '[]',
+            confidence TEXT NOT NULL DEFAULT 'medium',
+            source TEXT,
+            source_ref TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            last_used_at TEXT,
+            use_count INTEGER NOT NULL DEFAULT 0,
+            archived_at TEXT
+        );
+        CREATE TABLE project_memory_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER NOT NULL,
+            memory_id INTEGER,
+            action TEXT NOT NULL,
+            reason TEXT,
+            created_at TEXT NOT NULL
+        );
+        CREATE TABLE user_memories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            kind TEXT NOT NULL,
+            content TEXT NOT NULL,
+            summary TEXT,
+            why_useful_later TEXT NOT NULL,
+            tags_json TEXT NOT NULL DEFAULT '[]',
+            confidence TEXT NOT NULL DEFAULT 'medium',
+            source TEXT,
+            source_ref TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            last_used_at TEXT,
+            use_count INTEGER NOT NULL DEFAULT 0,
+            archived_at TEXT
+        );
+        CREATE TABLE user_memory_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            memory_id INTEGER,
+            action TEXT NOT NULL,
+            reason TEXT,
+            created_at TEXT NOT NULL
+        );
+    """)
+    now = "2026-01-01T00:00:00+00:00"
+    conn.execute(
+        "INSERT INTO projects (root_path, name, git_remote, remote_fingerprint, known_paths_json, created_at, updated_at) VALUES (?,?,?,?,?,?,?)",
+        ("/home/alice/myapp", "myapp", "https://github.com/org/myapp", "abc123", '["/home/alice/myapp"]', now, now),
+    )
+    conn.execute(
+        "INSERT INTO projects (root_path, name, git_remote, remote_fingerprint, known_paths_json, created_at, updated_at) VALUES (?,?,?,?,?,?,?)",
+        ("/home/bob/myapp", "myapp", "https://github.com/org/myapp", "abc123", '["/home/bob/myapp"]', now, now),
+    )
+    conn.execute(
+        "INSERT INTO project_memories (project_id, kind, content, why_useful_later, tags_json, confidence, created_at, updated_at, use_count) VALUES (1,'decision','Memory from Alice device.','Test.','[]','high',?,?,0)",
+        (now, now),
+    )
+    conn.execute(
+        "INSERT INTO project_memories (project_id, kind, content, why_useful_later, tags_json, confidence, created_at, updated_at, use_count) VALUES (2,'convention','Memory from Bob device.','Test.','[]','medium',?,?,0)",
+        (now, now),
+    )
+    conn.commit()
+    conn.close()
+
+    store = AgentMemoryStore(db_path)
+
+    project_rows = store._conn.execute("SELECT * FROM projects").fetchall()
+    assert len(project_rows) == 1
+    surviving_id = project_rows[0]["id"]
+
+    mem_rows = store._conn.execute("SELECT id FROM project_memories WHERE project_id = ?", (surviving_id,)).fetchall()
+    assert len(mem_rows) == 2
+
+    paths = json.loads(project_rows[0]["known_paths_json"])
+    assert "/home/alice/myapp" in paths
+    assert "/home/bob/myapp" in paths
+
+    store.close()

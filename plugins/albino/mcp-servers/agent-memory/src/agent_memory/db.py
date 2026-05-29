@@ -38,6 +38,12 @@ def _parse_json_array(value: str) -> list[str]:
         return []
 
 
+def _sql_str(value: str | None) -> str:
+    if value is None:
+        return "NULL"
+    return "'" + value.replace("'", "''") + "'"
+
+
 class AgentMemoryStore:
     def __init__(self, db_path: str) -> None:
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -74,10 +80,47 @@ class AgentMemoryStore:
         git_remote = get_git_remote(root_path)
         remote_fingerprint = fingerprint_remote(git_remote)
         now = _now()
-        # INSERT OR IGNORE is safe here: all DB calls are synchronous on the single asyncio
-        # event-loop thread, so there is no true concurrent access to this connection.
+
+        if remote_fingerprint:
+            row = self._conn.execute(
+                "SELECT * FROM projects WHERE remote_fingerprint = ?", (remote_fingerprint,)
+            ).fetchone()
+            if row:
+                project = _map_project(row)
+                if root_path not in project.known_paths:
+                    updated_paths = json.dumps(sorted({*project.known_paths, root_path}))
+                    self._conn.execute(
+                        "UPDATE projects SET known_paths_json = ?, updated_at = ? WHERE id = ?",
+                        (updated_paths, now, project.id),
+                    )
+                    self._commit("get_or_create_project")
+                    row = self._conn.execute("SELECT * FROM projects WHERE id = ?", (project.id,)).fetchone()
+                return _map_project(row)
+
+            # Check for a legacy row (repo may have had no remote when first registered).
+            legacy = self._conn.execute(
+                "SELECT * FROM projects WHERE root_path = ? AND remote_fingerprint IS NULL", (root_path,)
+            ).fetchone()
+            if legacy:
+                paths = _parse_json_array(legacy["known_paths_json"])
+                if root_path not in paths:
+                    paths.append(root_path)
+                self._conn.execute(
+                    "UPDATE projects SET git_remote = ?, remote_fingerprint = ?, known_paths_json = ?, updated_at = ? WHERE id = ?",
+                    (git_remote, remote_fingerprint, json.dumps(sorted(set(paths))), now, legacy["id"]),
+                )
+                self._commit("get_or_create_project")
+                row = self._conn.execute("SELECT * FROM projects WHERE id = ?", (legacy["id"],)).fetchone()
+                return _map_project(row)
+        else:
+            row = self._conn.execute(
+                "SELECT * FROM projects WHERE root_path = ? AND remote_fingerprint IS NULL", (root_path,)
+            ).fetchone()
+            if row:
+                return _map_project(row)
+
         self._conn.execute(
-            """INSERT OR IGNORE INTO projects
+            """INSERT INTO projects
                (root_path, name, git_remote, remote_fingerprint, known_paths_json, created_at, updated_at)
                VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (
@@ -91,11 +134,25 @@ class AgentMemoryStore:
             ),
         )
         self._commit("get_or_create_project")
-        row = self._conn.execute("SELECT * FROM projects WHERE root_path = ?", (root_path,)).fetchone()
+        if remote_fingerprint:
+            row = self._conn.execute(
+                "SELECT * FROM projects WHERE remote_fingerprint = ?", (remote_fingerprint,)
+            ).fetchone()
+        else:
+            row = self._conn.execute(
+                "SELECT * FROM projects WHERE root_path = ? AND remote_fingerprint IS NULL", (root_path,)
+            ).fetchone()
         return _map_project(row)
 
     def get_project(self, project_root: str) -> ProjectRecord | None:
         root_path = canonical_project_root(project_root)
+        remote_fingerprint = fingerprint_remote(get_git_remote(root_path))
+        if remote_fingerprint:
+            row = self._conn.execute(
+                "SELECT * FROM projects WHERE remote_fingerprint = ?", (remote_fingerprint,)
+            ).fetchone()
+            if row:
+                return _map_project(row)
         row = self._conn.execute("SELECT * FROM projects WHERE root_path = ?", (root_path,)).fetchone()
         return _map_project(row) if row else None
 
@@ -473,8 +530,91 @@ class AgentMemoryStore:
         )
         self._commit("_mark_user_memories_used")
 
+    def _apply_migration_v2(self) -> None:
+        rows = self._conn.execute("SELECT * FROM projects").fetchall()
+
+        fingerprint_groups: dict[str, list[sqlite3.Row]] = {}
+        for row in rows:
+            fp = row["remote_fingerprint"]
+            if fp:
+                fingerprint_groups.setdefault(fp, []).append(row)
+
+        remap: dict[int, int] = {}
+        merged_paths: dict[int, list[str]] = {}
+        for group in fingerprint_groups.values():
+            if len(group) <= 1:
+                continue
+            group_sorted = sorted(group, key=lambda r: r["id"])
+            primary_id = group_sorted[0]["id"]
+            all_paths: set[str] = set()
+            for r in group_sorted:
+                all_paths.update(_parse_json_array(r["known_paths_json"]))
+            merged_paths[primary_id] = sorted(all_paths)
+            for r in group_sorted[1:]:
+                remap[r["id"]] = primary_id
+
+        insert_stmts: list[str] = []
+        for row in rows:
+            if row["id"] in remap:
+                continue
+            paths = merged_paths.get(row["id"])
+            paths_json = json.dumps(paths) if paths is not None else (row["known_paths_json"] or "[]")
+            insert_stmts.append(
+                f"INSERT INTO projects_new "
+                f"(id, root_path, name, git_remote, remote_fingerprint, known_paths_json, created_at, updated_at) "
+                f"VALUES ({row['id']}, {_sql_str(row['root_path'])}, {_sql_str(row['name'])}, "
+                f"{_sql_str(row['git_remote'])}, {_sql_str(row['remote_fingerprint'])}, "
+                f"{_sql_str(paths_json)}, {_sql_str(row['created_at'])}, {_sql_str(row['updated_at'])});"
+            )
+
+        reparent_stmts: list[str] = []
+        for secondary_id, primary_id in remap.items():
+            reparent_stmts.append(
+                f"UPDATE project_memories SET project_id = {primary_id} WHERE project_id = {secondary_id};"
+            )
+            reparent_stmts.append(
+                f"UPDATE project_memory_events SET project_id = {primary_id} WHERE project_id = {secondary_id};"
+            )
+
+        now_str = _sql_str(_now())
+        script_parts = [
+            "PRAGMA foreign_keys = OFF;",
+            "BEGIN;",
+            "DROP TABLE IF EXISTS projects_new;",
+            "CREATE TABLE projects_new (",
+            "    id INTEGER PRIMARY KEY AUTOINCREMENT,",
+            "    root_path TEXT NOT NULL,",
+            "    name TEXT NOT NULL,",
+            "    git_remote TEXT,",
+            "    remote_fingerprint TEXT,",
+            "    known_paths_json TEXT NOT NULL DEFAULT '[]',",
+            "    created_at TEXT NOT NULL,",
+            "    updated_at TEXT NOT NULL",
+            ");",
+            *insert_stmts,
+            *reparent_stmts,
+            "DROP TABLE IF EXISTS projects;",
+            "ALTER TABLE projects_new RENAME TO projects;",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_fingerprint_unique",
+            "    ON projects(remote_fingerprint)",
+            "    WHERE remote_fingerprint IS NOT NULL;",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_root_path_local",
+            "    ON projects(root_path)",
+            "    WHERE remote_fingerprint IS NULL;",
+            f"INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (2, {now_str});",
+            "COMMIT;",
+            "PRAGMA foreign_keys = ON;",
+        ]
+        self._conn.executescript("\n".join(script_parts))
+        logger.info("migration v2 applied: projects keyed by remote_fingerprint")
+
     def _migrate(self) -> None:
         self._conn.executescript("""
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS projects (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 root_path TEXT NOT NULL UNIQUE,
@@ -485,8 +625,6 @@ class AgentMemoryStore:
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
-
-            CREATE INDEX IF NOT EXISTS idx_projects_remote_fingerprint ON projects(remote_fingerprint);
 
             CREATE TABLE IF NOT EXISTS project_memories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -566,6 +704,9 @@ class AgentMemoryStore:
                 embedding float[{EMBEDDING_DIM}]
             );
         """)
+        applied = {r[0] for r in self._conn.execute("SELECT version FROM schema_migrations").fetchall()}
+        if 2 not in applied:
+            self._apply_migration_v2()
 
 
 def _map_project(row: sqlite3.Row) -> ProjectRecord:
@@ -618,7 +759,3 @@ def _map_user_memory(row: sqlite3.Row) -> UserMemoryRecord:
         use_count=row["use_count"],
         archived_at=row["archived_at"],
     )
-
-
-def _confidence_score(confidence: str) -> int:
-    return {"high": 3, "medium": 2, "low": 1}.get(confidence, 2)

@@ -1,8 +1,6 @@
 """Vector search tests: these use the real fastembed model (BAAI/bge-small-en-v1.5).
 The model is downloaded on first run (~130 MB) and cached locally thereafter."""
 
-import pytest
-
 from agent_memory.embedding import EMBEDDING_DIM, embed, memory_embed_text
 from agent_memory.memory_service import ProjectMemoryService, UserMemoryService
 
@@ -145,9 +143,9 @@ async def test_vector_search_semantic_without_word_overlap(service: ProjectMemor
     assert results[0].id == auth_mem.id
 
 
-async def test_vector_search_raises_for_unknown_project(service: ProjectMemoryService, tmp_dir):
-    with pytest.raises(ValueError, match="Project not found"):
-        await service.search(project_root=str(tmp_dir), query="anything at all")
+async def test_vector_search_returns_empty_for_unknown_project(service: ProjectMemoryService, tmp_dir):
+    results = await service.search(project_root=str(tmp_dir), query="anything at all")
+    assert results == []
 
 
 async def test_vector_search_respects_k_limit(service: ProjectMemoryService, tmp_dir):

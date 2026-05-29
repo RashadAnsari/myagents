@@ -98,7 +98,7 @@ class ProjectMemoryService:
     ) -> list[MemoryRecord]:
         project = self._store.get_project(project_root)
         if not project:
-            raise ValueError(f"Project not found: {project_root}")
+            return []
 
         limit = _clamp(k, 1, 25)
         skip = _clamp(offset, 0, 100)
