@@ -28,6 +28,7 @@ Rerun to update. Reload your editor after install.
   - [MCP Servers](#mcp-servers)
   - [Hooks](#hooks)
   - [Cursor Rules](#cursor-rules)
+- [Claude Desktop](#claude-desktop)
 - [Repository Rules](#repository-rules)
 
 ---
@@ -120,6 +121,31 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 | Rule | Description |
 |------|-------------|
 | `session-memory` | Bootstraps project memory at conversation start and prompts memory handoff at the end (covers the Cursor `stop` gap) |
+
+---
+
+## Claude Desktop
+
+The `.claude-desktop/` directory contains ready-to-use configuration for Claude Desktop.
+
+### Setup
+
+1. Open Claude Desktop settings and go to the **MCP** section.
+2. Copy the contents of `.claude-desktop/mcp.json` into your `claude_desktop_config.json` under the `mcpServers` key, or merge the two files manually.
+3. Restart Claude Desktop.
+
+### MCP Servers
+
+| Server | Description |
+|--------|-------------|
+| `agent-memory` | Stores and retrieves durable user preferences and knowledge across sessions. Served from `~/.myagents/plugins/albino/mcp-servers/agent-memory` after running `install.sh`. |
+| `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. |
+
+### Skills
+
+| Skill | Description |
+|-------|-------------|
+| `user-memory` | User-memory-only variant of the `agent-memory` skill. No project memory. Designed for Claude Desktop where there is no active repo context. Calls `user_search` at session start and `user_remember` when durable facts are learned. |
 
 ---
 

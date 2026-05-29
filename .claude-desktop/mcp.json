@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "agent-memory": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "~/.myagents/plugins/albino/mcp-servers/agent-memory",
+        "agent-memory"
+      ]
+    }
+    },
+    "playwright": {
+      "command": "bunx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    }
+  }
+}
