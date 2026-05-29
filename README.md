@@ -1,6 +1,6 @@
 # myagents
 
-Personal plugin marketplace for Claude Code and Cursor. Brings Rashad's workflows, review agents, and development conventions to any project.
+Personal plugin marketplace for Claude Code, Cursor, and Claude Desktop. Brings Rashad's workflows, review agents, and development conventions to any project.
 
 ---
 
@@ -14,9 +14,9 @@ Installs for whichever platforms are detected:
 
 - **Claude Code**: registers the marketplace and installs the plugin
 - **Cursor**: symlinks the plugin to `~/.cursor/plugins/local/albino`
-- **Claude Desktop**: merges MCP servers into `claude_desktop_config.json`
+- **Claude Desktop**: merges MCP servers into `claude_desktop_config.json` and installs skills
 
-Rerun to update. Reload your editor after install.
+Rerun to update. Restart your editor after install.
 
 ---
 
@@ -127,14 +127,14 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 
 ## Claude Desktop
 
-`install.sh` detects Claude Desktop automatically and sets it up. Restart Claude Desktop after running it.
+`install.sh` detects Claude Desktop automatically, merges MCP servers into `claude_desktop_config.json`, and copies skills into the Claude Desktop config directory. Restart Claude Desktop after running it.
 
 ### MCP Servers
 
 | Server | Description |
 |--------|-------------|
-| `agent-memory` | Stores and retrieves durable user preferences and knowledge across sessions. Served from `~/.myagents/plugins/albino/mcp-servers/agent-memory` after running `install.sh`. |
-| `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. |
+| `agent-memory` | Stores and retrieves durable user preferences and knowledge across sessions. Runs via `run-with-uv.sh`; auto-installs `uv` on first use. |
+| `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Runs via `run-with-bunx.sh`; auto-installs `bun` on first use. |
 
 ### Skills
 
