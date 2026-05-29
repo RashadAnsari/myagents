@@ -49,7 +49,7 @@ The database files are ignored by git.
 
 ## Project Memory
 
-Project memory is scoped to a single repository. It is identified by the normalized project root path and, when available, the git remote fingerprint.
+Project memory is scoped to a single repository. The repository is identified by the SHA256 fingerprint of its normalized `origin` remote URL (e.g. `https://github.com/org/repo`). This means memories are shared across all clones of the same repo, regardless of local path or device. For repos with no git remote, the local root path is used as the fallback identity.
 
 ### What Gets Stored
 
