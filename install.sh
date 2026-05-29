@@ -32,6 +32,7 @@ need() {
 
 # Fetch repo
 
+need jq
 need git
 need python3
 
