@@ -17,12 +17,9 @@ CURSOR_PLUGINS_DIR="$HOME/.cursor/plugins/local"
 CURSOR_PLUGIN_LINK="$CURSOR_PLUGINS_DIR/$PLUGIN_NAME"
 
 CLAUDE_DESKTOP_SRC="$INSTALL_DIR/.claude-desktop"
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  CLAUDE_DESKTOP_CONFIG_DIR="$HOME/Library/Application Support/Claude"
-else
-  CLAUDE_DESKTOP_CONFIG_DIR="$HOME/.config/claude"
-fi
+CLAUDE_DESKTOP_CONFIG_DIR="$HOME/Library/Application Support/Claude"
 CLAUDE_DESKTOP_CONFIG="$CLAUDE_DESKTOP_CONFIG_DIR/claude_desktop_config.json"
+CLAUDE_DESKTOP_SKILLS_DIR="$CLAUDE_DESKTOP_CONFIG_DIR/skills"
 
 registered=false
 claude_detected=false
@@ -181,10 +178,15 @@ save(config_path, config)
 PY
   then
     echo "  ✓ MCP servers installed into Claude Desktop config"
-    echo "  • Restart Claude Desktop to activate."
   else
     echo "  ✗ Failed to update Claude Desktop config"
   fi
+  if [ -d "$CLAUDE_DESKTOP_SRC/skills" ]; then
+    mkdir -p "$CLAUDE_DESKTOP_SKILLS_DIR"
+    cp -r "$CLAUDE_DESKTOP_SRC/skills/." "$CLAUDE_DESKTOP_SKILLS_DIR/"
+    echo "  ✓ Skills installed into Claude Desktop"
+  fi
+  echo "  • Restart Claude Desktop to activate."
 fi
 
 # Summary
@@ -198,14 +200,6 @@ printf " Claude Code     : %s\n" "$( [ "$claude_detected" = true ] && echo "✓ 
 printf " Cursor          : %s\n" "$( [ "$cursor_detected" = true ] && echo "✓ found" || echo "not found" )"
 printf " Claude Desktop  : %s\n" "$( [ "$claude_desktop_detected" = true ] && echo "✓ found" || echo "not found" )"
 echo "────────────────────────────────"
-
-if [ "$claude_detected" = false ] && [ "$cursor_detected" = false ] && [ "$claude_desktop_detected" = false ]; then
-  echo ""
-  echo "The plugin was installed, but we could not find Claude Code, Cursor, or Claude Desktop on your computer."
-  echo "Get Claude Code:    https://claude.ai/download"
-  echo "Get Cursor:         https://cursor.com/download"
-  echo "Get Claude Desktop: https://claude.ai/download"
-fi
 
 if [ "$failed_registry" = true ]; then
   exit 1

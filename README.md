@@ -127,13 +127,7 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 
 ## Claude Desktop
 
-The `.claude-desktop/` directory contains ready-to-use configuration for Claude Desktop.
-
-### Setup
-
-Run `install.sh` — it detects Claude Desktop automatically and merges the MCP servers into `claude_desktop_config.json`. Restart Claude Desktop afterwards.
-
-Manual alternative: copy the contents of `.claude-desktop/mcp.json` into your `claude_desktop_config.json` under the `mcpServers` key.
+`install.sh` detects Claude Desktop automatically and sets it up. Restart Claude Desktop after running it.
 
 ### MCP Servers
 
