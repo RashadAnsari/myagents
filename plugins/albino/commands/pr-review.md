@@ -61,7 +61,22 @@ Store:
 - `PR_DIFF`: full diff text from the third command
 - `HEAD_SHA`: value of `headRefOid` from `PR_META`
 
-## Step 4: Load Context
+## Step 4: Create Isolated Review Environment
+
+Clone the repository to a temporary directory at the PR head commit. All file reads, grep operations, and git commands in subsequent steps must target this directory, not the current working directory.
+
+```bash
+REVIEW_DIR=$(mktemp -d /tmp/pr-review-XXXXXX)
+gh repo clone {owner}/{repo} "$REVIEW_DIR" -- --depth=100
+git -C "$REVIEW_DIR" fetch origin pull/{number}/head:pr-review-head
+git -C "$REVIEW_DIR" checkout pr-review-head
+```
+
+If any command fails, clean up with `rm -rf "$REVIEW_DIR"` and report the error.
+
+Store `REVIEW_DIR` for use in all subsequent steps. This is the only path reviewers may use for file access and git operations.
+
+## Step 5: Load Context
 
 Run both in parallel:
 
@@ -70,7 +85,7 @@ Run both in parallel:
 
 Combine into `PROJECT_CONTEXT`: a compact summary of active conventions, known decisions, and pitfalls that reviewers must apply.
 
-## Step 5: Select Relevant Reviewers
+## Step 6: Select Relevant Reviewers
 
 Analyze `CHANGED_FILES` and apply the rules below to build the list of reviewers to spawn. Log which reviewers were selected and why before spawning.
 
@@ -108,7 +123,7 @@ Analyze `CHANGED_FILES` and apply the rules below to build the list of reviewers
 
 When spawning a custom reviewer, write a focused system prompt for it that describes its area of expertise and what to look for, then apply the same instructions and output format as all other reviewers.
 
-## Step 6: Spawn Selected Reviewers in Parallel
+## Step 7: Spawn Selected Reviewers in Parallel
 
 Spawn all selected reviewers simultaneously, including any custom ones decided in Step 5. Do not wait for one before starting the next.
 
@@ -120,8 +135,9 @@ Each agent prompt MUST:
 - Begin with: `MANDATORY: Read AGENTS.md and follow its rules before doing anything.`
 - Include the full `PR_META` and `PR_DIFF` verbatim
 - Include the full `PROJECT_CONTEXT`
+- Include `REVIEW_DIR` and this instruction verbatim: "All file reads (Read, Glob, Grep) and git commands must use REVIEW_DIR as the repository root. Do not read files from any other path."
 - The root cause of every finding must trace back to a `+` or `-` line in the diff. Something this PR added, removed, or modified must be the source of the problem
-- The impact of a finding can extend anywhere in the codebase. Actively use Read, Glob, and Grep to look for ripple effects: broken callers, missing imports, consumers of a changed API, queries that rely on a modified schema, components that depend on a changed contract. These cross-file impacts are the most important findings
+- The impact of a finding can extend anywhere in the codebase. Actively use Read, Glob, and Grep (all against REVIEW_DIR) to look for ripple effects: broken callers, missing imports, consumers of a changed API, queries that rely on a modified schema, components that depend on a changed contract. These cross-file impacts are the most important findings
 - Examples of valid findings that originate in the diff but affect unchanged code: changing a function signature that breaks callers elsewhere, removing a utility that other modules still import, changing an API response shape that breaks a frontend consumer, modifying a shared config that affects downstream services, deleting a guard that other code relied on
 - A finding is invalid only if it has no connection to anything changed in this PR: a pre-existing bug in unrelated code the PR never touched. Discard those
 - Instruct the agent to flag anything in the changed lines that conflicts with the conventions and decisions in `PROJECT_CONTEXT`
@@ -162,12 +178,12 @@ Where SEVERITY is one of: CRITICAL, HIGH, MEDIUM, LOW. The `[SEVERITY]` tag and 
 
 The `history-reviewer` has a different task from the other reviewers. Its job is not to find new bugs but to provide context that reveals real problems hidden in history. For each changed hunk in `PR_DIFF`:
 
-1. Run `git log --follow -p -- <file>` to understand the commit history of changed files
-2. Run `git blame -L <start>,<end> -- <file>` on the changed lines to see who introduced them and when
+1. Run `git -C "$REVIEW_DIR" log --follow -p -- <file>` to understand the commit history of changed files
+2. Run `git -C "$REVIEW_DIR" blame -L <start>,<end> -- <file>` on the changed lines to see who introduced them and when
 
 Output a finding only when history reveals a real problem: e.g., a line being reverted to a version that was previously removed for a known reason, or a pattern being re-introduced that was explicitly cleaned up before. Use the same output format as all other reviewers.
 
-## Step 7: Collect, Clean, and Number All Findings
+## Step 8: Collect, Clean, and Number All Findings
 
 Wait for all agents to complete. Collect every finding from every agent.
 
@@ -199,7 +215,7 @@ Assign a sequential number to every finding across both groups, sorted by severi
 5.  [LOW]      src/models/user.ts:103: Variable name `d` is too vague, use `deletedAt`
 ```
 
-## Step 8: Confidence Scoring
+## Step 9: Confidence Scoring
 
 For every finding collected in Step 7, spawn one **Haiku** subagent in parallel to score it. Each scorer receives:
 - The finding text
@@ -215,7 +231,7 @@ The scorer must output a single integer 0-100 using this scale:
 
 **Discard any finding that scores below 80.** Do not present it to the user and do not post it.
 
-## Step 9: Present PR Brief, Findings, and Ask What to Post
+## Step 10: Present PR Brief, Findings, and Ask What to Post
 
 Before listing any findings, print a **PR Brief**: 2 to 4 sentences of plain-English summary of what this PR does, derived from the PR body and diff. Cover the problem or goal, the approach taken, and any notable side effects or risks. Do not copy the PR body verbatim; synthesise it. If the PR body is empty, derive the summary from the diff alone.
 
@@ -245,9 +261,9 @@ If findings remain after scoring, print the full numbered list below the PR Brie
 
 If the user picks "Comment only" for Question 2 and "Leave empty" for Question 3 (and there are no findings or they chose "Post none"), confirm there will be nothing posted and stop.
 
-## Step 10: Post the Review
+## Step 11: Post the Review
 
-Use the review body from Question 3 in Step 9 exactly as determined:
+Use the review body from Question 3 in Step 10 exactly as determined:
 - User typed in Other: use their text verbatim
 - "Leave empty": empty string
 
@@ -284,11 +300,11 @@ gh api repos/{owner}/{repo}/pulls/{number}/reviews \
 After posting:
 - Show a confirmation with verdict and number of comments posted
 - Print the direct link to the review: `https://github.com/{owner}/{repo}/pull/{number}`
-- Clean up: `rm -f /tmp/pr_review_payload.json`
+- Clean up: `rm -f /tmp/pr_review_payload.json && rm -rf "$REVIEW_DIR"`
 
 ## Rules
 
-- Never post the review without explicit user confirmation in Step 9
+- Never post the review without explicit user confirmation in Step 10
 - Never include any mention of a review tool, AI, or automated system in the posted body or comment text. Comments must read as if a human engineer wrote them directly
 - Every comment body must pass the humanizer skill check: no hedging, no padding, no AI vocabulary ("crucial", "ensure", "leverage", "pivotal", "robust"), no significance inflation
 - Each posted comment must be 1-3 sentences (suggestion blocks do not count). If it cannot be said in 3 sentences it is probably not specific enough
@@ -301,5 +317,5 @@ After posting:
 - Deduplicate before presenting. Never show the user the same file:line twice
 - If a reviewer finds nothing, do not invent findings
 - Clean up `/tmp/pr_review_payload.json` whether or not the post succeeded
-- Never present or post any finding that scored below 80 in Step 8
+- Never present or post any finding that scored below 80 in Step 9
 - Never include a partial committable suggestion. If the fix cannot be expressed completely in one contiguous block, use prose only
