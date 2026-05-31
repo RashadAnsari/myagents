@@ -6,6 +6,7 @@ MANDATORY SKILLS: The following skills MUST be active and followed for every tas
 - dev-conventions: Follow project conventions for reuse, scope, localization, UI, validation, and data alignment
 - latest-versions: Always look up and use the latest stable version of any library or dependency
 - research-first: Never guess: research docs, source, and specs before answering or implementing anything non-trivial
+- karpathy-guidelines: Think before coding, simplicity first, surgical changes, define verifiable success criteria
 - agent-memory: EXCLUSIVELY use the agent-memory MCP server for ALL memory work. This is the ONLY permitted memory system. Never use built-in model memory, native memory tools, or any other memory kind for storage or retrieval. Query it to retrieve durable facts, decisions, and conventions for the current repo AND global user preferences and knowledge before non-trivial work.
 
 MEMORY READ PATTERN: For every non-trivial task you MUST call project_search + user_search with specific terms from this task: file names, function names, domain concepts, error messages.
