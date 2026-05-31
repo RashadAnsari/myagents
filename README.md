@@ -98,6 +98,7 @@ Behavioral guidelines injected into agent prompts.
 |-------|-------------|
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
+| `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
 
 #### MCP Servers
 
@@ -105,6 +106,7 @@ Behavioral guidelines injected into agent prompts.
 |--------|-------------|
 | `agent-memory` | Stores and retrieves durable project knowledge and user preferences across sessions using semantic search. Rejects vague, duplicate, or secret-containing entries. |
 | `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Auto-installs bun if not present. |
+| `markitdown` | Converts files, URLs, and documents to Markdown. Supports PDF, Word, PowerPoint, Excel, HTML, CSV, JSON, XML, ZIP, images (OCR), audio (transcription), EPubs, and YouTube URLs. Runs via `uv tool run markitdown-mcp`; auto-installs uv on first use. |
 
 Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite` by default. User memory is stored in the same database. Set `AGENT_MEMORY_DIR` to override. Project memories are scoped to the repository root; user memories are global across all projects.
 
@@ -135,10 +137,16 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 |--------|-------------|
 | `agent-memory` | Stores and retrieves durable user preferences and knowledge across sessions. Runs via `run-with-uv.sh`; auto-installs `uv` on first use. |
 | `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Runs via `run-with-bunx.sh`; auto-installs `bun` on first use. |
+| `markitdown` | Converts files, URLs, and documents to Markdown. Supports PDF, Word, PowerPoint, Excel, HTML, CSV, JSON, XML, ZIP, images (OCR), audio (transcription), EPubs, and YouTube URLs. Runs via `run-with-uv.sh`; auto-installs `uv` on first use. |
 
 ### Skills
 
 Skills for Claude Desktop are managed directly inside the app. Go to **Customize > Skills** to add, remove, or reorder skills. The installer does not manage skills for Claude Desktop.
+
+| Skill | Description |
+|-------|-------------|
+| `user-memory` | Remembers personal context across everyday conversations: health, food, travel, habits, goals, and communication style |
+| `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
 
 ---
 
