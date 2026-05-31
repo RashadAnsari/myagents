@@ -13,6 +13,13 @@
         "-c",
         "~/.myagents/plugins/albino/scripts/run-with-bunx.sh @playwright/mcp@latest"
       ]
+    },
+    "markitdown": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "~/.myagents/plugins/albino/scripts/run-with-uv.sh tool run markitdown-mcp"
+      ]
     }
   }
 }
