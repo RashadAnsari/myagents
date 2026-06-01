@@ -91,6 +91,7 @@ Behavioral guidelines injected into agent prompts.
 | `latest-versions` | Always look up and use the latest stable version of any dependency |
 | `research-first` | Research docs and source before answering or implementing anything non-trivial |
 | `agent-memory` | Retrieves relevant project and user memory before non-trivial work and stores durable learnings after |
+| `karpathy-guidelines` | Behavioral guidelines to reduce common LLM coding mistakes: think before coding, simplicity first, surgical changes, goal-driven execution |
 
 **Opt-in** (activate manually as needed):
 
@@ -99,7 +100,6 @@ Behavioral guidelines injected into agent prompts.
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 | `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
-| `karpathy-guidelines` | Behavioral guidelines to reduce common LLM coding mistakes: think before coding, simplicity first, surgical changes, goal-driven execution |
 
 #### MCP Servers
 
