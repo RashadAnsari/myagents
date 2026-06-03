@@ -47,6 +47,13 @@ When set, the database path becomes:
 
 The database files are ignored by git.
 
+## Configuration
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `AGENT_MEMORY_DIR` | `~/.myagents/agent-memory` | Directory where `memory.sqlite` is stored. |
+| `DISABLE_PROJECT_MEMORY` | unset | Set to `true`, `1`, or `yes` to disable all project memory tools at startup. When set, `project_remember`, `project_search`, `project_update`, `project_forget`, and `project_purge` are not registered and will not appear in the tool list. User memory tools are unaffected. Useful for installations where project-scoped memory is not wanted, such as Claude Desktop. |
+
 ## Project Memory
 
 Project memory is scoped to a single repository. The repository is identified by the SHA256 fingerprint of its normalized `origin` remote URL (e.g. `https://github.com/org/repo`). This means memories are shared across all clones of the same repo, regardless of local path or device. For repos with no git remote, the local root path is used as the fallback identity.
@@ -185,4 +192,4 @@ printf '%s\n' \
 - Archived memories are excluded from normal search; pass `include_archived=True` to include them.
 - Hard delete removes the memory row but always keeps an audit event.
 - `remember()` is embed-first: the embedding is computed before any DB write, so a failed embedding leaves the database untouched.
-- The `AGENT_MEMORY_DIR` environment variable overrides the storage directory; the database is placed directly inside it as `memory.sqlite`.
+- `AGENT_MEMORY_DIR` overrides the storage directory; the database is placed inside it as `memory.sqlite`.

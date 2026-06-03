@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 
 from .db import AgentMemoryStore
@@ -18,10 +19,11 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     store = None
     try:
+        disable_project_memory = os.environ.get("DISABLE_PROJECT_MEMORY", "").lower() in ("1", "true", "yes")
         store = AgentMemoryStore(default_database_path())
         project_service = ProjectMemoryService(store)
         user_service = UserMemoryService(store)
-        mcp = create_server(project_service, user_service)
+        mcp = create_server(project_service, user_service, disable_project_memory=disable_project_memory)
     except Exception as exc:
         logger.exception("initialization failed: %s", exc)
         sys.exit(1)

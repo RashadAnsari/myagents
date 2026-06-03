@@ -37,9 +37,7 @@ def _log_tool(name: str, **context: object) -> None:
     logger.debug("tool %s %s", name, parts)
 
 
-def create_server(project_service: ProjectMemoryService, user_service: UserMemoryService) -> FastMCP:
-    mcp = FastMCP("agent-memory")
-
+def _register_project_tools(mcp: FastMCP, project_service: ProjectMemoryService) -> None:
     @mcp.tool(name="project_remember")
     async def project_remember(
         project_root: Annotated[str, Field(description=_PROJECT_ROOT_DESC)],
@@ -152,6 +150,8 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         count = project_service.purge_archived(project_root, days)
         return {"purged": count}
 
+
+def _register_user_tools(mcp: FastMCP, user_service: UserMemoryService) -> None:
     @mcp.tool(name="user_remember")
     async def user_remember(
         kind: Annotated[UserMemoryKind, Field(description=_USER_MEMORY_KIND_DESC)],
@@ -256,6 +256,22 @@ def create_server(project_service: ProjectMemoryService, user_service: UserMemor
         _log_tool("user_purge", days=days)
         count = user_service.purge_archived(days)
         return {"purged": count}
+
+
+def create_server(
+    project_service: ProjectMemoryService,
+    user_service: UserMemoryService,
+    *,
+    disable_project_memory: bool = False,
+) -> FastMCP:
+    mcp = FastMCP("agent-memory")
+
+    if disable_project_memory:
+        logger.info("project memory disabled via DISABLE_PROJECT_MEMORY; project_* tools not registered")
+    else:
+        _register_project_tools(mcp, project_service)
+
+    _register_user_tools(mcp, user_service)
 
     return mcp
 

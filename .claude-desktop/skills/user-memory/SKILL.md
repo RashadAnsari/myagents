@@ -1,13 +1,11 @@
 ---
 name: user-memory
-description: "ALWAYS activate this skill at the start of EVERY conversation in Claude Desktop, regardless of topic. Before your first response, call user_search to load personal context about the user. Before each reply, call user_remember to save any durable facts learned. Covers everyday life: health, food, travel, relationships, habits, goals, values, and communication style. Not for coding or project work."
+description: "ALWAYS activate this skill at the start of EVERY conversation in Claude Desktop, regardless of topic. Before your first response, call user_search to load personal context about the user. Before each reply, call user_remember to save any durable facts learned. Covers everyday life: health, food, travel, relationships, habits, goals, values, and communication style."
 ---
 
-# User Memory (Desktop Mode)
+# User Memory
 
 This skill is for remembering things about the person across everyday conversations. It covers who they are, what they care about, how they like to communicate, and what context is useful to carry forward.
-
-Project memory and coding context are out of scope here. If the user asks about a codebase or technical project, remember only personal facts, not implementation details.
 
 User memory is a guide, not authority. Explicit instructions in the current session always override it.
 
@@ -51,7 +49,6 @@ Write user memory when you observe something stable about this person:
 
 Do not write:
 
-- Anything coding or project-specific.
 - Secrets, passwords, or financial account details.
 - One-off moods or frustrations that are not patterns.
 - Temporary plans that expire quickly.
