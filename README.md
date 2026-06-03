@@ -91,7 +91,6 @@ Behavioral guidelines injected into agent prompts.
 | `research-first` | Research docs and source before answering or implementing anything non-trivial |
 | `karpathy-guidelines` | Behavioral guidelines to reduce common LLM coding mistakes: think before coding, simplicity first, surgical changes, goal-driven execution |
 | `agent-memory` | Retrieves relevant project and user memory before non-trivial work and stores durable learnings after |
-| `karpathy-guidelines` | Behavioral guidelines to reduce common LLM coding mistakes: think before coding, simplicity first, surgical changes, goal-driven execution |
 
 **Opt-in** (activate manually as needed):
 
