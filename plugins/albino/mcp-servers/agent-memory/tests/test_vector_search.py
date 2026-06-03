@@ -208,3 +208,169 @@ async def test_user_archived_excluded_from_vector_search(user_service: UserMemor
 
     results = await user_service.search(query="Yarn package management migration")
     assert len(results) == 0
+
+
+# --- Relevance / anti-garbage tests ---
+# These verify that search returns on-topic results and does not surface
+# semantically unrelated memories ahead of a clearly matching one.
+
+GARBAGE_MEMORIES = [
+    (
+        "convention",
+        "The best pasta shapes for thick cream sauces are rigatoni and pappardelle because they hold the sauce well.",
+        "Agents need this for menu planning.",
+    ),
+    (
+        "convention",
+        "Mount Everest stands at 8,849 metres above sea level and is located in the Himalayas on the Nepal-Tibet border.",
+        "Agents need this for geography queries.",
+    ),
+    (
+        "convention",
+        "Wool cardigans should be hand-washed in cold water and laid flat to dry to prevent shrinkage and maintain shape.",
+        "Agents need this for fabric care advice.",
+    ),
+    (
+        "convention",
+        "The offside rule in football is triggered when an attacker receives the ball while nearer to the goal line than both the ball and the second-to-last defender.",
+        "Agents need this for sports rule explanations.",
+    ),
+    (
+        "convention",
+        "Tomatoes thrive in full sun and need at least six hours of direct sunlight per day along with consistent watering.",
+        "Agents need this for gardening advice.",
+    ),
+    (
+        "convention",
+        "The boiling point of water drops by roughly 1 degree Celsius for every 300 metres of elevation gain above sea level.",
+        "Agents need this for high-altitude cooking adjustments.",
+    ),
+]
+
+
+async def _store_garbage(service: ProjectMemoryService, tmp_dir) -> None:
+    for kind, content, why in GARBAGE_MEMORIES:
+        await service.remember(
+            project_root=str(tmp_dir),
+            kind=kind,
+            content=content,
+            why_useful_later=why,
+            confidence="medium",
+        )
+
+
+async def test_search_returns_relevant_not_garbage(service: ProjectMemoryService, tmp_dir):
+    """Top result for a technical query must be the on-topic memory, not one of
+    the unrelated noise memories stored alongside it."""
+    await _store_garbage(service, tmp_dir)
+    relevant = await service.remember(
+        project_root=str(tmp_dir),
+        kind="architecture",
+        content="The API gateway uses Redis as a distributed rate-limiting backend, keyed by client IP and route prefix with a sliding-window TTL.",
+        why_useful_later="Future agents need to know the rate-limiting backend to configure Redis correctly.",
+        confidence="high",
+    )
+    results = await service.search(project_root=str(tmp_dir), query="Redis rate limiting API gateway TTL", k=1)
+    assert len(results) == 1
+    assert results[0].id == relevant.id, (
+        f"Expected relevant memory (id={relevant.id}) to rank first, got id={results[0].id}: {results[0].content[:80]}"
+    )
+
+
+async def test_search_cross_domain_discrimination(service: ProjectMemoryService, tmp_dir):
+    """Search must discriminate across two completely different technical domains.
+    A security query must not surface a frontend styling result first, and vice versa."""
+    security_mem = await service.remember(
+        project_root=str(tmp_dir),
+        kind="gotcha",
+        content="All outbound HTTP requests must include an HMAC-SHA256 signature header derived from the request body and a rotating secret key to prevent replay attacks.",
+        why_useful_later="Future agents need this to avoid shipping unsigned requests that will be rejected by downstream services.",
+        confidence="high",
+    )
+    styling_mem = await service.remember(
+        project_root=str(tmp_dir),
+        kind="convention",
+        content="Design tokens for colour, spacing, and typography are defined in tokens.css and must never be duplicated inline; components import them via CSS custom properties.",
+        why_useful_later="Future agents must reference tokens.css instead of hardcoding values to keep the design system consistent.",
+        confidence="high",
+    )
+
+    security_results = await service.search(
+        project_root=str(tmp_dir), query="HMAC signature authentication replay attack prevention", k=1
+    )
+    assert len(security_results) == 1
+    assert security_results[0].id == security_mem.id, (
+        f"Security query returned styling result first: {security_results[0].content[:80]}"
+    )
+
+    styling_results = await service.search(
+        project_root=str(tmp_dir), query="CSS design tokens colour spacing typography custom properties", k=1
+    )
+    assert len(styling_results) == 1
+    assert styling_results[0].id == styling_mem.id, (
+        f"Styling query returned security result first: {styling_results[0].content[:80]}"
+    )
+
+
+async def test_search_top_k_stays_on_topic_amid_noise(service: ProjectMemoryService, tmp_dir):
+    """With many unrelated memories in the store, all top-k results for a domain
+    query must come from that domain rather than from the noise pool."""
+    await _store_garbage(service, tmp_dir)
+    db_ids = set()
+    for content in [
+        "Postgres read replicas are promoted automatically by Patroni when the primary fails a health check three times in a row.",
+        "Connection pool size is capped at 20 per dyno to stay within Postgres's max_connections limit of 100 across five dynos.",
+        "Slow query logging is enabled at the 200 ms threshold; logs are shipped to Datadog and trigger a PagerDuty alert at 1 second.",
+    ]:
+        m = await service.remember(
+            project_root=str(tmp_dir),
+            kind="architecture",
+            content=content,
+            why_useful_later="Future agents need this for database operations.",
+            confidence="high",
+        )
+        db_ids.add(m.id)
+
+    results = await service.search(project_root=str(tmp_dir), query="PostgreSQL connection pool replica failover", k=3)
+    assert len(results) == 3
+    returned_ids = {r.id for r in results}
+    assert returned_ids == db_ids, (
+        f"Expected only the 3 database memories in top-3, but got ids={returned_ids}. "
+        f"Non-database result contents: {[r.content[:60] for r in results if r.id not in db_ids]}"
+    )
+
+
+async def test_user_search_returns_relevant_not_garbage(user_service: UserMemoryService):
+    """User memory search must return the on-topic result ahead of unrelated noise."""
+    noise_contents = [
+        (
+            "preference",
+            "User enjoys hiking and prefers trails with at least 500 metres of elevation gain on weekends.",
+            "Agents need this for leisure planning.",
+        ),
+        (
+            "preference",
+            "User collects vintage mechanical keyboards and follows several specialist forums for new arrivals.",
+            "Agents need this for hobby context.",
+        ),
+        (
+            "preference",
+            "User drinks espresso in the morning and switches to herbal tea after 2 pm to avoid afternoon caffeine crashes.",
+            "Agents need this for meeting scheduling.",
+        ),
+    ]
+    for kind, content, why in noise_contents:
+        await user_service.remember(kind=kind, content=content, why_useful_later=why, confidence="low")
+
+    relevant = await user_service.remember(
+        kind="behavior",
+        content="User always insists on structured logging with JSON output and correlation IDs on every log line so traces can be joined across services.",
+        why_useful_later="Agents must emit structured JSON logs with a correlation ID field, never plain-text log lines.",
+        confidence="high",
+    )
+
+    results = await user_service.search(query="structured logging JSON correlation ID tracing", k=1)
+    assert len(results) == 1
+    assert results[0].id == relevant.id, (
+        f"Expected relevant memory (id={relevant.id}), got id={results[0].id}: {results[0].content[:80]}"
+    )
