@@ -6,20 +6,5 @@
     "name": "Rashad Ansari",
     "url": "https://github.com/RashadAnsari"
   },
-  "rules": "./rules",
-  "hooks": {
-    "version": 1,
-    "hooks": {
-      "sessionStart": [
-        {
-          "command": "./hooks/session-start.sh"
-        }
-      ],
-      "beforeSubmitPrompt": [
-        {
-          "command": "./hooks/user-prompt-submit.sh"
-        }
-      ]
-    }
-  }
+  "rules": "./rules"
 }

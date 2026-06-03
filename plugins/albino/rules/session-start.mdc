@@ -1,10 +1,9 @@
-#!/usr/bin/env bash
-set -euo pipefail
+---
+description: "Mandatory skills, memory read/write rules, and session bootstrap at conversation start"
+alwaysApply: true
+---
 
-input=$(cat)
-hook_event=$(printf '%s' "$input" | jq -r '.hook_event_name // ""' 2>/dev/null || echo "")
-
-REMINDER="BEFORE YOUR FIRST RESPONSE (required, silent):
+BEFORE YOUR FIRST RESPONSE (required, silent):
 1. Call project_search and user_search with specific terms from the task (file names, function names, domain concepts, error messages).
 2. Read AGENTS.md if it exists and apply its rules.
 
@@ -20,11 +19,4 @@ AFTER EVERY RESPONSE (required):
 Did you learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha found, a convention established, an architecture fact clarified. If yes, call project_remember or user_remember before finishing. Skip if nothing non-obvious was learned. Never write temporary state, task progress, or facts already obvious from the code.
 
 WHEN SPAWNING SUBAGENTS:
-Pass these same instructions to every subagent."
-
-jq -n --arg event "${hook_event:-SessionStart}" --arg ctx "$REMINDER" '{
-  hookSpecificOutput: {
-    hookEventName: $event,
-    additionalContext: $ctx
-  }
-}'
+Pass these same instructions to every subagent.

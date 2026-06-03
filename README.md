@@ -81,15 +81,15 @@ Specialist review agents spawned in parallel by `/reviewcrew`, also available in
 
 Behavioral guidelines injected into agent prompts.
 
-**Mandatory** (always active, injected before every prompt via the `user-prompt-submit` hook):
+**Mandatory** (always active, injected at session start via the `session-start` hook for Claude Code and the `session-start` rule for Cursor):
 
 | Skill | Description |
 |-------|-------------|
-| `agent-protocol` | Enforces `AGENTS.md` rules on every agent spawn |
 | `code-reusability` | Spots duplication and applies extraction patterns |
 | `dev-conventions` | General conventions: reuse, scope, localization, UI, validation, and data |
 | `latest-versions` | Always look up and use the latest stable version of any dependency |
 | `research-first` | Research docs and source before answering or implementing anything non-trivial |
+| `karpathy-guidelines` | Behavioral guidelines to reduce common LLM coding mistakes: think before coding, simplicity first, surgical changes, goal-driven execution |
 | `agent-memory` | Retrieves relevant project and user memory before non-trivial work and stores durable learnings after |
 | `karpathy-guidelines` | Behavioral guidelines to reduce common LLM coding mistakes: think before coding, simplicity first, surgical changes, goal-driven execution |
 
@@ -97,6 +97,7 @@ Behavioral guidelines injected into agent prompts.
 
 | Skill | Description |
 |-------|-------------|
+| `agent-protocol` | Enforces `AGENTS.md` rules on every agent spawn |
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 | `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
@@ -115,8 +116,7 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 
 | Hook | Event | Description |
 |------|-------|-------------|
-| `session-start` | `SessionStart` / `sessionStart` | Bootstraps project memory and user preferences before the first prompt |
-| `user-prompt-submit` | `UserPromptSubmit` / `beforeSubmitPrompt` | Injects the mandatory `AGENTS.md` reminder and active skill list before every prompt |
+| `session-start` | `SessionStart` | Injects mandatory skills, memory read/write rules, and session bootstrap at the start of every Claude Code session |
 
 #### Cursor Rules
 
@@ -124,7 +124,7 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 
 | Rule | Description |
 |------|-------------|
-| `session-memory` | Bootstraps project memory at conversation start and prompts memory handoff at the end (covers the Cursor `stop` gap) |
+| `session-start` | Injects mandatory skills, memory read/write rules, and session bootstrap into every Cursor session (always-applied rule, equivalent to the `session-start` hook in Claude Code) |
 
 ---
 

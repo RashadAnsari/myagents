@@ -20,13 +20,13 @@ Review agents are any agent file whose name ends in `-reviewer.md` inside `plugi
 
 ## Skill Reminder Rule
 
-The mandatory skill list is injected before every prompt via a single file:
+The mandatory skill list is injected once at session start via:
 
-- `plugins/albino/hooks/user-prompt-submit.sh`: runs on Claude Code (`UserPromptSubmit`) and Cursor (`beforeSubmitPrompt`)
+- `plugins/albino/hooks/session-start.sh`: runs on Claude Code (`SessionStart`)
+- `plugins/albino/rules/session-start.mdc`: runs on Cursor (always-applied rule)
 
-The skills currently injected:
+Both files must contain identical content. The skills currently injected:
 
-- `agent-protocol`
 - `code-reusability`
 - `dev-conventions`
 - `latest-versions`
@@ -34,15 +34,15 @@ The skills currently injected:
 - `karpathy-guidelines`
 - `agent-memory`
 
-These 6 skills are mandatory and always active. Additional skills are available in `plugins/albino/skills/` but are opt-in and not injected automatically.
+These skills are mandatory and always active. Additional skills are available in `plugins/albino/skills/` but are opt-in and not injected automatically.
 
 **When a new skill is added to `plugins/albino/skills/`, ask the user:**
 
 > "A new skill `<name>` was added. Do you want it included in the agent reminder so it is enforced on every task?"
 
-If yes: add it to the skill list in `plugins/albino/hooks/user-prompt-submit.sh`. If no: leave the file unchanged.
+If yes: add it to the skills list in both `plugins/albino/hooks/session-start.sh` and `plugins/albino/rules/session-start.mdc`. If no: leave both files unchanged.
 
-Do not silently add or skip skills. Always ask.
+Do not silently add or skip skills. Always ask. Always update both files together.
 
 ---
 
