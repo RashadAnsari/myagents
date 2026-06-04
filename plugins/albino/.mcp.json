@@ -1,17 +1,17 @@
 {
   "mcpServers": {
-    "playwright": {
-      "command": "bash",
-      "args": [
-        "-c",
-        "PLUGIN=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$PLUGIN\" ] && PLUGIN=\"$(pwd)\"; exec \"$PLUGIN/scripts/run-with-bunx.sh\" @playwright/mcp@latest"
-      ]
-    },
     "agent-memory": {
       "command": "bash",
       "args": [
         "-c",
         "PLUGIN=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$PLUGIN\" ] && PLUGIN=\"$(pwd)\"; exec \"$PLUGIN/scripts/run-with-uv.sh\" run --directory \"$PLUGIN/mcp-servers/agent-memory\" agent-memory"
+      ]
+    },
+    "playwright": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "PLUGIN=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$PLUGIN\" ] && PLUGIN=\"$(pwd)\"; exec \"$PLUGIN/scripts/run-with-bunx.sh\" @playwright/mcp@latest"
       ]
     },
     "markitdown": {

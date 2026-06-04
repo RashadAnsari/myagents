@@ -4,11 +4,8 @@
       "command": "bash",
       "args": [
         "-c",
-        "~/.myagents/plugins/albino/scripts/run-with-uv.sh run --project ~/.myagents/plugins/albino/mcp-servers/agent-memory agent-memory"
-      ],
-      "env": {
-        "DISABLE_PROJECT_MEMORY": "true"
-      }
+        "DISABLE_PROJECT_MEMORY=true ~/.myagents/plugins/albino/scripts/run-with-uv.sh run --project ~/.myagents/plugins/albino/mcp-servers/agent-memory agent-memory"
+      ]
     },
     "playwright": {
       "command": "bash",
