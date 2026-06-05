@@ -11,7 +11,7 @@
     "hooks": {
       "sessionStart": [
         {
-          "command": "PLATFORM=cursor bash ./hooks/session-start.sh"
+          "command": "PLATFORM=cursor ./hooks/session-start.sh"
         }
       ]
     }
