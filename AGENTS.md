@@ -22,10 +22,9 @@ Review agents are any agent file whose name ends in `-reviewer.md` inside `plugi
 
 The mandatory skill list is injected once at session start via:
 
-- `plugins/albino/hooks/session-start.sh`: runs on Claude Code (`SessionStart`)
-- `plugins/albino/rules/session-start.mdc`: runs on Cursor (always-applied rule)
+- `plugins/albino/hooks/session-start.sh`: runs on both Claude Code (`SessionStart` hook) and Cursor (`sessionStart` hook)
 
-Both files must contain identical content. The skills currently injected:
+The skills currently injected:
 
 - `code-reusability`
 - `dev-conventions`
@@ -40,9 +39,9 @@ These skills are mandatory and always active. Additional skills are available in
 
 > "A new skill `<name>` was added. Do you want it included in the agent reminder so it is enforced on every task?"
 
-If yes: add it to the skills list in both `plugins/albino/hooks/session-start.sh` and `plugins/albino/rules/session-start.mdc`. If no: leave both files unchanged.
+If yes: add it to the skills list in `plugins/albino/hooks/session-start.sh`. If no: leave it unchanged.
 
-Do not silently add or skip skills. Always ask. Always update both files together.
+Do not silently add or skip skills. Always ask.
 
 ---
 

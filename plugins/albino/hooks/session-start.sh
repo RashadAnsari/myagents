@@ -19,9 +19,13 @@ Did you learn anything durable this turn? Durable means: a decision made, a user
 WHEN SPAWNING SUBAGENTS:
 Pass these same instructions to every subagent."
 
-jq -n --arg ctx "$REMINDER" '{
-  hookSpecificOutput: {
-    hookEventName: "SessionStart",
-    additionalContext: $ctx
-  }
-}'
+if [ "${PLATFORM:-}" = "cursor" ]; then
+  jq -n --arg ctx "$REMINDER" '{ additional_context: $ctx }'
+else
+  jq -n --arg ctx "$REMINDER" '{
+    hookSpecificOutput: {
+      hookEventName: "SessionStart",
+      additionalContext: $ctx
+    }
+  }'
+fi

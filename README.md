@@ -28,7 +28,6 @@ Rerun to update. Restart your editor after install.
   - [Skills](#skills)
   - [MCP Servers](#mcp-servers)
   - [Hooks](#hooks)
-  - [Cursor Rules](#cursor-rules)
 - [Claude Desktop](#claude-desktop)
 - [Repository Rules](#repository-rules)
 
@@ -81,7 +80,7 @@ Specialist review agents spawned in parallel by `/reviewcrew`, also available in
 
 Behavioral guidelines injected into agent prompts.
 
-**Mandatory** (always active, injected at session start via the `session-start` hook for Claude Code and the `session-start` rule for Cursor):
+**Mandatory** (always active, injected at session start via the `session-start` hook for both Claude Code and Cursor):
 
 | Skill | Description |
 |-------|-------------|
@@ -113,17 +112,9 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 
 #### Hooks
 
-| Hook | Event | Description |
-|------|-------|-------------|
-| `session-start` | `SessionStart` | Injects mandatory skills, memory read/write rules, and session bootstrap at the start of every Claude Code session |
-
-#### Cursor Rules
-
-`.mdc` files applied to every Cursor agent session.
-
-| Rule | Description |
-|------|-------------|
-| `session-start` | Injects mandatory skills, memory read/write rules, and session bootstrap into every Cursor session (always-applied rule, equivalent to the `session-start` hook in Claude Code) |
+| Hook | Event | Platforms | Description |
+|------|-------|-----------|-------------|
+| `session-start` | `SessionStart` | Claude Code, Cursor | Injects mandatory skills, memory read/write rules, and session bootstrap at the start of every session |
 
 ---
 
