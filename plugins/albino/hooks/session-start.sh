@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-input=$(cat)
-hook_event=$(printf '%s' "$input" | jq -r '.hook_event_name // ""' 2>/dev/null || echo "")
-
 REMINDER="BEFORE YOUR FIRST RESPONSE (required, silent):
 1. Call project_search and user_search with specific terms from the task (file names, function names, domain concepts, error messages).
 2. Read AGENTS.md if it exists and apply its rules.
@@ -22,9 +19,9 @@ Did you learn anything durable this turn? Durable means: a decision made, a user
 WHEN SPAWNING SUBAGENTS:
 Pass these same instructions to every subagent."
 
-jq -n --arg event "${hook_event:-SessionStart}" --arg ctx "$REMINDER" '{
+jq -n --arg ctx "$REMINDER" '{
   hookSpecificOutput: {
-    hookEventName: $event,
+    hookEventName: "SessionStart",
     additionalContext: $ctx
   }
 }'
