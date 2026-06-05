@@ -4,7 +4,7 @@ import os
 from fastembed import TextEmbedding
 
 EMBEDDING_DIM = 384
-_MODEL_ID = os.environ.get("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
+_MODEL_ID = os.environ.get("AGENT_MEMORY_EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
 
 _model: TextEmbedding | None = None
 

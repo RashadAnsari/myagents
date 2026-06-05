@@ -317,9 +317,15 @@ def test_migration_v2_merges_duplicate_projects(tmp_path):
     """A v1 database with two rows sharing a fingerprint is merged by migration v2."""
     db_path = str(tmp_path / "memory.sqlite")
 
-    # Build a v1-style database manually (root_path UNIQUE, no schema_migrations).
+    # Build a v1-style database manually.
+    # Real v1 databases created by the old _migrate() have a schema_migrations table
+    # (it was always created) but no version=2 row yet (that was inserted by v2 migration).
     conn = sqlite3.connect(db_path)
     conn.executescript("""
+        CREATE TABLE schema_migrations (
+            version INTEGER PRIMARY KEY,
+            applied_at TEXT NOT NULL
+        );
         CREATE TABLE projects (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             root_path TEXT NOT NULL UNIQUE,
@@ -411,5 +417,116 @@ def test_migration_v2_merges_duplicate_projects(tmp_path):
     paths = json.loads(project_rows[0]["known_paths_json"])
     assert "/home/alice/myapp" in paths
     assert "/home/bob/myapp" in paths
+
+    store.close()
+
+
+def test_legacy_v2_database_bootstraps_without_remigration(tmp_path):
+    """A post-v2 old-code database is bootstrapped: both migrations marked applied, data preserved."""
+    db_path = str(tmp_path / "memory.sqlite")
+
+    # Build a database that looks exactly like one fully migrated by the old hand-rolled system:
+    # v2 schema (no UNIQUE on root_path, partial unique indexes present) plus
+    # schema_migrations with version=2 (inserted by the old _apply_migration_v2).
+    conn = sqlite3.connect(db_path)
+    conn.executescript("""
+        CREATE TABLE schema_migrations (
+            version INTEGER PRIMARY KEY,
+            applied_at TEXT NOT NULL
+        );
+        CREATE TABLE projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            root_path TEXT NOT NULL,
+            name TEXT NOT NULL,
+            git_remote TEXT,
+            remote_fingerprint TEXT,
+            known_paths_json TEXT NOT NULL DEFAULT '[]',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE UNIQUE INDEX idx_projects_fingerprint_unique
+            ON projects(remote_fingerprint)
+            WHERE remote_fingerprint IS NOT NULL;
+        CREATE UNIQUE INDEX idx_projects_root_path_local
+            ON projects(root_path)
+            WHERE remote_fingerprint IS NULL;
+        CREATE TABLE project_memories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            content TEXT NOT NULL,
+            summary TEXT,
+            why_useful_later TEXT NOT NULL,
+            tags_json TEXT NOT NULL DEFAULT '[]',
+            confidence TEXT NOT NULL DEFAULT 'medium',
+            source TEXT,
+            source_ref TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            last_used_at TEXT,
+            use_count INTEGER NOT NULL DEFAULT 0,
+            archived_at TEXT
+        );
+        CREATE TABLE project_memory_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER NOT NULL,
+            memory_id INTEGER,
+            action TEXT NOT NULL,
+            reason TEXT,
+            created_at TEXT NOT NULL
+        );
+        CREATE TABLE user_memories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            kind TEXT NOT NULL,
+            content TEXT NOT NULL,
+            summary TEXT,
+            why_useful_later TEXT NOT NULL,
+            tags_json TEXT NOT NULL DEFAULT '[]',
+            confidence TEXT NOT NULL DEFAULT 'medium',
+            source TEXT,
+            source_ref TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            last_used_at TEXT,
+            use_count INTEGER NOT NULL DEFAULT 0,
+            archived_at TEXT
+        );
+        CREATE TABLE user_memory_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            memory_id INTEGER,
+            action TEXT NOT NULL,
+            reason TEXT,
+            created_at TEXT NOT NULL
+        );
+    """)
+    now = "2026-01-01T00:00:00+00:00"
+    conn.execute("INSERT INTO schema_migrations (version, applied_at) VALUES (2, ?)", (now,))
+    conn.execute(
+        "INSERT INTO projects (root_path, name, git_remote, remote_fingerprint, known_paths_json, created_at, updated_at) VALUES (?,?,?,?,?,?,?)",
+        ("/home/alice/myapp", "myapp", "https://github.com/org/myapp", "fp1", '["/home/alice/myapp"]', now, now),
+    )
+    conn.execute(
+        "INSERT INTO project_memories (project_id, kind, content, why_useful_later, tags_json, confidence, created_at, updated_at, use_count) VALUES (1,'decision','Preserved memory.','Test.','[]','high',?,?,0)",
+        (now, now),
+    )
+    conn.commit()
+    conn.close()
+
+    store = AgentMemoryStore(db_path)
+
+    # Data must be intact: migration 002 must not have re-run and altered anything.
+    project_rows = store._conn.execute("SELECT * FROM projects").fetchall()
+    assert len(project_rows) == 1
+    assert project_rows[0]["root_path"] == "/home/alice/myapp"
+
+    mem_rows = store._conn.execute("SELECT content FROM project_memories WHERE project_id = 1").fetchall()
+    assert len(mem_rows) == 1
+    assert mem_rows[0]["content"] == "Preserved memory."
+
+    # Both migrations must be recorded in yoyo's tracking table, confirming the bootstrap
+    # read schema_migrations version=2 and marked them applied without re-running.
+    applied = {r[0] for r in store._conn.execute("SELECT migration_id FROM _yoyo_migration").fetchall()}
+    assert "001_initial" in applied
+    assert "002_fingerprint" in applied
 
     store.close()

@@ -8,6 +8,7 @@ dependencies = [
     "fastembed>=0.8.0",
     "sqlite-vec>=0.1.9",
     "detect-secrets>=1.5.0",
+    "yoyo-migrations>=9.0.0",
 ]
 
 [project.scripts]
