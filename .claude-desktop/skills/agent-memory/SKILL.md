@@ -1,5 +1,5 @@
 ---
-name: user-memory
+name: agent-memory
 description: "ALWAYS activate this skill at the start of EVERY conversation in Claude Desktop, regardless of topic. Before your first response, call user_search to load personal context about the user. Before each reply, call user_remember to save any durable facts learned. Covers everyday life: health, food, travel, relationships, habits, goals, values, and communication style."
 ---
 

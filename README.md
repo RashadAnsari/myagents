@@ -136,7 +136,7 @@ Skills for Claude Desktop are managed directly inside the app. Go to **Customize
 
 | Skill | Description |
 |-------|-------------|
-| `user-memory` | Remembers personal context across everyday conversations: health, food, travel, habits, goals, and communication style |
+| `agent-memory` | Remembers personal context across everyday conversations: health, food, travel, habits, goals, and communication style |
 | `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
 
 ---
