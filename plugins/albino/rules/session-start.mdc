@@ -1,7 +1,9 @@
-#!/usr/bin/env bash
-set -euo pipefail
+---
+description: "Mandatory skills, memory read/write rules, and session bootstrap at conversation start"
+alwaysApply: true
+---
 
-REMINDER="BEFORE YOUR FIRST RESPONSE (required, silent):
+BEFORE YOUR FIRST RESPONSE (required, silent):
 1. Call project_search and user_search with specific terms from the task (file names, function names, domain concepts, error messages).
 2. Read AGENTS.md if it exists and apply its rules.
 
@@ -17,21 +19,4 @@ AFTER EVERY RESPONSE (required):
 Did you learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha found, a convention established, an architecture fact clarified. If yes, call project_remember or user_remember before finishing. Skip if nothing non-obvious was learned. Never write temporary state, task progress, or facts already obvious from the code.
 
 WHEN SPAWNING SUBAGENTS:
-Pass these same instructions to every subagent."
-
-if [ "${PLATFORM:-}" = "cursor" ]; then
-  # NOTE: Cursor sessionStart additional_context injection is currently broken.
-  # The hook runs and output is accepted, but context never reaches the agent window.
-  # As a workaround, the same context is delivered via rules/session-start.mdc (alwaysApply: true).
-  # Keep this hook in place so it activates automatically once Cursor fixes the bug.
-  # https://forum.cursor.com/t/sessionstart-hook-additional-context-is-never-injected-into-agents-initial-system-context/158452
-  # https://forum.cursor.com/t/sessionstart-hook-output-is-accepted-and-merged-but-the-injected-context-does-not-reach-agent-window/157141
-  jq -n --arg ctx "$REMINDER" '{ additional_context: $ctx }'
-else
-  jq -n --arg ctx "$REMINDER" '{
-    hookSpecificOutput: {
-      hookEventName: "SessionStart",
-      additionalContext: $ctx
-    }
-  }'
-fi
+Pass these same instructions to every subagent.
