@@ -11,12 +11,12 @@
     "hooks": {
       "sessionStart": [
         {
-          "command": "PLATFORM=cursor ./hooks/session-start.sh"
+          "command": "PLATFORM=cursor bash \"${CURSOR_PLUGIN_ROOT}/hooks/session-start.sh\""
         }
       ],
       "stop": [
         {
-          "command": "PLATFORM=cursor ./hooks/stop.sh",
+          "command": "PLATFORM=cursor bash \"${CURSOR_PLUGIN_ROOT}/hooks/stop.sh\"",
           "loop_limit": 1
         }
       ]
