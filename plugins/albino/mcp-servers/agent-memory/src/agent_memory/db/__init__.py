@@ -1,6 +1,6 @@
 from ..paths import canonical_project_root, fingerprint_remote, get_git_remote
 from ._utils import pack_vector
-from .store import AgentMemoryStore
+from .agent_store import AgentMemoryStore
 
 __all__ = [
     "AgentMemoryStore",

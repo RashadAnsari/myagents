@@ -16,9 +16,7 @@ async def test_remember_rejects_non_git_directory(service: ProjectMemoryService,
     with pytest.raises(ValueError, match="not a git repository"):
         await service.remember(
             project_root=str(tmp_dir),
-            kind="convention",
             content="This memory should be rejected because the directory has no git repository initialized.",
-            why_useful_later="Tests that non-git directories cannot accumulate project memory.",
         )
 
 
@@ -28,15 +26,11 @@ async def test_subdirectory_path_shares_project_with_git_root(service: ProjectMe
 
     mem_root = await service.remember(
         project_root=str(tmp_dir),
-        kind="convention",
         content="All public functions must have a corresponding unit test in the tests directory at the repo root.",
-        why_useful_later="Future agents need this to know where to place new tests without asking.",
     )
     mem_sub = await service.remember(
         project_root=str(subdir),
-        kind="decision",
         content="The module layer owns all business logic and must never import directly from the API handlers layer.",
-        why_useful_later="Future agents need this boundary rule to avoid coupling the domain layer to HTTP concerns.",
     )
 
     assert mem_root.project_id == mem_sub.project_id
@@ -54,60 +48,23 @@ async def test_subdirectory_path_shares_project_with_git_root(service: ProjectMe
 async def test_stores_and_searches_durable_memory(service: ProjectMemoryService, tmp_dir):
     memory = await service.remember(
         project_root=str(tmp_dir),
-        kind="decision",
         content="Use the agent-memory MCP server for durable project decisions and verify memories against repo files before acting.",
-        why_useful_later="Future agents need this to retrieve useful project context without trusting stale notes blindly.",
-        tags=["mcp", "memory"],
-        confidence="high",
         source="test",
     )
     results = await service.search(project_root=str(tmp_dir), query="durable project decisions", k=5)
 
     assert memory.id > 0
-    assert memory.kind == "decision"
-    assert memory.tags == ["mcp", "memory"]
-    assert memory.confidence == "high"
     assert memory.source == "test"
     assert len(results) == 1
     assert results[0].id == memory.id
     assert "durable project decisions" in results[0].content
 
 
-async def test_filters_search_results_by_kind_and_tag(service: ProjectMemoryService, tmp_dir):
-    await service.remember(
-        project_root=str(tmp_dir),
-        kind="decision",
-        content="Memory search should support decision filtering for architecture discussions about durable context retrieval.",
-        why_useful_later="Future agents need filtered retrieval when many memory kinds exist in the same project.",
-        tags=["architecture", "retrieval"],
-        confidence="high",
-    )
-    await service.remember(
-        project_root=str(tmp_dir),
-        kind="gotcha",
-        content="Memory search should also store gotchas about retrieval behavior without mixing them into decision results.",
-        why_useful_later="Future agents need gotcha filtering separately from durable architecture decisions.",
-        tags=["retrieval"],
-        confidence="medium",
-    )
-    results = await service.search(
-        project_root=str(tmp_dir),
-        query="retrieval",
-        kinds=["decision"],
-        tags=["architecture"],
-    )
-    assert len(results) == 1
-    assert results[0].kind == "decision"
-    assert "architecture" in results[0].tags
-
-
 async def test_rejects_vague_memory(service: ProjectMemoryService, tmp_dir):
     with pytest.raises(MemoryQualityError, match="too vague"):
         await service.remember(
             project_root=str(tmp_dir),
-            kind="handoff",
             content="fixed the issue and all done with the work that needed to be completed for this task.",
-            why_useful_later="Future agents need to know what was done so they can continue the work effectively.",
         )
 
 
@@ -115,56 +72,44 @@ async def test_rejects_too_short_memory(service: ProjectMemoryService, tmp_dir):
     with pytest.raises(MemoryQualityError, match="too short"):
         await service.remember(
             project_root=str(tmp_dir),
-            kind="decision",
             content="Use PostgreSQL.",
-            why_useful_later="Agents need to know the database.",
         )
 
 
 async def test_rejects_duplicate_memory(service: ProjectMemoryService, tmp_dir):
     content = "Use the agent-memory MCP server for durable project decisions and verify memories against repo files before acting."
-    why = "Future agents need this to retrieve useful project context without trusting stale notes blindly."
-    await service.remember(project_root=str(tmp_dir), kind="decision", content=content, why_useful_later=why)
+    await service.remember(project_root=str(tmp_dir), content=content)
     with pytest.raises(MemoryQualityError, match="duplicates"):
-        await service.remember(project_root=str(tmp_dir), kind="decision", content=content, why_useful_later=why)
+        await service.remember(project_root=str(tmp_dir), content=content)
 
 
 async def test_archive_and_hard_delete(service: ProjectMemoryService, tmp_dir):
     memory = await service.remember(
         project_root=str(tmp_dir),
-        kind="gotcha",
         content="Running tests in parallel caused intermittent failures due to shared test database state not being cleaned up.",
-        why_useful_later="Future agents need isolated databases to avoid non-deterministic failures in parallel test runs.",
     )
-    result = service.forget(str(tmp_dir), memory.id, reason="Resolved.")
+    result = service.forget(str(tmp_dir), memory.id)
     assert result["archived"] is True
 
-    # Hard delete
     memory2 = await service.remember(
         project_root=str(tmp_dir),
-        kind="gotcha",
         content="A second gotcha about running tests in sequence instead of parallel to avoid flaky test results here.",
-        why_useful_later="Future agents need to know this to prevent flaky tests caused by parallel test execution issues.",
     )
-    result2 = service.forget(str(tmp_dir), memory2.id, hard_delete=True, reason="Cleaned up.")
+    result2 = service.forget(str(tmp_dir), memory2.id, hard_delete=True)
     assert result2["deleted"] is True
 
 
-async def test_update_memory(service: ProjectMemoryService, tmp_dir):
+async def test_update_memory_content(service: ProjectMemoryService, tmp_dir):
     memory = await service.remember(
         project_root=str(tmp_dir),
-        kind="convention",
         content="All service methods must return typed result objects instead of throwing exceptions for expected error cases.",
-        why_useful_later="Future agents should use result types rather than exceptions when implementing service methods.",
-        confidence="medium",
     )
     updated = await service.update(
         project_root=str(tmp_dir),
         memory_id=memory.id,
-        confidence="high",
-        reason="Confirmed across all service files.",
+        content="All service methods must return typed result objects instead of throwing exceptions; callers must check the result.",
     )
-    assert updated.confidence == "high"
+    assert "callers must check" in updated.content
 
 
 async def test_default_database_path_uses_home():
@@ -216,10 +161,8 @@ def test_fingerprint_remote_is_deterministic():
 
 async def test_user_remember_and_search(user_service: UserMemoryService):
     memory = await user_service.remember(
-        kind="preference",
         content="User strongly prefers concise function names that accurately describe what the function does without abbreviation.",
-        why_useful_later="Agents should avoid abbreviated function names and prefer clarity when naming functions.",
-        confidence="high",
+        source="test",
     )
     results = await user_service.search(query="naming functions concise")
     assert memory.id > 0
@@ -228,42 +171,25 @@ async def test_user_remember_and_search(user_service: UserMemoryService):
 
 async def test_user_rejects_duplicate(user_service: UserMemoryService):
     content = "User strongly prefers concise function names that accurately describe what the function does without abbreviation."
-    why = "Agents should avoid abbreviated function names and prefer clarity when naming functions."
-    await user_service.remember(kind="preference", content=content, why_useful_later=why)
+    await user_service.remember(content=content)
     with pytest.raises(MemoryQualityError, match="duplicates"):
-        await user_service.remember(kind="preference", content=content, why_useful_later=why)
+        await user_service.remember(content=content)
 
 
 async def test_user_forget_archives(user_service: UserMemoryService):
     memory = await user_service.remember(
-        kind="tool_preference",
         content="User previously used Yarn for package management but has since migrated all projects to pnpm for better performance.",
-        why_useful_later="Agents should use pnpm and not suggest Yarn for this user's projects.",
-        confidence="high",
     )
-    result = user_service.forget(memory.id, reason="Already migrated.")
+    result = user_service.forget(memory.id)
     assert result["archived"] is True
-
-
-async def test_tag_normalization(service: ProjectMemoryService, tmp_dir):
-    memory = await service.remember(
-        project_root=str(tmp_dir),
-        kind="convention",
-        content="All API endpoints must be versioned with a v1 prefix and must return consistent JSON error shapes.",
-        why_useful_later="Future agents need this when adding new endpoints to maintain API consistency.",
-        tags=["API", "  REST  ", "api", "REST", "v1-endpoints"],
-    )
-    assert memory.tags == ["api", "rest", "v1-endpoints"]
 
 
 async def test_archive_excludes_from_search(service: ProjectMemoryService, tmp_dir):
     memory = await service.remember(
         project_root=str(tmp_dir),
-        kind="gotcha",
         content="SQLite journal mode must be set to WAL before enabling foreign keys to avoid lock contention issues.",
-        why_useful_later="Future agents need this ordering to avoid SQLite locking failures during initialization.",
     )
-    service.forget(str(tmp_dir), memory.id, reason="Superseded.")
+    service.forget(str(tmp_dir), memory.id)
 
     results = await service.search(project_root=str(tmp_dir), query="SQLite WAL journal mode foreign keys")
     assert all(r.id != memory.id for r in results)
@@ -277,23 +203,16 @@ async def test_archive_excludes_from_search(service: ProjectMemoryService, tmp_d
 async def test_remember_defaults(service: ProjectMemoryService, tmp_dir):
     memory = await service.remember(
         project_root=str(tmp_dir),
-        kind="convention",
         content="All database queries must use parameterized statements to prevent SQL injection vulnerabilities in production.",
-        why_useful_later="Future agents must use parameterized queries and never format user input directly into SQL.",
     )
-    assert memory.confidence == "medium"
-    assert memory.tags == []
     assert memory.source is None
+    assert memory.source_ref is None
 
 
 async def test_end_to_end_workflow(service: ProjectMemoryService, tmp_dir):
     memory = await service.remember(
         project_root=str(tmp_dir),
-        kind="convention",
         content="All Python functions must have type annotations for parameters and return values without exception.",
-        why_useful_later="Future agents need this to write correctly typed Python code that passes the project linter.",
-        confidence="medium",
-        tags=["python", "types"],
     )
 
     results = await service.search(project_root=str(tmp_dir), query="type annotations Python functions")
@@ -303,13 +222,11 @@ async def test_end_to_end_workflow(service: ProjectMemoryService, tmp_dir):
     updated = await service.update(
         project_root=str(tmp_dir),
         memory_id=memory.id,
-        confidence="high",
-        reason="Confirmed enforced in CI via mypy strict mode.",
+        content="All Python functions must have type annotations; mypy strict mode is enforced in CI.",
     )
-    assert updated.confidence == "high"
-    assert updated.tags == ["python", "types"]
+    assert "mypy strict" in updated.content
 
-    service.forget(str(tmp_dir), memory.id, reason="Superseded by project-wide mypy config.")
+    service.forget(str(tmp_dir), memory.id)
     results_after = await service.search(project_root=str(tmp_dir), query="type annotations Python")
     assert all(r.id != memory.id for r in results_after)
 
@@ -322,11 +239,9 @@ async def test_end_to_end_workflow(service: ProjectMemoryService, tmp_dir):
 async def test_hard_delete_removes_from_search(service: ProjectMemoryService, tmp_dir):
     memory = await service.remember(
         project_root=str(tmp_dir),
-        kind="gotcha",
         content="Embedding the model must be initialized lazily to avoid loading large model weights at import time.",
-        why_useful_later="Future agents need this to avoid slow startup times caused by eager model initialization.",
     )
-    service.forget(str(tmp_dir), memory.id, hard_delete=True, reason="Cleaned up.")
+    service.forget(str(tmp_dir), memory.id, hard_delete=True)
 
     results = await service.search(
         project_root=str(tmp_dir), query="embedding model lazy initialization startup", include_archived=True

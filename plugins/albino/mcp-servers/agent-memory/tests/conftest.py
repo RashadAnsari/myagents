@@ -20,7 +20,7 @@ def tmp_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def store(tmp_path: Path) -> AgentMemoryStore:
+def agent_store(tmp_path: Path) -> AgentMemoryStore:
     try:
         s = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
     except Exception as exc:
@@ -38,13 +38,13 @@ def store(tmp_path: Path) -> AgentMemoryStore:
 
 
 @pytest.fixture
-def service(store: AgentMemoryStore) -> ProjectMemoryService:
-    return ProjectMemoryService(store)
+def service(agent_store: AgentMemoryStore) -> ProjectMemoryService:
+    return ProjectMemoryService(agent_store)
 
 
 @pytest.fixture
-def user_service(store: AgentMemoryStore) -> UserMemoryService:
-    return UserMemoryService(store)
+def user_service(agent_store: AgentMemoryStore) -> UserMemoryService:
+    return UserMemoryService(agent_store)
 
 
 @pytest.fixture

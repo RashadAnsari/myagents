@@ -35,62 +35,26 @@ def user_svc(bare_store):
     return UserMemoryService(bare_store)
 
 
-def _make_contents(n: int) -> list[tuple[str, str]]:
-    """Return n distinct (content, why) pairs that pass quality checks."""
-    contents = [
-        (
-            "Use postgres for all persistent storage to keep infrastructure unified and avoid cache invalidation bugs.",
-            "Agents need this to avoid adding Redis or Mongo unnecessarily to the technology stack.",
-        ),
-        (
-            "All service layer methods must return typed result objects instead of raising exceptions for expected errors.",
-            "Future agents should use result types rather than exception catching when implementing new service methods.",
-        ),
-        (
-            "Database migrations must be reversible and include both up and down steps for every schema change made.",
-            "Agents need this to safely roll back failed deployments without manual SQL intervention in production.",
-        ),
-        (
-            "Use environment variables for all configuration values and never hardcode credentials in source files.",
-            "Agents must read configuration from the environment to keep secrets out of version control permanently.",
-        ),
-        (
-            "All API endpoints must validate request bodies with Pydantic schemas before processing any business logic.",
-            "Future agents need this to prevent malformed data from reaching the service layer and causing silent bugs.",
-        ),
-        (
-            "Write integration tests that hit a real database instead of mocking the DB layer for all service tests.",
-            "Agents need real DB tests because mocked DB tests missed a schema migration bug in the previous quarter.",
-        ),
-        (
-            "Use structured logging with JSON output in production to enable log aggregation and alerting by severity.",
-            "Agents need structured logs to query for errors and set up alerts without parsing unstructured log strings.",
-        ),
-        (
-            "Pin all direct dependencies to exact versions in requirements files to ensure reproducible builds everywhere.",
-            "Agents need pinned deps to prevent surprise breakages from upstream package releases in CI and production.",
-        ),
-    ]
-    return contents[:n]
+_CONTENTS = [
+    "Use postgres for all persistent storage to keep infrastructure unified and avoid cache invalidation bugs.",
+    "All service layer methods must return typed result objects instead of raising exceptions for expected errors.",
+    "Database migrations must be reversible and include both up and down steps for every schema change made.",
+    "Use environment variables for all configuration values and never hardcode credentials in source files.",
+    "All API endpoints must validate request bodies with Pydantic schemas before processing any business logic.",
+    "Write integration tests that hit a real database instead of mocking the DB layer for all service tests.",
+    "Use structured logging with JSON output in production to enable log aggregation and alerting by severity.",
+    "Pin all direct dependencies to exact versions in requirements files to ensure reproducible builds everywhere.",
+]
 
 
 async def test_concurrent_remember_creates_all_memories(svc, bare_store, tmp_path):
-    pairs = _make_contents(5)
     with patch("agent_memory.memory_service.embed_one", new=AsyncMock(return_value=_VECTOR)):
         memories = await asyncio.gather(
-            *[
-                svc.remember(
-                    project_root=str(tmp_path),
-                    kind="decision",
-                    content=content,
-                    why_useful_later=why,
-                )
-                for content, why in pairs
-            ]
+            *[svc.remember(project_root=str(tmp_path), content=content) for content in _CONTENTS[:5]]
         )
 
     assert len(memories) == 5
-    assert len({m.id for m in memories}) == 5  # all unique IDs
+    assert len({m.id for m in memories}) == 5
 
     project = bare_store.get_or_create_project(str(tmp_path))
     active = bare_store.list_active_project_memories(project.id)
@@ -98,18 +62,9 @@ async def test_concurrent_remember_creates_all_memories(svc, bare_store, tmp_pat
 
 
 async def test_concurrent_remember_no_id_collisions(svc, tmp_path):
-    pairs = _make_contents(8)
     with patch("agent_memory.memory_service.embed_one", new=AsyncMock(return_value=_VECTOR)):
         memories = await asyncio.gather(
-            *[
-                svc.remember(
-                    project_root=str(tmp_path),
-                    kind="convention",
-                    content=content,
-                    why_useful_later=why,
-                )
-                for content, why in pairs
-            ]
+            *[svc.remember(project_root=str(tmp_path), content=content) for content in _CONTENTS]
         )
 
     ids = [m.id for m in memories]
@@ -117,18 +72,8 @@ async def test_concurrent_remember_no_id_collisions(svc, tmp_path):
 
 
 async def test_concurrent_user_remember_creates_all(user_svc, bare_store):
-    pairs = _make_contents(5)
     with patch("agent_memory.memory_service.embed_one", new=AsyncMock(return_value=_VECTOR)):
-        memories = await asyncio.gather(
-            *[
-                user_svc.remember(
-                    kind="preference",
-                    content=content,
-                    why_useful_later=why,
-                )
-                for content, why in pairs
-            ]
-        )
+        memories = await asyncio.gather(*[user_svc.remember(content=content) for content in _CONTENTS[:5]])
 
     assert len(memories) == 5
     assert len({m.id for m in memories}) == 5
@@ -138,28 +83,13 @@ async def test_concurrent_user_remember_creates_all(user_svc, bare_store):
 
 
 async def test_concurrent_remember_and_search(svc, tmp_path):
-    first_content, first_why = _make_contents(1)[0]
     with patch("agent_memory.memory_service.embed_one", new=AsyncMock(return_value=_VECTOR)):
-        await svc.remember(
-            project_root=str(tmp_path),
-            kind="decision",
-            content=first_content,
-            why_useful_later=first_why,
-        )
+        await svc.remember(project_root=str(tmp_path), content=_CONTENTS[0])
 
-    pairs = _make_contents(8)[1:]  # skip the already-stored first one
     with patch("agent_memory.memory_service.embed_one", new=AsyncMock(return_value=_VECTOR)):
         results = await asyncio.gather(
             svc.search(project_root=str(tmp_path), query="postgres storage"),
-            *[
-                svc.remember(
-                    project_root=str(tmp_path),
-                    kind="decision",
-                    content=content,
-                    why_useful_later=why,
-                )
-                for content, why in pairs
-            ],
+            *[svc.remember(project_root=str(tmp_path), content=content) for content in _CONTENTS[1:]],
         )
 
     search_results = results[0]

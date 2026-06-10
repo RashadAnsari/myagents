@@ -62,24 +62,11 @@ Do not write:
 - Temporary task details.
 - Vague notes without a clear future use.
 
-### User Memory Kinds and Examples
-
-| Kind | What it captures | Example |
-|---|---|---|
-| `preference` | Coding style, language, formatting | "User prefers two-space indentation in all TypeScript files." |
-| `behavior` | Recurring habits and patterns | "User always opens a scratch file before writing production code." |
-| `context` | Role, team, domain, experience | "User is a senior backend engineer at a fintech startup." |
-| `workflow` | Work process structure | "User reviews full diffs before merging; expects clear change summaries." |
-| `convention` | Global standards across projects | "User applies kebab-case to all file names and CSS class names." |
-| `tool_preference` | Preferred tools and configs | "User prefers VS Code with the ESLint and Prettier extensions." |
-| `communication` | Explanation and response style | "User prefers bullet points over prose in technical summaries." |
-
 ### Quality Rules for User Memory
 
 Every user memory must satisfy all of these:
 
 - **Content ≥ 40 characters or ≥ 7 words.** Short notes are not durable enough.
-- **`whyUsefulLater` required.** Explain exactly how a future agent benefits. If you cannot, do not store it.
 - **No vague phrases.** Avoid "fixed the issue", "made changes", "implemented it".
 - **No command output.** Do not store npm logs, test output, or exit codes.
 - **No secrets.** Any content matching API key, token, or private key patterns is rejected automatically.
@@ -95,10 +82,9 @@ Every user memory must satisfy all of these:
 
 **Before each final response (when something durable was learned):**
 ```
-Durable = decision, preference, gotcha, convention, architecture fact, behavior pattern
+Durable = preference, gotcha, convention, behavior pattern, architecture fact
 1. user_remember for each durable cross-project fact
-2. Include a clear whyUsefulLater
-3. source="agent" or source="user", source_ref=<context>
+2. source="agent" or source="user", source_ref=<context>
 ```
 
 **When user memory conflicts with observed behavior:**
@@ -140,27 +126,11 @@ Do not write:
 - Vague summaries without actionable content.
 - Facts already obvious from `README.md`, `AGENTS.md`, or nearby code: unless the memory adds durable interpretation that is hard to infer.
 
-### Project Memory Kinds and Examples
-
-| Kind | What it captures | Example |
-|---|---|---|
-| `decision` | Architectural or design decisions with rationale | "Chose REST over GraphQL because the client team is familiar with REST and the API surface is small and stable." |
-| `convention` | Naming, style, or structure rules | "All API error responses must include a `code` field with a machine-readable string; never return just an HTTP status." |
-| `architecture` | Module boundaries, data flow, key relationships | "Business logic lives in `src/services/`; `src/api/` only handles request parsing and response formatting. Never put DB calls in API handlers." |
-| `workflow` | Non-obvious build, test, or deploy steps | "Run `npm run db:migrate` before running tests locally; the test suite does not auto-migrate." |
-| `preference` | User preferences specific to this project | "User wants all new React components in `src/components/` as named exports, never default exports." |
-| `gotcha` | Surprising behavior or traps | "Prisma `findUnique` silently returns null instead of throwing when a record is not found; always check the return value." |
-| `bug` | Root causes of recurring issues | "The date picker breaks on Safari when the locale prop is omitted; always pass an explicit locale." |
-| `dependency` | Constraint or quirk of a library or tool | "Day.js `isBetween` plugin must be explicitly imported and registered before use; it is not included by default." |
-| `testing` | Test patterns or required coverage | "E2E tests must call `resetDb()` before each test; the suite shares a database and is order-dependent without it." |
-| `handoff` | End-of-task learnings for the next agent | "Migrated auth from JWT in localStorage to httpOnly cookies; old JWT validation code removed from `src/middleware/auth.ts`." |
-
 ### Quality Rules for Project Memory
 
 Same rules as user memory:
 
 - Content ≥ 40 characters or ≥ 7 words.
-- `whyUsefulLater` required and meaningful.
 - No vague phrases, command output, or secrets.
 - No duplicates of existing active memories. A second call with identical content raises `MemoryQualityError` (reason: `duplicates`) rather than silently doing nothing. Do not retry on this error: it confirms the memory already exists.
 
@@ -176,14 +146,13 @@ Same rules as user memory:
 ```
 Durable = decision, convention, architecture fact, gotcha, workflow step, dependency quirk
 1. project_remember for each durable repo-scoped fact
-2. Include whyUsefulLater: if you cannot explain it, skip it
-3. source="agent" or source="user", source_ref=<file path, PR, or test command>
+2. source="agent" or source="user", source_ref=<file path, PR, or test command>
 ```
 
 **When memory is stale or wrong:**
 ```
 1. Repo wins. Memory is a hint.
-2. project_update to correct content or lower confidence
+2. project_update to correct content
 3. project_forget to archive if it no longer applies
 4. Preserve useful source references when correcting
 ```
@@ -208,38 +177,19 @@ Both `project_search` and `user_search` use vector KNN search. Queries and memor
 **Use multiple short searches when context is broad:**
 - Search `"authentication"` then `"session token"` rather than `"authentication session token flow"`
 
-**Use kind filters when you know the category:**
-- `kinds: ["gotcha", "bug"]` when looking for pitfalls
-- `kinds: ["preference", "convention"]` when checking style rules
-
-**Use tag filters when tags are likely:**
-- `tags: ["typescript"]` to filter to typed-language memories
-
 ---
 
 ## Choosing Between Project and User Memory
 
 | Situation | Store where |
 |---|---|
-| "This user always prefers functional style" | `user_remember` → `preference` |
-| "This project uses a custom error wrapper" | `project_remember` → `convention` |
-| "The user is a senior engineer at a fintech" | `user_remember` → `context` |
-| "The auth module must never cache tokens" | `project_remember` → `decision` |
-| "User prefers bullet points in responses" | `user_remember` → `communication` |
-| "The payment webhook silently drops events when the queue is full instead of erroring" | `project_remember` → `gotcha` |
-| "User uses VS Code with Prettier" | `user_remember` → `tool_preference` |
-| "Run `uv run pytest` before any push in this repo" | `project_remember` → `workflow` |
+| "This user always prefers functional style" | `user_remember` |
+| "This project uses a custom error wrapper" | `project_remember` |
+| "The user is a senior engineer at a fintech" | `user_remember` |
+| "The auth module must never cache tokens" | `project_remember` |
+| "User prefers bullet points in responses" | `user_remember` |
+| "The payment webhook silently drops events when the queue is full instead of erroring" | `project_remember` |
+| "User uses VS Code with Prettier" | `user_remember` |
+| "Run `uv run pytest` before any push in this repo" | `project_remember` |
 
 When in doubt: if it applies only to this repo, use project memory. If it applies regardless of which repo you are in, use user memory.
-
----
-
-## Confidence Levels
-
-| Level | When to use |
-|---|---|
-| `high` | Confirmed by direct observation or explicit user statement |
-| `medium` | Inferred from behavior or indirect evidence (default) |
-| `low` | Uncertain; should be verified before relying on it |
-
-Lower confidence when memory conflicts with current evidence rather than archiving it immediately: it may still be useful as a starting point.

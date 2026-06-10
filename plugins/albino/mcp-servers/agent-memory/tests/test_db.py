@@ -23,9 +23,7 @@ def test_store_initializes_schema(bare_store):
     tables = {
         row[0] for row in bare_store._conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
     }
-    assert {"projects", "project_memories", "project_memory_events", "user_memories", "user_memory_events"}.issubset(
-        tables
-    )
+    assert {"projects", "project_memories", "user_memories"}.issubset(tables)
 
 
 def test_migrate_is_idempotent(tmp_path):
@@ -57,19 +55,13 @@ def test_create_and_get_memory(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
     memory = bare_store.create_project_memory(
         project_id=project.id,
-        kind="decision",
         content="Use postgres for all persistent storage to keep infrastructure simple.",
-        summary="Postgres for storage",
-        why_useful_later="Avoids adding Redis/Mongo to the stack.",
-        tags=["database", "infrastructure"],
-        confidence="high",
         source="test",
         source_ref=None,
         vector=_DUMMY_VECTOR,
     )
     assert memory.id > 0
-    assert memory.kind == "decision"
-    assert memory.tags == ["database", "infrastructure"]
+    assert memory.source == "test"
 
     fetched = bare_store.get_project_memory(memory.id)
     assert fetched is not None
@@ -81,29 +73,19 @@ def test_list_active_memories_excludes_archived(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
     m1 = bare_store.create_project_memory(
         project_id=project.id,
-        kind="decision",
         content="Active memory that should appear in active listing for this project.",
-        summary=None,
-        why_useful_later="Test.",
-        tags=[],
-        confidence="medium",
         source=None,
         source_ref=None,
         vector=_DUMMY_VECTOR,
     )
     m2 = bare_store.create_project_memory(
         project_id=project.id,
-        kind="gotcha",
         content="Archived memory that should not appear in active listing after archival.",
-        summary=None,
-        why_useful_later="Test.",
-        tags=[],
-        confidence="medium",
         source=None,
         source_ref=None,
         vector=_DUMMY_VECTOR,
     )
-    bare_store.archive_project_memory(m2.id, "test archive")
+    bare_store.archive_project_memory(m2.id)
 
     active = bare_store.list_active_project_memories(project.id)
     ids = [m.id for m in active]
@@ -111,45 +93,11 @@ def test_list_active_memories_excludes_archived(bare_store, tmp_path):
     assert m2.id not in ids
 
 
-def test_update_memory(bare_store, tmp_path):
+def test_update_memory_content(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
     memory = bare_store.create_project_memory(
         project_id=project.id,
-        kind="convention",
-        content="Use snake_case for all Python identifiers including functions and variables.",
-        summary=None,
-        why_useful_later="Consistency.",
-        tags=[],
-        confidence="medium",
-        source=None,
-        source_ref=None,
-        vector=_DUMMY_VECTOR,
-    )
-    updated = bare_store.update_project_memory(
-        memory_id=memory.id,
-        content=None,
-        summary="snake_case convention",
-        why_useful_later=None,
-        tags=["style"],
-        confidence="high",
-        archived_at=None,
-        reason="added tag",
-    )
-    assert updated.summary == "snake_case convention"
-    assert updated.confidence == "high"
-    assert "style" in updated.tags
-
-
-def test_update_memory_content_only(bare_store, tmp_path):
-    project = bare_store.get_or_create_project(str(tmp_path))
-    memory = bare_store.create_project_memory(
-        project_id=project.id,
-        kind="convention",
         content="Original content about using snake_case for all Python identifiers.",
-        summary="original summary",
-        why_useful_later="Consistency across codebase.",
-        tags=["style"],
-        confidence="medium",
         source=None,
         source_ref=None,
         vector=_DUMMY_VECTOR,
@@ -157,63 +105,39 @@ def test_update_memory_content_only(bare_store, tmp_path):
     updated = bare_store.update_project_memory(
         memory_id=memory.id,
         content="Updated content about using snake_case for all Python identifiers and module names.",
-        summary=None,
-        why_useful_later=None,
-        tags=None,
-        confidence=None,
         archived_at=None,
-        reason="clarified scope",
     )
     assert "module names" in updated.content
-    assert updated.summary == "original summary"
-    assert updated.tags == ["style"]
-    assert updated.confidence == "medium"
 
 
-def test_update_memory_why_only(bare_store, tmp_path):
+def test_update_memory_preserves_source(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
     memory = bare_store.create_project_memory(
         project_id=project.id,
-        kind="gotcha",
-        content="SQLite WAL mode must be enabled before foreign keys to avoid lock contention.",
-        summary=None,
-        why_useful_later="Original rationale that needs improvement.",
-        tags=[],
-        confidence="low",
-        source=None,
-        source_ref=None,
+        content="Use snake_case for all Python identifiers including functions and variables.",
+        source="test",
+        source_ref="some-ref",
         vector=_DUMMY_VECTOR,
     )
     updated = bare_store.update_project_memory(
         memory_id=memory.id,
         content=None,
-        summary=None,
-        why_useful_later="Future agents need this ordering rule to avoid locking failures during SQLite initialization.",
-        tags=None,
-        confidence=None,
         archived_at=None,
-        reason="improved rationale",
     )
-    assert "locking failures" in updated.why_useful_later
-    assert updated.confidence == "low"
-    assert "WAL mode" in updated.content
+    assert updated.source == "test"
+    assert updated.source_ref == "some-ref"
 
 
 def test_archive_memory(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
     memory = bare_store.create_project_memory(
         project_id=project.id,
-        kind="gotcha",
         content="Avoid using mutable default arguments in Python function definitions.",
-        summary=None,
-        why_useful_later="Classic Python gotcha.",
-        tags=[],
-        confidence="high",
         source=None,
         source_ref=None,
         vector=_DUMMY_VECTOR,
     )
-    archived = bare_store.archive_project_memory(memory.id, "no longer relevant")
+    archived = bare_store.archive_project_memory(memory.id)
     assert archived.archived_at is not None
 
     active = bare_store.list_active_project_memories(project.id)
@@ -224,46 +148,17 @@ def test_hard_delete_memory_removes_row(bare_store, tmp_path):
     project = bare_store.get_or_create_project(str(tmp_path))
     memory = bare_store.create_project_memory(
         project_id=project.id,
-        kind="decision",
         content="Hard delete test memory that must be fully removed from the database.",
-        summary=None,
-        why_useful_later="Testing hard delete.",
-        tags=[],
-        confidence="low",
         source=None,
         source_ref=None,
         vector=_DUMMY_VECTOR,
     )
     memory_id = memory.id
-    bare_store.hard_delete_project_memory(memory_id, "test deletion", project.id)
+    bare_store.hard_delete_project_memory(memory_id, project.id)
 
     assert bare_store.get_project_memory(memory_id) is None
     vec_row = bare_store._conn.execute("SELECT * FROM project_memory_vec WHERE memory_id = ?", (memory_id,)).fetchone()
     assert vec_row is None
-
-
-def test_hard_delete_keeps_audit_event(bare_store, tmp_path):
-    project = bare_store.get_or_create_project(str(tmp_path))
-    memory = bare_store.create_project_memory(
-        project_id=project.id,
-        kind="decision",
-        content="Audit trail test memory verifying hard delete events are preserved.",
-        summary=None,
-        why_useful_later="Audit test.",
-        tags=[],
-        confidence="medium",
-        source=None,
-        source_ref=None,
-        vector=_DUMMY_VECTOR,
-    )
-    memory_id = memory.id
-    bare_store.hard_delete_project_memory(memory_id, "audit test", project.id)
-
-    events = bare_store._conn.execute(
-        "SELECT action FROM project_memory_events WHERE action = 'hard_deleted' AND project_id = ?",
-        (project.id,),
-    ).fetchall()
-    assert len(events) >= 1
 
 
 def test_cross_device_same_remote_shares_project(tmp_path, monkeypatch):
@@ -281,10 +176,10 @@ def test_cross_device_same_remote_shares_project(tmp_path, monkeypatch):
     monkeypatch.setattr(db_module, "fingerprint_remote", lambda r: "abc123" if r else None)
     monkeypatch.setattr(db_module, "canonical_project_root", lambda p: str(Path(p).resolve()))
 
-    store = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
-    proj_a = store.get_or_create_project(str(path_a))
-    proj_b = store.get_or_create_project(str(path_b))
-    store.close()
+    agent_store = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
+    proj_a = agent_store.get_or_create_project(str(path_a))
+    proj_b = agent_store.get_or_create_project(str(path_b))
+    agent_store.close()
 
     assert proj_a.id == proj_b.id
 
@@ -304,10 +199,10 @@ def test_cross_device_updates_known_paths(tmp_path, monkeypatch):
     monkeypatch.setattr(db_module, "fingerprint_remote", lambda r: "abc123" if r else None)
     monkeypatch.setattr(db_module, "canonical_project_root", lambda p: str(Path(p).resolve()))
 
-    store = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
-    store.get_or_create_project(str(path_a))
-    proj = store.get_or_create_project(str(path_b))
-    store.close()
+    agent_store = AgentMemoryStore(str(tmp_path / "memory.sqlite"))
+    agent_store.get_or_create_project(str(path_a))
+    proj = agent_store.get_or_create_project(str(path_b))
+    agent_store.close()
 
     assert str(path_a.resolve()) in proj.known_paths
     assert str(path_b.resolve()) in proj.known_paths
@@ -317,9 +212,6 @@ def test_migration_v2_merges_duplicate_projects(tmp_path):
     """A v1 database with two rows sharing a fingerprint is merged by migration v2."""
     db_path = str(tmp_path / "memory.sqlite")
 
-    # Build a v1-style database manually.
-    # Real v1 databases created by the old _migrate() have a schema_migrations table
-    # (it was always created) but no version=2 row yet (that was inserted by v2 migration).
     conn = sqlite3.connect(db_path)
     conn.executescript("""
         CREATE TABLE schema_migrations (
@@ -405,29 +297,28 @@ def test_migration_v2_merges_duplicate_projects(tmp_path):
     conn.commit()
     conn.close()
 
-    store = AgentMemoryStore(db_path)
+    agent_store = AgentMemoryStore(db_path)
 
-    project_rows = store._conn.execute("SELECT * FROM projects").fetchall()
+    project_rows = agent_store._conn.execute("SELECT * FROM projects").fetchall()
     assert len(project_rows) == 1
     surviving_id = project_rows[0]["id"]
 
-    mem_rows = store._conn.execute("SELECT id FROM project_memories WHERE project_id = ?", (surviving_id,)).fetchall()
+    mem_rows = agent_store._conn.execute(
+        "SELECT id FROM project_memories WHERE project_id = ?", (surviving_id,)
+    ).fetchall()
     assert len(mem_rows) == 2
 
     paths = json.loads(project_rows[0]["known_paths_json"])
     assert "/home/alice/myapp" in paths
     assert "/home/bob/myapp" in paths
 
-    store.close()
+    agent_store.close()
 
 
 def test_legacy_v2_database_bootstraps_without_remigration(tmp_path):
     """A post-v2 old-code database is bootstrapped: both migrations marked applied, data preserved."""
     db_path = str(tmp_path / "memory.sqlite")
 
-    # Build a database that looks exactly like one fully migrated by the old hand-rolled system:
-    # v2 schema (no UNIQUE on root_path, partial unique indexes present) plus
-    # schema_migrations with version=2 (inserted by the old _apply_migration_v2).
     conn = sqlite3.connect(db_path)
     conn.executescript("""
         CREATE TABLE schema_migrations (
@@ -512,21 +403,18 @@ def test_legacy_v2_database_bootstraps_without_remigration(tmp_path):
     conn.commit()
     conn.close()
 
-    store = AgentMemoryStore(db_path)
+    agent_store = AgentMemoryStore(db_path)
 
-    # Data must be intact: migration 002 must not have re-run and altered anything.
-    project_rows = store._conn.execute("SELECT * FROM projects").fetchall()
+    project_rows = agent_store._conn.execute("SELECT * FROM projects").fetchall()
     assert len(project_rows) == 1
     assert project_rows[0]["root_path"] == "/home/alice/myapp"
 
-    mem_rows = store._conn.execute("SELECT content FROM project_memories WHERE project_id = 1").fetchall()
+    mem_rows = agent_store._conn.execute("SELECT content FROM project_memories WHERE project_id = 1").fetchall()
     assert len(mem_rows) == 1
     assert mem_rows[0]["content"] == "Preserved memory."
 
-    # Both migrations must be recorded in yoyo's tracking table, confirming the bootstrap
-    # read schema_migrations version=2 and marked them applied without re-running.
-    applied = {r[0] for r in store._conn.execute("SELECT migration_id FROM _yoyo_migration").fetchall()}
+    applied = {r[0] for r in agent_store._conn.execute("SELECT migration_id FROM _yoyo_migration").fetchall()}
     assert "001_initial" in applied
     assert "002_fingerprint" in applied
 
-    store.close()
+    agent_store.close()

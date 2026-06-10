@@ -36,12 +36,3 @@ async def embed_one(text: str) -> list[float]:
     if not results:
         raise RuntimeError("Embedding returned empty result.")
     return results[0]
-
-
-def memory_embed_text(content: str, summary: str | None, tags: list[str]) -> str:
-    parts = [content]
-    if summary:
-        parts.append(summary)
-    if tags:
-        parts.append(" ".join(tags))
-    return " ".join(parts)

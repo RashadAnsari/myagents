@@ -38,23 +38,15 @@ Store as `PROJECT_ROOT`.
 
 For **project memory**, call `mcp__plugin_albino_agent-memory__project_remember` with:
 - `project_root`: value of `PROJECT_ROOT`
-- `kind`: most accurate kind from `decision`, `convention`, `architecture`, `workflow`, `preference`, `gotcha`, `bug`, `dependency`, `testing`, `handoff`
 - `content`: specific, concrete content - at least 40 characters, no secrets, no command output
-- `why_useful_later`: explain exactly how a future agent benefits from knowing this
-- `summary`: short title (used in listings)
-- `confidence`: `high` if the user stated it directly, `medium` if inferred from context
 - `source`: `"user"` if the user explicitly told you, `"agent"` if you inferred it
 
 For **user memory**, call `mcp__plugin_albino_agent-memory__user_remember` with:
-- `kind`: most accurate kind from `preference`, `behavior`, `context`, `workflow`, `convention`, `tool_preference`, `communication`
 - `content`: specific, concrete content - at least 40 characters, no secrets
-- `why_useful_later`: explain exactly how a future agent benefits
-- `summary`: short title
-- `confidence`: `high` if stated directly, `medium` if inferred
 - `source`: `"user"` if explicitly stated, `"agent"` if inferred
 
 If a call returns a `MemoryQualityError` with reason `duplicates`, note that the memory already exists and skip it. Do not retry.
 
 ## Step 5: Report
 
-After all calls complete, tell the user what was saved. For each saved memory show: scope (project or user), kind, and summary. If a duplicate was detected, say so. If nothing qualified to save, explain briefly.
+After all calls complete, tell the user what was saved. For each saved memory show: scope (project or user) and a brief description of the content. If a duplicate was detected, say so. If nothing qualified to save, explain briefly.

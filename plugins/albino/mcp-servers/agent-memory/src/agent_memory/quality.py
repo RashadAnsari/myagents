@@ -3,8 +3,6 @@ import re
 
 logger = logging.getLogger(__name__)
 
-# Detect-secrets plugins initialized once at module level.
-# Pattern-based plugins only: no entropy detectors, which produce false positives on natural language.
 try:
     from detect_secrets.plugins.artifactory import ArtifactoryDetector
     from detect_secrets.plugins.aws import AWSKeyDetector
@@ -59,14 +57,6 @@ except ImportError:  # pragma: no cover
     _DS_PLUGINS = []
     logger.warning("detect-secrets unavailable, using regex-only secret detection")
 
-# Targeted regexes covering gaps not handled by detect-secrets pattern plugins:
-# - Stripe test keys (StripeDetector only covers _live_ with exactly 24 chars)
-# - GitHub PAT variable length (GitHubTokenDetector requires exactly 36 chars)
-# - Generic sdk prefixes: sk_, pk_, rk_, hf_, github_pat_
-# - GitLab old underscore format (GitLabTokenDetector uses hyphen)
-# - Generic sk- hyphen-prefixed tokens (OpenAIDetector only covers old T3BlbkFJ marker)
-# - Plaintext keyword=value assignments (KeywordDetector requires source-code context)
-# - Long base64 blobs not covered by structural patterns above
 _SECRET_SIGNALS = [
     re.compile(r"\b(?:sk|pk|rk|hf|github_pat)_[A-Za-z0-9_-]{20,}\b"),
     re.compile(r"\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{20,}\b"),
@@ -84,8 +74,6 @@ _DUPLICATE_USER_MSG = "Memory duplicates an existing active user memory."
 
 _MIN_CONTENT_CHARS = 40
 _MIN_CONTENT_WORDS = 7
-_MIN_WHY_CHARS = 20
-_MIN_WHY_WORDS = 4
 
 _VAGUE_PHRASES = [
     "fixed the issue",
@@ -124,7 +112,6 @@ def looks_like_secret(value: str) -> bool:
         return True
     if any(sig.search(value) for sig in _SECRET_SIGNALS):
         return True
-    # High-entropy mixed token heuristic: 40+ chars with lowercase, uppercase, digits, and symbols
     return any(
         len(part) >= 40
         and any(c.islower() for c in part)
@@ -151,18 +138,13 @@ def _is_duplicate(content: str, existing_contents: list[str]) -> bool:
 
 def evaluate_memory_quality(
     content: str,
-    why_useful_later: str,
     existing_contents: list[str],
 ) -> tuple[bool, list[str]]:
     reasons: list[str] = []
     content = content.strip()
-    why = (why_useful_later or "").strip()
 
     if len(content) < _MIN_CONTENT_CHARS or _word_count(content) < _MIN_CONTENT_WORDS:
         reasons.append("Memory content is too short to be durable.")
-
-    if not why or len(why) < _MIN_WHY_CHARS or _word_count(why) < _MIN_WHY_WORDS:
-        reasons.append("Memory must explain why it will be useful later.")
 
     if any(phrase in content.lower() for phrase in _VAGUE_PHRASES):
         reasons.append("Memory content is too vague.")
@@ -170,7 +152,7 @@ def evaluate_memory_quality(
     if any(sig.search(content) for sig in _COMMAND_OUTPUT_SIGNALS):
         reasons.append("Memory looks like routine command output or task status.")
 
-    if looks_like_secret(content) or looks_like_secret(why):
+    if looks_like_secret(content):
         reasons.append("Memory looks like it may contain a secret or credential.")
 
     if _is_duplicate(content, existing_contents):
@@ -181,9 +163,8 @@ def evaluate_memory_quality(
 
 def evaluate_user_memory_quality(
     content: str,
-    why_useful_later: str,
     existing_contents: list[str],
 ) -> tuple[bool, list[str]]:
-    ok, reasons = evaluate_memory_quality(content, why_useful_later, existing_contents)
+    ok, reasons = evaluate_memory_quality(content, existing_contents)
     reasons = [_DUPLICATE_USER_MSG if r == _DUPLICATE_PROJECT_MSG else r for r in reasons]
     return ok, reasons

@@ -120,11 +120,7 @@ Return ONLY a JSON array. No prose, no explanation, no markdown fences.
 
 Each element:
 {
-  "kind": "decision|convention|gotcha|architecture|workflow|preference|bug|dependency|testing",
   "content": "Specific, concrete statement at least 40 characters long. No vague language.",
-  "summary": "Short title, 5-10 words",
-  "why_useful_later": "How a future agent working in this repo benefits from knowing this",
-  "confidence": "high if stated explicitly in discussion, medium if inferred from context",
   "source_ref": "PR #<number>"
 }
 
@@ -143,7 +139,6 @@ If parsing an agent's output fails (not valid JSON), log a warning and continue 
 
 Within `ALL_CANDIDATES`, merge candidates that describe the same fact. When two candidates overlap:
 
-- Keep the one with higher confidence.
 - Prefer the `content` that is more specific.
 - Set `source_ref` to the earliest PR number that established the rule (e.g. `"PR #42"` if the fact first appeared there).
 
@@ -156,11 +151,7 @@ Store the deduplicated result as `FINAL_CANDIDATES`.
 For each candidate in `FINAL_CANDIDATES`, call `project_remember` with:
 
 - `project_root`: `PROJECT_ROOT`
-- `kind`: candidate's `kind`
 - `content`: candidate's `content`
-- `summary`: candidate's `summary`
-- `why_useful_later`: candidate's `why_useful_later`
-- `confidence`: candidate's `confidence`
 - `source`: `"agent"`
 - `source_ref`: candidate's `source_ref`
 
@@ -178,7 +169,7 @@ Print a summary:
 - Written to memory: `WRITTEN_COUNT`
 - Skipped (already existed): `SKIPPED_COUNT`
 
-Then list every written memory: `[kind] summary (source_ref)`.
+Then list every written memory: `content (source_ref)`.
 
 If nothing was written, say so and explain why (all duplicates, no signal in PRs, etc.).
 

@@ -78,25 +78,10 @@ Bad project memory:
 - Vague summaries like "fixed the issue".
 - Facts already obvious from current files unless the memory adds durable interpretation.
 
-### Project Memory Kinds
-
-| Kind           | Use                                                |
-| -------------- | -------------------------------------------------- |
-| `decision`     | Architecture or design decisions with rationale    |
-| `convention`   | Coding style or naming rules for this project      |
-| `architecture` | Structure, boundaries, or key module relationships |
-| `workflow`     | Non-obvious build, test, or deploy steps           |
-| `preference`   | User preferences specific to this project          |
-| `gotcha`       | Surprising behavior or common pitfalls             |
-| `bug`          | Root causes of recurring bugs                      |
-| `dependency`   | Important dependency constraints or quirks         |
-| `testing`      | Test patterns or coverage requirements             |
-| `handoff`      | End-of-task learnings for the next agent           |
-
 ### Project Memory Tools
 
-- `project_remember`: Store durable project memory after quality and secret checks. Requires `why_useful_later`. Idempotent by content: a duplicate raises an error rather than creating a second record.
-- `project_search`: Vector search project memory with optional kind and tag filters. Supports `offset` for pagination.
+- `project_remember`: Store durable project memory after quality and secret checks. Idempotent by content: a duplicate raises an error rather than creating a second record.
+- `project_search`: Vector search project memory. Supports `offset` for pagination.
 - `project_update`: Correct, refine, or archive an existing memory.
 - `project_forget`: Archive by default or hard-delete when requested.
 - `project_purge`: Hard-delete archived project memories older than N days to prevent unbounded growth. Audit events are always preserved.
@@ -123,22 +108,10 @@ Bad user memory:
 - One-off task details or temporary opinions.
 - Anything that does not help future agents understand this person.
 
-### User Memory Kinds
-
-| Kind              | Use                                                    |
-| ----------------- | ------------------------------------------------------ |
-| `preference`      | Coding style, language, formatting, output preferences |
-| `behavior`        | Recurring habits and patterns the user exhibits        |
-| `context`         | Role, team, domain, experience level, background       |
-| `workflow`        | How the user structures their work processes           |
-| `convention`      | Global standards applied across all projects           |
-| `tool_preference` | Preferred tools, frameworks, CLIs, and configurations  |
-| `communication`   | How the user prefers explanations and responses        |
-
 ### User Memory Tools
 
-- `user_remember`: Store durable user memory after quality and secret checks. Requires `why_useful_later`. Idempotent by content.
-- `user_search`: Vector search user memory with optional kind and tag filters. Supports `offset` for pagination.
+- `user_remember`: Store durable user memory after quality and secret checks. Idempotent by content.
+- `user_search`: Vector search user memory. Supports `offset` for pagination.
 - `user_update`: Correct, refine, or archive an existing user memory.
 - `user_forget`: Archive by default or hard-delete when requested.
 - `user_purge`: Hard-delete archived user memories older than N days to prevent unbounded growth. Audit events are always preserved.

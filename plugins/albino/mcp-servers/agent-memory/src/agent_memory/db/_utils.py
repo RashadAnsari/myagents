@@ -5,7 +5,7 @@ import struct
 from datetime import UTC, datetime
 
 from ..types import (
-    MemoryRecord,
+    ProjectMemoryRecord,
     ProjectRecord,
     UserMemoryRecord,
 )
@@ -43,22 +43,15 @@ def map_project(row: sqlite3.Row) -> ProjectRecord:
     )
 
 
-def map_project_memory(row: sqlite3.Row) -> MemoryRecord:
-    return MemoryRecord(
+def map_project_memory(row: sqlite3.Row) -> ProjectMemoryRecord:
+    return ProjectMemoryRecord(
         id=row["id"],
         project_id=row["project_id"],
-        kind=row["kind"],
         content=row["content"],
-        summary=row["summary"],
-        why_useful_later=row["why_useful_later"],
-        tags=parse_json_array(row["tags_json"]),
-        confidence=row["confidence"],
         source=row["source"],
         source_ref=row["source_ref"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
-        last_used_at=row["last_used_at"],
-        use_count=row["use_count"],
         archived_at=row["archived_at"],
     )
 
@@ -66,17 +59,10 @@ def map_project_memory(row: sqlite3.Row) -> MemoryRecord:
 def map_user_memory(row: sqlite3.Row) -> UserMemoryRecord:
     return UserMemoryRecord(
         id=row["id"],
-        kind=row["kind"],
         content=row["content"],
-        summary=row["summary"],
-        why_useful_later=row["why_useful_later"],
-        tags=parse_json_array(row["tags_json"]),
-        confidence=row["confidence"],
         source=row["source"],
         source_ref=row["source_ref"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
-        last_used_at=row["last_used_at"],
-        use_count=row["use_count"],
         archived_at=row["archived_at"],
     )

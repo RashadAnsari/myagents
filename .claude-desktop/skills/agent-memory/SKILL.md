@@ -56,26 +56,11 @@ Do not write:
 
 ---
 
-## Memory Kinds
-
-| Kind | What it captures | Example |
-|---|---|---|
-| `preference` | Food, lifestyle, aesthetics, leisure | "User is vegetarian and prefers Mediterranean food." |
-| `behavior` | Recurring habits and patterns | "User exercises in the morning and plans workouts on Sundays." |
-| `context` | Life situation, role, location, background | "User lives in Amsterdam, works in product management, has two kids." |
-| `workflow` | How the user approaches tasks and decisions | "User likes to think out loud before committing to a decision." |
-| `convention` | Personal standards they apply consistently | "User always budgets in euros and tracks expenses weekly." |
-| `tool_preference` | Apps, services, or methods they rely on | "User tracks habits with Notion and prefers voice notes over typing." |
-| `communication` | Tone, depth, and format preferences | "User prefers short direct answers. Gets frustrated by excessive caveats." |
-
----
-
 ## Quality Rules
 
 Every memory must pass all of these:
 
 - **Content is at least 40 characters or 7 words.** Short notes are not durable.
-- **`whyUsefulLater` is required.** Explain exactly how a future conversation benefits. If you cannot, skip it.
 - **No vague phrases.** Avoid "user likes things", "prefers it that way".
 - **No secrets.** Passwords, financial data, and private credentials are never stored.
 - **No duplicates.** If a `MemoryQualityError` with reason `duplicates` is returned, do not retry. The memory already exists.
@@ -92,13 +77,13 @@ Every memory must pass all of these:
 
 **Before each final response (when something durable was learned):**
 ```
-1. user_remember with kind, content, whyUsefulLater
-2. source="user" if the user stated it directly, source="agent" if inferred
+1. user_remember with content and optionally source/source_ref
+2. source="user" if stated directly, source="agent" if inferred
 ```
 
 **When a memory is stale or wrong:**
 ```
-1. user_update  →  correct the content or lower confidence
+1. user_update  →  correct the content
 2. user_forget  →  archive if it no longer applies
 3. user_remember  →  store the accurate version
 ```
@@ -115,8 +100,3 @@ Every memory must pass all of these:
 
 **Run multiple short searches when the topic spans areas:**
 - Search `"diet"` then `"health goals"` rather than one long query.
-
-**Use kind filters when the category is obvious:**
-- `kinds: ["preference", "behavior"]` for lifestyle topics.
-- `kinds: ["communication"]` when calibrating tone.
-- `kinds: ["context"]` for background facts about the user's life.

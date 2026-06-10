@@ -36,7 +36,7 @@ Run both at the same time:
 1. `mcp__plugin_albino_agent-memory__project_search` with `project_root: PROJECT_ROOT`, `query: $ARGUMENTS`, `k: 10`
 2. `mcp__plugin_albino_agent-memory__user_search` with `query: $ARGUMENTS`, `k: 10`
 
-After results arrive, filter each list: keep only entries whose `content` or `summary` is meaningfully related to `$ARGUMENTS`. Discard unrelated results that surfaced only because of distant semantic similarity.
+After results arrive, filter each list: keep only entries whose `content` is meaningfully related to `$ARGUMENTS`. Discard unrelated results that surfaced only because of distant semantic similarity.
 
 Store the filtered results as `PROJECT_MATCHES` and `USER_MATCHES`.
 
@@ -56,12 +56,10 @@ For each **project memory**, call `mcp__plugin_albino_agent-memory__project_forg
 - `project_root`: `PROJECT_ROOT`
 - `id`: numeric id of the entry
 - `hard_delete`: `false` (soft-delete; reversible)
-- `reason`: `"Forgotten via /forget: $ARGUMENTS"`
 
 For each **user memory**, call `mcp__plugin_albino_agent-memory__user_forget` with:
 - `id`: numeric id of the entry
 - `hard_delete`: `false`
-- `reason`: `"Forgotten via /forget: $ARGUMENTS"`
 
 Run all forget calls in parallel.
 

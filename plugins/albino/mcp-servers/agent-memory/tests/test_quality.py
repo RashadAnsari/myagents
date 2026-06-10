@@ -3,7 +3,6 @@ import pytest
 from agent_memory.quality import evaluate_memory_quality, evaluate_user_memory_quality, looks_like_secret
 
 _GOOD_CONTENT = "Use postgres for all persistent storage to avoid adding Redis or Mongo to the stack unnecessarily."
-_GOOD_WHY = "Future agents need this to keep infrastructure choices consistent across all services."
 
 
 class TestLooksLikeSecret:
@@ -14,7 +13,6 @@ class TestLooksLikeSecret:
         assert looks_like_secret("-----BEGIN OPENSSH PRIVATE KEY-----\nfoobar\n-----END OPENSSH PRIVATE KEY-----")
 
     def test_aws_access_key(self):
-        # Pattern requires exactly AKIA + 16 uppercase alphanumeric = 20 chars total
         assert looks_like_secret("AKIAIOSFODNN7EXAMPLE")
 
     def test_generic_token_prefix_sk(self):
@@ -36,8 +34,6 @@ class TestLooksLikeSecret:
         assert looks_like_secret("DATABASE_PASSWORD=supersecretpassword123")
 
     def test_base64_long_string(self):
-        # Pattern: \b[A-Za-z0-9+/]*[+/][A-Za-z0-9+/]{40,}={0,2}\b
-        # Needs 40+ chars after the first +/
         assert looks_like_secret("base64+ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx")
 
     def test_stripe_live_key(self):
@@ -56,7 +52,6 @@ class TestLooksLikeSecret:
         assert looks_like_secret("sk-proj-ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcd")
 
     def test_entropy_heuristic_mixed_case_digits_special(self):
-        # 40+ chars, mixed case, digits, special char
         assert looks_like_secret("aAbBcC1234567890aAbBcC123456789/abcdefgh")
 
     def test_normal_content_not_secret(self):
@@ -71,36 +66,21 @@ class TestLooksLikeSecret:
 
 class TestEvaluateMemoryQualityBoundaries:
     def test_passes_at_minimum_length(self):
-        # Exactly 40 chars, exactly 7 words
         content = "Use postgres for the main data storage now"
         assert len(content.strip()) >= 40
         assert len([w for w in content.strip().split() if w]) >= 7
-        ok, _ = evaluate_memory_quality(content, _GOOD_WHY, [])
+        ok, _ = evaluate_memory_quality(content, [])
         assert ok
 
     def test_rejects_content_too_short_chars(self):
-        ok, reasons = evaluate_memory_quality("Too short.", _GOOD_WHY, [])
+        ok, reasons = evaluate_memory_quality("Too short.", [])
         assert not ok
         assert any("too short" in r.lower() for r in reasons)
 
     def test_rejects_content_too_few_words(self):
-        ok, reasons = evaluate_memory_quality("a" * 40, _GOOD_WHY, [])
+        ok, reasons = evaluate_memory_quality("a" * 40, [])
         assert not ok
         assert any("too short" in r.lower() for r in reasons)
-
-    def test_rejects_empty_why(self):
-        ok, reasons = evaluate_memory_quality(_GOOD_CONTENT, "", [])
-        assert not ok
-        assert any("useful later" in r.lower() for r in reasons)
-
-    def test_rejects_why_too_short(self):
-        ok, reasons = evaluate_memory_quality(_GOOD_CONTENT, "short", [])
-        assert not ok
-        assert any("useful later" in r.lower() for r in reasons)
-
-    def test_accepts_minimal_valid_why(self):
-        ok, _ = evaluate_memory_quality(_GOOD_CONTENT, "Agents need this context.", [])
-        assert ok
 
 
 class TestEvaluateMemoryQualityReasons:
@@ -118,67 +98,62 @@ class TestEvaluateMemoryQualityReasons:
     )
     def test_rejects_vague_phrase(self, phrase):
         content = f"I {phrase} and everything is working correctly now in the system."
-        ok, reasons = evaluate_memory_quality(content, _GOOD_WHY, [])
+        ok, reasons = evaluate_memory_quality(content, [])
         assert not ok
         assert any("vague" in r.lower() for r in reasons)
 
     def test_rejects_command_output_npm(self):
         content = "npm run build\n> project@1.0.0 build\n> tsc --outDir dist\nThe build succeeded."
-        ok, reasons = evaluate_memory_quality(content, _GOOD_WHY, [])
+        ok, reasons = evaluate_memory_quality(content, [])
         assert not ok
         assert any("command output" in r.lower() for r in reasons)
 
     def test_rejects_command_output_git(self):
         content = "git status\nOn branch main\nnothing to commit, working tree clean\n"
-        ok, reasons = evaluate_memory_quality(content, _GOOD_WHY, [])
+        ok, reasons = evaluate_memory_quality(content, [])
         assert not ok
 
     def test_rejects_secret_in_content(self):
         content = "The API key is AKIAIOSFODNN7EXAMPLE and should be rotated regularly in production env."
-        ok, reasons = evaluate_memory_quality(content, _GOOD_WHY, [])
-        assert not ok
-        assert any("secret" in r.lower() for r in reasons)
-
-    def test_rejects_secret_in_why(self):
-        ok, reasons = evaluate_memory_quality(_GOOD_CONTENT, "Rotate key AKIAIOSFODNN7EXAMPLE soon.", [])
+        ok, reasons = evaluate_memory_quality(content, [])
         assert not ok
         assert any("secret" in r.lower() for r in reasons)
 
     def test_rejects_exact_duplicate(self):
-        ok, reasons = evaluate_memory_quality(_GOOD_CONTENT, _GOOD_WHY, [_GOOD_CONTENT])
+        ok, reasons = evaluate_memory_quality(_GOOD_CONTENT, [_GOOD_CONTENT])
         assert not ok
         assert any("duplicates" in r.lower() for r in reasons)
 
     def test_rejects_normalized_duplicate(self):
-        # Different whitespace/casing but same normalized form
         variant = _GOOD_CONTENT.upper().replace(".", "").replace(",", "")
-        ok, reasons = evaluate_memory_quality(_GOOD_CONTENT, _GOOD_WHY, [variant])
+        ok, reasons = evaluate_memory_quality(_GOOD_CONTENT, [variant])
         assert not ok
         assert any("duplicates" in r.lower() for r in reasons)
 
     def test_passes_non_duplicate(self):
         other = "Use Redis for caching session data to improve response times across all API endpoints."
-        ok, _ = evaluate_memory_quality(_GOOD_CONTENT, _GOOD_WHY, [other])
+        ok, _ = evaluate_memory_quality(_GOOD_CONTENT, [other])
         assert ok
 
     def test_multiple_reasons_accumulated(self):
-        ok, reasons = evaluate_memory_quality("short", "x", [])
+        content = "I fixed the issue and everything is working correctly now in the system."
+        ok, reasons = evaluate_memory_quality(content, [content])
         assert not ok
-        assert len(reasons) >= 2
+        assert len(reasons) >= 2  # vague + duplicate
 
 
 class TestEvaluateUserMemoryQuality:
     def test_passes_valid_content(self):
-        ok, _ = evaluate_user_memory_quality(_GOOD_CONTENT, _GOOD_WHY, [])
+        ok, _ = evaluate_user_memory_quality(_GOOD_CONTENT, [])
         assert ok
 
     def test_duplicate_message_uses_user_wording(self):
-        ok, reasons = evaluate_user_memory_quality(_GOOD_CONTENT, _GOOD_WHY, [_GOOD_CONTENT])
+        ok, reasons = evaluate_user_memory_quality(_GOOD_CONTENT, [_GOOD_CONTENT])
         assert not ok
         assert any("user memory" in r.lower() for r in reasons)
         assert not any(r == "Memory duplicates an existing active memory." for r in reasons)
 
     def test_non_duplicate_reason_unchanged(self):
-        ok, reasons = evaluate_user_memory_quality("short", _GOOD_WHY, [])
+        ok, reasons = evaluate_user_memory_quality("short", [])
         assert not ok
         assert any("too short" in r.lower() for r in reasons)
