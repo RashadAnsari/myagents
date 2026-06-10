@@ -13,6 +13,12 @@
         {
           "command": "PLATFORM=cursor ./hooks/session-start.sh"
         }
+      ],
+      "stop": [
+        {
+          "command": "PLATFORM=cursor ./hooks/stop.sh",
+          "loop_limit": 1
+        }
       ]
     }
   }

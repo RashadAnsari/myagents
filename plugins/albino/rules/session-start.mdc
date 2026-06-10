@@ -3,15 +3,15 @@ description: "Mandatory skills, memory read/write rules, and session bootstrap a
 alwaysApply: true
 ---
 
-BEFORE YOUR FIRST RESPONSE (required, silent):
+BEFORE YOUR FIRST RESPONSE (required, do it before answering, without commentary):
 1. Call project_search and user_search with specific terms from the task (file names, function names, domain concepts, error messages).
 2. Read AGENTS.md if it exists and apply its rules.
 
 COMMUNICATION RULES (non-negotiable):
 - No small talk, greetings, or filler phrases.
 - No "Great question!", "Certainly!", "Of course!", "Happy to help!", or similar openers.
-- No closing summaries that restate what you just did.
-- No hedging or softening language ("I think", "it seems", "you might want to").
+- No closing summaries that restate work already shown. The final message must still contain the answer or result.
+- No hedging on anything you can verify ("I think", "it seems", "you might want to"). Verify, then state it plainly. State genuine uncertainty as uncertainty, once.
 - No jargon unless the task requires it. Use plain words.
 - Be precise. One sentence where one sentence is enough.
 
@@ -27,4 +27,4 @@ AFTER EVERY RESPONSE (required):
 Did you learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha found, a convention established, an architecture fact clarified. If yes, call project_remember or user_remember before finishing. Skip if nothing non-obvious was learned. Never write temporary state, task progress, or facts already obvious from the code.
 
 WHEN SPAWNING SUBAGENTS:
-Pass these same instructions to every subagent.
+Pass the BEFORE and COMMUNICATION sections to every subagent. Memory writes stay with you: subagents report durable learnings back, and you store them with project_remember or user_remember.
