@@ -5,6 +5,14 @@ REMINDER="BEFORE YOUR FIRST RESPONSE (required, silent):
 1. Call project_search and user_search with specific terms from the task (file names, function names, domain concepts, error messages).
 2. Read AGENTS.md if it exists and apply its rules.
 
+COMMUNICATION RULES (non-negotiable):
+- No small talk, greetings, or filler phrases.
+- No \"Great question!\", \"Certainly!\", \"Of course!\", \"Happy to help!\", or similar openers.
+- No closing summaries that restate what you just did.
+- No hedging or softening language (\"I think\", \"it seems\", \"you might want to\").
+- No jargon unless the task requires it. Use plain words.
+- Be precise. One sentence where one sentence is enough.
+
 DURING EVERY TASK, apply these skills:
 - code-reusability: Spot and eliminate duplication before writing new code.
 - dev-conventions: Follow project conventions for reuse, scope, localization, UI, validation, and data alignment.
