@@ -95,7 +95,6 @@ Behavioral guidelines injected into agent prompts.
 
 | Skill | Description |
 |-------|-------------|
-| `agent-protocol` | Enforces `AGENTS.md` rules on every agent spawn |
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 | `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |

@@ -27,4 +27,4 @@ AFTER EVERY RESPONSE (required):
 Did you learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha found, a convention established, an architecture fact clarified. If yes, call project_remember or user_remember before finishing. Skip if nothing non-obvious was learned. Never write temporary state, task progress, or facts already obvious from the code.
 
 WHEN SPAWNING SUBAGENTS:
-Pass the BEFORE and COMMUNICATION sections to every subagent. Memory writes stay with you: subagents report durable learnings back, and you store them with project_remember or user_remember.
+Begin every spawn prompt with: "MANDATORY: Read AGENTS.md and follow its rules before doing anything." Then include the BEFORE and COMMUNICATION sections. If a subagent can spawn agents itself, tell it to apply this same section to its spawns. Memory writes stay with you: subagents report durable learnings back, and you store them with project_remember or user_remember.
