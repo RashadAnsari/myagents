@@ -95,6 +95,7 @@ Behavioral guidelines injected into agent prompts.
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 | `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
+| `plugin-authoring` | Best practices for writing skills, commands, and agents: descriptions, structure, token efficiency, frontmatter, and tool scoping |
 
 #### MCP Servers
 

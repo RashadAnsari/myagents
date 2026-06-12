@@ -1,9 +1,10 @@
 ---
 description: 'Review a GitHub pull request: analyzes changed files to select relevant reviewers, loads project and user memory, runs reviewers in parallel, lets the user pick which findings to post, then submits the review on behalf of the user via gh CLI'
+argument-hint: [github-pr-url]
 allowed-tools: [Agent, Bash, Read, Write, Glob, Grep, AskUserQuestion, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
 ---
 
-MANDATORY: Read the humanizer skill at `plugins/albino/skills/humanizer/SKILL.md` now and keep all its rules active for the entire session. Every piece of text you write or post, including comment bodies, the review body, and any output to the user, must pass the humanizer check before it leaves your context.
+MANDATORY: Load the humanizer skill (`albino:humanizer`) now and keep all its rules active for the entire session. Every piece of text you write or post, including comment bodies, the review body, and any output to the user, must pass the humanizer check before it leaves your context.
 
 # PR Review
 
@@ -80,8 +81,8 @@ Store `REVIEW_DIR` for use in all subsequent steps. This is the only path review
 
 Run both in parallel:
 
-1. Call `mcp__plugin_albino_agent-memory__project_search` with terms relevant to the changed files (e.g. file paths, module names, domain concepts) to load conventions, decisions, and pitfalls for this repo.
-2. Call `mcp__plugin_albino_agent-memory__user_search` with similar terms to load user preferences relevant to this PR.
+1. Call `project_search` (agent-memory MCP server) with terms relevant to the changed files (e.g. file paths, module names, domain concepts) to load conventions, decisions, and pitfalls for this repo.
+2. Call `user_search` (agent-memory MCP server) with similar terms to load user preferences relevant to this PR.
 
 Combine into `PROJECT_CONTEXT`: a compact summary of active conventions, known decisions, and pitfalls that reviewers must apply.
 
@@ -96,7 +97,8 @@ Analyze `CHANGED_FILES` and apply the rules below to build the list of reviewers
 - `performance-reviewer`
 - `test-reviewer`
 - `logging-reviewer`
-- `history-reviewer`
+
+**Always spawn the inline `history-reviewer`** as well. It has no agent file: its task is defined in Step 7.
 
 **Include `dependency-reviewer`** if any changed file matches: `package.json`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `bun.lockb`, `pyproject.toml`, `requirements*.txt`, `setup.py`, `setup.cfg`, `Pipfile`, `go.mod`, `go.sum`, `Cargo.toml`, `Cargo.lock`, `Gemfile`, `Gemfile.lock`, `pom.xml`, `build.gradle`, `build.gradle.kts`, or `*.podspec`.
 
@@ -125,7 +127,7 @@ When spawning a custom reviewer, write a focused system prompt for it that descr
 
 ## Step 7: Spawn Selected Reviewers in Parallel
 
-Spawn all selected reviewers simultaneously, including any custom ones decided in Step 5. Do not wait for one before starting the next.
+Spawn all selected reviewers simultaneously, including any custom ones decided in Step 6. Do not wait for one before starting the next.
 
 **Model assignment per reviewer:**
 - `security-reviewer`, `architecture-reviewer`, `code-reviewer`: use **Opus**
@@ -136,7 +138,7 @@ Each agent prompt MUST:
 - Include the full `PR_META` and `PR_DIFF` verbatim
 - Include the full `PROJECT_CONTEXT`
 - Include `REVIEW_DIR` and this instruction verbatim: "All file reads (Read, Glob, Grep) and git commands must use REVIEW_DIR as the repository root. Do not read files from any other path."
-- Include this instruction verbatim: "Before reviewing, call `mcp__plugin_albino_agent-memory__project_search` and `mcp__plugin_albino_agent-memory__user_search` with terms specific to your reviewer domain and the files in the diff (e.g. file paths, module names, patterns you are about to analyze). Use the results to supplement PROJECT_CONTEXT with any additional conventions, decisions, or gotchas relevant to what you are reviewing."
+- Include this instruction verbatim: "Before reviewing, call `project_search` and `user_search` (agent-memory MCP server) with terms specific to your reviewer domain and the files in the diff (e.g. file paths, module names, patterns you are about to analyze). Use the results to supplement PROJECT_CONTEXT with any additional conventions, decisions, or gotchas relevant to what you are reviewing."
 - The root cause of every finding must trace back to a `+` or `-` line in the diff. Something this PR added, removed, or modified must be the source of the problem
 - The impact of a finding can extend anywhere in the codebase. Actively use Read, Glob, and Grep (all against REVIEW_DIR) to look for ripple effects: broken callers, missing imports, consumers of a changed API, queries that rely on a modified schema, components that depend on a changed contract. These cross-file impacts are the most important findings
 - Examples of valid findings that originate in the diff but affect unchanged code: changing a function signature that breaks callers elsewhere, removing a utility that other modules still import, changing an API response shape that breaks a frontend consumer, modifying a shared config that affects downstream services, deleting a guard that other code relied on
@@ -177,7 +179,7 @@ Where SEVERITY is one of: CRITICAL, HIGH, MEDIUM, LOW. The `[SEVERITY]` tag and 
 
 **History reviewer instructions:**
 
-The `history-reviewer` has a different task from the other reviewers. Its job is not to find new bugs but to provide context that reveals real problems hidden in history. For each changed hunk in `PR_DIFF`:
+The `history-reviewer` has a different task from the other reviewers. Its job is not to find new bugs but to provide context that reveals real problems hidden in history. Spawn it as a general-purpose agent with the mandatory prompt requirements above plus this task. For each changed hunk in `PR_DIFF`:
 
 1. Run `git -C "$REVIEW_DIR" log --follow -p -- <file>` to understand the commit history of changed files
 2. Run `git -C "$REVIEW_DIR" blame -L <start>,<end> -- <file>` on the changed lines to see who introduced them and when
@@ -218,7 +220,7 @@ Assign a sequential number to every finding across both groups, sorted by severi
 
 ## Step 9: Confidence Scoring
 
-For every finding collected in Step 7, spawn one **Haiku** subagent in parallel to score it. Each scorer receives:
+For every finding collected in Step 8, spawn one **Haiku** subagent in parallel to score it. Each scorer receives:
 - The finding text
 - The relevant diff hunk(s) where the root cause appears
 - The `PROJECT_CONTEXT`

@@ -1,5 +1,6 @@
 ---
 description: Save something to agent memory - picks project or user scope automatically from context
+argument-hint: [what to remember]
 allowed-tools: [Bash, mcp__plugin_albino_agent-memory__project_remember, mcp__plugin_albino_agent-memory__user_remember]
 ---
 
@@ -36,12 +37,12 @@ Store as `PROJECT_ROOT`.
 
 ## Step 4: Store each memory
 
-For **project memory**, call `mcp__plugin_albino_agent-memory__project_remember` with:
+For **project memory**, call `project_remember` (agent-memory MCP server) with:
 - `project_root`: value of `PROJECT_ROOT`
 - `content`: specific, concrete content - at least 40 characters, no secrets, no command output
 - `source`: `"user"` if the user explicitly told you, `"agent"` if you inferred it
 
-For **user memory**, call `mcp__plugin_albino_agent-memory__user_remember` with:
+For **user memory**, call `user_remember` (agent-memory MCP server) with:
 - `content`: specific, concrete content - at least 40 characters, no secrets
 - `source`: `"user"` if explicitly stated, `"agent"` if inferred
 

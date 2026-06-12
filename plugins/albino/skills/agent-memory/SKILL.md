@@ -1,6 +1,7 @@
 ---
 name: agent-memory
 description: Use the agent-memory MCP server to retrieve, verify, and store durable project knowledge and global user knowledge before and after non-trivial work.
+allowed-tools: [mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search, mcp__plugin_albino_agent-memory__project_remember, mcp__plugin_albino_agent-memory__user_remember, mcp__plugin_albino_agent-memory__project_update, mcp__plugin_albino_agent-memory__user_update, mcp__plugin_albino_agent-memory__project_forget, mcp__plugin_albino_agent-memory__user_forget]
 ---
 
 # Project Memory & User Memory

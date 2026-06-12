@@ -1,5 +1,6 @@
 ---
 description: Search agent memory and forget entries matching the given description
+argument-hint: [what to forget]
 allowed-tools: [Bash, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search, mcp__plugin_albino_agent-memory__project_forget, mcp__plugin_albino_agent-memory__user_forget]
 ---
 
@@ -33,8 +34,8 @@ Store as `PROJECT_ROOT`.
 
 Run both at the same time:
 
-1. `mcp__plugin_albino_agent-memory__project_search` with `project_root: PROJECT_ROOT`, `query: $ARGUMENTS`, `k: 10`
-2. `mcp__plugin_albino_agent-memory__user_search` with `query: $ARGUMENTS`, `k: 10`
+1. `project_search` (agent-memory MCP server) with `project_root: PROJECT_ROOT`, `query: $ARGUMENTS`, `k: 10`
+2. `user_search` (agent-memory MCP server) with `query: $ARGUMENTS`, `k: 10`
 
 After results arrive, filter each list: keep only entries whose `content` is meaningfully related to `$ARGUMENTS`. Discard unrelated results that surfaced only because of distant semantic similarity.
 
@@ -52,12 +53,12 @@ No memory found matching: <$ARGUMENTS>
 
 Immediately forget every entry in `PROJECT_MATCHES` and `USER_MATCHES` without asking for confirmation.
 
-For each **project memory**, call `mcp__plugin_albino_agent-memory__project_forget` with:
+For each **project memory**, call `project_forget` (agent-memory MCP server) with:
 - `project_root`: `PROJECT_ROOT`
 - `id`: numeric id of the entry
 - `hard_delete`: `false` (soft-delete; reversible)
 
-For each **user memory**, call `mcp__plugin_albino_agent-memory__user_forget` with:
+For each **user memory**, call `user_forget` (agent-memory MCP server) with:
 - `id`: numeric id of the entry
 - `hard_delete`: `false`
 

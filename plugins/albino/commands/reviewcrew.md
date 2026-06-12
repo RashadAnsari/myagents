@@ -41,112 +41,19 @@ Wait for all agents to complete. Collect every finding from every agent. Do not 
 
 ## Step 4: Write Consolidated Report
 
-Write the full consolidated report to `REVIEW_REPORT.md` in the project root. Use this exact structure:
+Write the full consolidated report to `REVIEW_REPORT.md` in the project root, structured as follows:
+
+1. A `# Codebase Review Report` title with a `Generated: <current date and time>` line.
+2. A `## Summary` section containing a severity table with columns `Review Area | Critical | High | Medium | Low`: one row per reviewer in the Step 2 order, then a bold **Total** row. Add this note above the table: "Each row reflects the count from that reviewer's own output. Cross-reviewer duplicates are not merged."
+3. One section per reviewer, in the Step 2 order, separated by `---` rules:
 
 ```markdown
-# Codebase Review Report
+## <Review Area> Review
 
-Generated: <current date and time>
-
-## Summary
-
-Each row reflects the count from that reviewer's own output. Cross-reviewer duplicates are not merged.
-
-| Review Area        | Critical | High | Medium | Low |
-|--------------------|----------|------|--------|-----|
-| Security           | N        | N    | N      | N   |
-| Code Quality       | N        | N    | N      | N   |
-| Architecture       | N        | N    | N      | N   |
-| Performance        | N        | N    | N      | N   |
-| Tests              | N        | N    | N      | N   |
-| Logging            | N        | N    | N      | N   |
-| Dependencies       | N        | N    | N      | N   |
-| Documentation      | N        | N    | N      | N   |
-| AGENTS.md          | N        | N    | N      | N   |
-| Accessibility      | N        | N    | N      | N   |
-| API Design         | N        | N    | N      | N   |
-| Database           | N        | N    | N      | N   |
-| i18n               | N        | N    | N      | N   |
-| **Total**          | **N**    | **N**| **N**  | **N** |
-
----
-
-## Security Review
-
-<full output from security-reviewer>
-
----
-
-## Code Quality Review
-
-<full output from code-reviewer>
-
----
-
-## Architecture Review
-
-<full output from architecture-reviewer>
-
----
-
-## Performance Review
-
-<full output from performance-reviewer>
-
----
-
-## Test Review
-
-<full output from test-reviewer>
-
----
-
-## Logging & Monitoring Review
-
-<full output from logging-reviewer>
-
----
-
-## Dependency Review
-
-<full output from dependency-reviewer>
-
----
-
-## Documentation Review
-
-<full output from docs-reviewer>
-
----
-
-## AGENTS.md Consistency Review
-
-<full output from agents-md-reviewer>
-
----
-
-## Accessibility Review
-
-<full output from accessibility-reviewer>
-
----
-
-## API Design Review
-
-<full output from api-design-reviewer>
-
----
-
-## Database Review
-
-<full output from database-reviewer>
-
----
-
-## i18n Review
-
-<full output from i18n-reviewer>
+<full output from that reviewer>
 ```
+
+Use the reviewer's area name for the heading (e.g. `## Security Review`, `## API Design Review`, `## AGENTS.md Consistency Review`).
 
 ## Rules
 

@@ -1,6 +1,7 @@
 ---
 name: markitdown
 description: Convert files, URLs, and documents to Markdown using the markitdown MCP server. Activate when the user asks to convert, extract, or read content from PDFs, Word docs, PowerPoints, spreadsheets, images, audio files, or any URL.
+allowed-tools: [mcp__plugin_albino_markitdown__convert_to_markdown]
 ---
 
 # Markitdown: Convert Anything to Markdown
@@ -10,7 +11,7 @@ The `markitdown` MCP server exposes a single tool that converts any supported re
 ## Tool
 
 ```
-mcp__plugin_albino_markitdown__convert_to_markdown(uri: string)
+convert_to_markdown(uri: string)   # on the markitdown MCP server
 ```
 
 The `uri` parameter accepts:
@@ -36,7 +37,7 @@ PDF, Word, PowerPoint, Excel, HTML, CSV, JSON, XML, ZIP archives, images (with E
 
 **Local file:**
 ```
-mcp__plugin_albino_markitdown__convert_to_markdown(
+convert_to_markdown(
   uri="file:///absolute/path/to/file.pdf"
 )
 ```
@@ -45,7 +46,7 @@ Always use an absolute path. Relative paths will fail.
 
 **Remote URL:**
 ```
-mcp__plugin_albino_markitdown__convert_to_markdown(
+convert_to_markdown(
   uri="https://example.com/document"
 )
 ```

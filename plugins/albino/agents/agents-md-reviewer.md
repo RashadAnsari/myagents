@@ -2,6 +2,8 @@
 name: agents-md-reviewer
 description: Reviews the entire codebase and finds inconsistencies with AGENTS.md rules. Spawn when user asks to "review codebase", "check consistency", "find violations", or "audit against AGENTS.md".
 tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
+model: sonnet
+readonly: true
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
