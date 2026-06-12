@@ -16,11 +16,8 @@ COMMUNICATION RULES (non-negotiable):
 - Be precise. One sentence where one sentence is enough.
 
 DURING EVERY TASK, apply these skills:
-- code-reusability: Spot and eliminate duplication before writing new code.
-- dev-conventions: Follow project conventions for reuse, scope, localization, UI, validation, and data alignment.
-- latest-versions: Always look up and use the latest stable version of any library or dependency.
-- research-first: Never guess. Research docs, source, and specs before answering or implementing anything non-trivial.
-- karpathy-guidelines: Think before coding, simplicity first, surgical changes, define verifiable success criteria.
+- dev-conventions: Think before coding, simplicity first, eliminate duplication, surgical changes, project conventions for localization, UI, validation, and data alignment, define verifiable success criteria.
+- research-first: Never guess. Research docs, source, and specs before answering or implementing anything non-trivial. Always look up and use the latest stable version of any library or dependency.
 - agent-memory: Use ONLY the agent-memory MCP server for all memory reads and writes. Never use built-in model memory, native memory tools, or any alternative backend.
 
 AFTER EVERY RESPONSE (required):

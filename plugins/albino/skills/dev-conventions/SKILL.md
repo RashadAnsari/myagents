@@ -1,11 +1,35 @@
 ---
 name: dev-conventions
-description: 'General development conventions: reuse, scope discipline, localization, UI consistency, validation, and data alignment. Activate when writing or reviewing code in any project.'
+description: 'Development conventions: think before coding, simplicity first, reuse and duplication discipline, surgical scope, localization, UI consistency, validation, data alignment, and verifiable success criteria. Activate when writing, reviewing, or refactoring code in any project, or when the user asks to "improve reusability", "reduce duplication", or "DRY this up".'
 ---
 
 # Development Conventions
 
 General rules that apply across all projects. Read and follow before making any code change.
+
+**Tradeoff:** These rules bias toward caution over speed. For trivial tasks, use judgment.
+
+## Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+## Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 
 ## Reuse Before Creating
 
@@ -22,11 +46,47 @@ General rules that apply across all projects. Read and follow before making any 
 - Shared constants belong in the relevant domain file: not scattered per file
 - Do not create a variant of something that already exists: parameterize or extend instead
 
-## Scope Control
+When you spot duplication, apply the matching pattern:
+
+| Signal | Pattern |
+|--------|---------|
+| Same logic in 2+ places | Extract function / Extract module |
+| Same logic with minor variation | Parameterize: add argument instead of copying |
+| Same group of values always together | Introduce value object or struct |
+| Same multi-step process repeated | Extract class or service |
+| Same conditional type-switching | Replace with polymorphism or strategy |
+| Same object built ad-hoc everywhere | Factory or builder function |
+| Same config value hardcoded in N places | Named constant or config key |
+| Same validation rule written per handler | Extract to single validator |
+| Same error mapping repeated per handler | Extract to shared mapper |
+| Same test setup repeated per file | Extract to shared factory or fixture |
+
+Extraction rules:
+
+- Extract only when duplication is confirmed: two instances minimum before extracting
+- Do not over-abstract: the extracted unit must be simpler to use than the original duplication
+- Name the extracted unit after what it does, not where it came from
+- Verify all call sites after extraction: do not leave dead copies behind
+- Do not change behavior during extraction: pure structural refactor only
+
+For a full codebase-wide audit, use the `code-reviewer` or `architecture-reviewer` agents instead.
+
+## Surgical Changes & Scope Control
+
+**Touch only what you must. Clean up only your own mess.**
 
 - Make the requested change at the layer where it belongs
 - Do not update downstream consumers, exports, reports, or unrelated screens unless the request explicitly requires it
-- Do not refactor surrounding code while fixing a targeted issue
+- Don't "improve" adjacent code, comments, or formatting
+- Don't refactor things that aren't broken
+- Match existing style, even if you'd do it differently
+- If you notice unrelated dead code, mention it - don't delete it
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused
+- Don't remove pre-existing dead code unless asked
+
+The test: Every changed line should trace directly to the user's request.
 
 ## Localization
 
@@ -71,6 +131,24 @@ Color tokens are named variables defined in the project's design system that ref
 - When adding a required field or changing nullability, add a migration: never silently break existing rows
 - Derived or calculated fields: compute once during insert/update and persist: other readers use the stored value
 - Enum or dropdown values stored in DB must use stable keys: never store display labels, never display raw keys to users
+
+## Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" -> "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" -> "Write a test that reproduces it, then make it pass"
+- "Refactor X" -> "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] -> verify: [check]
+2. [Step] -> verify: [check]
+3. [Step] -> verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
 ## Formatting & Verification
 

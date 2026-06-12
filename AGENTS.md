@@ -27,11 +27,8 @@ The mandatory skill list is injected once at session start via two mechanisms th
 
 The skills currently injected:
 
-- `code-reusability`
 - `dev-conventions`
-- `latest-versions`
 - `research-first`
-- `karpathy-guidelines`
 - `agent-memory`
 
 These skills are mandatory and always active. Additional skills are available in `plugins/albino/skills/` but are opt-in and not injected automatically.

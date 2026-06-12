@@ -84,11 +84,8 @@ Behavioral guidelines injected into agent prompts.
 
 | Skill | Description |
 |-------|-------------|
-| `code-reusability` | Spots duplication and applies extraction patterns |
-| `dev-conventions` | General conventions: reuse, scope, localization, UI, validation, and data |
-| `latest-versions` | Always look up and use the latest stable version of any dependency |
-| `research-first` | Research docs and source before answering or implementing anything non-trivial |
-| `karpathy-guidelines` | Behavioral guidelines to reduce common LLM coding mistakes: think before coding, simplicity first, surgical changes, goal-driven execution |
+| `dev-conventions` | Development conventions: think before coding, simplicity first, duplication and extraction discipline, surgical changes, localization, UI, validation, data alignment, goal-driven execution |
+| `research-first` | Research docs and source before answering or implementing anything non-trivial, including always looking up the latest stable version of any dependency |
 | `agent-memory` | Retrieves relevant project and user memory before non-trivial work and stores durable learnings after |
 
 **Opt-in** (activate manually as needed):
