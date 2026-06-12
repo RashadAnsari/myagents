@@ -58,15 +58,23 @@ def _register_project_tools(mcp: FastMCP, project_service: ProjectMemoryService)
             int, Field(description="Number of results to skip for pagination. Default 0.", ge=0, le=100)
         ] = 0,
         include_archived: Annotated[bool, Field(description=_INCLUDE_ARCHIVED_DESC)] = False,
+        all_projects: Annotated[
+            bool,
+            Field(
+                description="Set true to search the memories of all known projects instead of only this one."
+                " Results then include project_name and project_root showing which project each memory belongs to."
+            ),
+        ] = False,
     ) -> list:
-        """Vector search across project memory. Call this at task start with specific terms: file names, function names, domain concepts, error messages. Do not use generic questions as queries. Returns up to k results ordered by semantic relevance, starting at offset for pagination. Raises RuntimeError if embedding fails."""
-        _log_tool("project_search", project=project_root, query=query, k=k, offset=offset)
+        """Vector search across project memory. Call this at task start with specific terms: file names, function names, domain concepts, error messages. Do not use generic questions as queries. Set all_projects: true only when looking for knowledge from other repositories, such as a similar problem solved elsewhere or a convention shared across projects; memories from other projects may not apply to the current one, so check the project_name/project_root provenance on each result. Returns up to k results ordered by semantic relevance, starting at offset for pagination. Raises RuntimeError if embedding fails."""
+        _log_tool("project_search", project=project_root, query=query, k=k, offset=offset, all_projects=all_projects)
         results = await project_service.search(
             project_root=project_root,
             query=query,
             k=k,
             offset=offset,
             include_archived=include_archived,
+            all_projects=all_projects,
         )
         return [dataclasses.asdict(m) for m in results]
 

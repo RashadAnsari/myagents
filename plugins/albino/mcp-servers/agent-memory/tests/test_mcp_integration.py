@@ -1,6 +1,7 @@
 """MCP integration tests: exercise tools through FastMCP's in-process Client."""
 
 import json
+import subprocess
 
 import pytest
 from fastmcp import Client
@@ -55,6 +56,56 @@ async def test_stores_and_retrieves_memory_through_mcp(mcp_server, tmp_dir):
 
     assert remembered["id"] > 0
     assert len(matches) == 1
+
+
+async def test_project_search_all_projects_through_mcp(mcp_server, tmp_dir):
+    project_a = tmp_dir / "alpha-service"
+    project_b = tmp_dir / "beta-service"
+    for project_dir in (project_a, project_b):
+        project_dir.mkdir()
+        subprocess.run(["git", "init"], cwd=str(project_dir), capture_output=True, check=False)
+
+    async with Client(mcp_server) as client:
+        await client.call_tool(
+            "project_remember",
+            {
+                "project_root": str(project_a),
+                "content": "Background jobs are processed by a Celery worker pool with Redis as the broker and result backend.",
+            },
+        )
+        await client.call_tool(
+            "project_remember",
+            {
+                "project_root": str(project_b),
+                "content": "Asynchronous task queue uses BullMQ on top of Redis with exponential backoff retries for failed jobs.",
+            },
+        )
+
+        scoped_result = await client.call_tool(
+            "project_search",
+            {
+                "project_root": str(project_a),
+                "query": "task queue worker Redis jobs",
+                "k": 5,
+            },
+        )
+        scoped = json.loads(_text(scoped_result))
+
+        spanning_result = await client.call_tool(
+            "project_search",
+            {
+                "project_root": str(project_a),
+                "query": "task queue worker Redis jobs",
+                "k": 5,
+                "all_projects": True,
+            },
+        )
+        spanning = json.loads(_text(spanning_result))
+
+    assert len(scoped) == 1
+    assert len(spanning) == 2
+    assert {m["project_name"] for m in spanning} == {"alpha-service", "beta-service"}
+    assert all(m["project_root"] for m in spanning)
 
 
 async def test_rejects_low_quality_memory_as_error(mcp_server, tmp_dir):

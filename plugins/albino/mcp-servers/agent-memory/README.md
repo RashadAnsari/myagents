@@ -81,7 +81,7 @@ Bad project memory:
 ### Project Memory Tools
 
 - `project_remember`: Store durable project memory after quality and secret checks. Idempotent by content: a duplicate raises an error rather than creating a second record.
-- `project_search`: Vector search project memory. Supports `offset` for pagination.
+- `project_search`: Vector search project memory. Supports `offset` for pagination. Set `all_projects: true` to search the memories of all known projects instead of only the current one; results then include `project_name` and `project_root` showing which project each memory belongs to.
 - `project_update`: Correct, refine, or archive an existing memory.
 - `project_forget`: Archive by default or hard-delete when requested.
 - `project_purge`: Hard-delete archived project memories older than N days to prevent unbounded growth. Audit events are always preserved.

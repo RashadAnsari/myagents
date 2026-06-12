@@ -61,13 +61,23 @@ class ProjectMemoryService:
         k: int = 8,
         offset: int = 0,
         include_archived: bool = False,
+        all_projects: bool = False,
     ) -> list[ProjectMemoryRecord]:
+        limit = _clamp(k, 1, 25)
+        skip = _clamp(offset, 0, 100)
+
+        if all_projects:
+            query_vector = pack_vector(await embed_one(query))
+            return self._store.search_all_project_memories(
+                query_vector=query_vector,
+                limit=limit,
+                offset=skip,
+                include_archived=include_archived,
+            )
+
         project = self._store.get_project(project_root)
         if not project:
             return []
-
-        limit = _clamp(k, 1, 25)
-        skip = _clamp(offset, 0, 100)
 
         query_vector = pack_vector(await embed_one(query))
 

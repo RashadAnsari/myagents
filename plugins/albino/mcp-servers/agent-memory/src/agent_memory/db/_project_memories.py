@@ -119,6 +119,34 @@ class ProjectMemoriesMixin:
         ).fetchall()
         return [map_project_memory(r) for r in rows]
 
+    def search_all_project_memories(
+        self,
+        query_vector: bytes,
+        limit: int,
+        offset: int = 0,
+        include_archived: bool = False,
+    ) -> list[ProjectMemoryRecord]:
+        archived_where = "" if include_archived else "WHERE project_memories.archived_at IS NULL"
+        rows = self._conn.execute(
+            f"""WITH knn AS (
+                    SELECT memory_id, distance
+                    FROM project_memory_vec
+                    WHERE embedding MATCH ?
+                      AND k = ?
+                )
+                SELECT project_memories.*,
+                       projects.name AS project_name,
+                       projects.root_path AS project_root
+                FROM knn
+                JOIN project_memories ON project_memories.id = knn.memory_id
+                JOIN projects ON projects.id = project_memories.project_id
+                {archived_where}
+                ORDER BY knn.distance
+                LIMIT ? OFFSET ?""",
+            (query_vector, limit + offset, limit, offset),
+        ).fetchall()
+        return [map_project_memory(r) for r in rows]
+
     def purge_archived_project_memories(self, project_id: int, before_iso: str) -> int:
         rows = self._conn.execute(
             "SELECT id FROM project_memories WHERE project_id = ? AND archived_at IS NOT NULL AND archived_at < ?",

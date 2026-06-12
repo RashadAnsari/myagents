@@ -6,7 +6,7 @@ allowed-tools: [mcp__plugin_albino_markitdown__convert_to_markdown]
 
 # Markitdown: Convert Anything to Markdown
 
-The `markitdown` MCP server exposes a single tool that converts any supported resource to Markdown. It is available in both the albino plugin (Claude Code / Cursor) and Claude Desktop.
+The `markitdown` MCP server exposes a single tool that converts any supported resource to Markdown.
 
 ## Tool
 

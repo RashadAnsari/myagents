@@ -23,6 +23,9 @@ class ProjectMemoryRecord:
     created_at: str
     updated_at: str
     archived_at: str | None
+    # Provenance, populated only by cross-project search (all_projects=true).
+    project_name: str | None = None
+    project_root: str | None = None
 
 
 @dataclass

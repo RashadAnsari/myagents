@@ -44,6 +44,7 @@ def map_project(row: sqlite3.Row) -> ProjectRecord:
 
 
 def map_project_memory(row: sqlite3.Row) -> ProjectMemoryRecord:
+    keys = row.keys()
     return ProjectMemoryRecord(
         id=row["id"],
         project_id=row["project_id"],
@@ -53,6 +54,8 @@ def map_project_memory(row: sqlite3.Row) -> ProjectMemoryRecord:
         created_at=row["created_at"],
         updated_at=row["updated_at"],
         archived_at=row["archived_at"],
+        project_name=row["project_name"] if "project_name" in keys else None,
+        project_root=row["project_root"] if "project_root" in keys else None,
     )
 
 

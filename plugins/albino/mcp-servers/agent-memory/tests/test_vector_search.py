@@ -1,6 +1,8 @@
 """Vector search tests: these use the real fastembed model (BAAI/bge-small-en-v1.5).
 The model is downloaded on first run (~130 MB) and cached locally thereafter."""
 
+import subprocess
+
 from agent_memory.embedding import EMBEDDING_DIM, embed
 from agent_memory.memory_service import ProjectMemoryService, UserMemoryService
 
@@ -125,6 +127,87 @@ async def test_vector_search_respects_k_limit(service: ProjectMemoryService, tmp
         await service.remember(project_root=str(tmp_dir), content=content)
     results = await service.search(project_root=str(tmp_dir), query="project conventions standards", k=2)
     assert len(results) == 2
+
+
+def _init_project_dir(tmp_dir, name: str):
+    project_dir = tmp_dir / name
+    project_dir.mkdir()
+    subprocess.run(["git", "init"], cwd=str(project_dir), capture_output=True, check=False)
+    return project_dir
+
+
+async def test_all_projects_search_spans_projects(service: ProjectMemoryService, tmp_dir):
+    project_a = _init_project_dir(tmp_dir, "project-a")
+    project_b = _init_project_dir(tmp_dir, "project-b")
+    mem_a = await service.remember(
+        project_root=str(project_a),
+        content="Deployment pipeline uses blue-green releases with health checks gating the traffic switch between environments.",
+    )
+    mem_b = await service.remember(
+        project_root=str(project_b),
+        content="Release process performs canary deployments routing five percent of traffic before full rollout completes.",
+    )
+
+    scoped = await service.search(project_root=str(project_a), query="deployment release rollout traffic", k=5)
+    assert {r.id for r in scoped} == {mem_a.id}
+
+    spanning = await service.search(
+        project_root=str(project_a), query="deployment release rollout traffic", k=5, all_projects=True
+    )
+    assert {r.id for r in spanning} == {mem_a.id, mem_b.id}
+
+
+async def test_all_projects_search_includes_provenance(service: ProjectMemoryService, tmp_dir):
+    project_a = _init_project_dir(tmp_dir, "project-a")
+    await service.remember(
+        project_root=str(project_a),
+        content="GraphQL resolvers batch database lookups through dataloader instances scoped per request to avoid N+1 queries.",
+    )
+
+    results = await service.search(
+        project_root=str(project_a), query="GraphQL dataloader N+1 batching", k=5, all_projects=True
+    )
+    assert len(results) == 1
+    assert results[0].project_name == "project-a"
+    assert results[0].project_root == str(project_a)
+
+    scoped = await service.search(project_root=str(project_a), query="GraphQL dataloader N+1 batching", k=5)
+    assert scoped[0].project_name is None
+    assert scoped[0].project_root is None
+
+
+async def test_all_projects_search_works_for_unregistered_project(service: ProjectMemoryService, tmp_dir):
+    project_a = _init_project_dir(tmp_dir, "project-a")
+    unregistered = _init_project_dir(tmp_dir, "never-stored-anything")
+    mem_a = await service.remember(
+        project_root=str(project_a),
+        content="Feature flags are evaluated server-side through LaunchDarkly with a local fallback file for offline development.",
+    )
+
+    scoped = await service.search(project_root=str(unregistered), query="feature flags LaunchDarkly fallback")
+    assert scoped == []
+
+    spanning = await service.search(
+        project_root=str(unregistered), query="feature flags LaunchDarkly fallback", all_projects=True
+    )
+    assert {r.id for r in spanning} == {mem_a.id}
+
+
+async def test_all_projects_search_excludes_archived(service: ProjectMemoryService, tmp_dir):
+    project_a = _init_project_dir(tmp_dir, "project-a")
+    memory = await service.remember(
+        project_root=str(project_a),
+        content="Legacy build system used Grunt task runners before the project migrated to Vite for asset bundling.",
+    )
+    service.forget(str(project_a), memory.id)
+
+    results = await service.search(project_root=str(project_a), query="Grunt build Vite bundling", all_projects=True)
+    assert results == []
+
+    with_archived = await service.search(
+        project_root=str(project_a), query="Grunt build Vite bundling", all_projects=True, include_archived=True
+    )
+    assert {r.id for r in with_archived} == {memory.id}
 
 
 async def test_user_vector_search_stores_embedding(user_service: UserMemoryService):

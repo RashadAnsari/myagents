@@ -179,7 +179,15 @@ Where SEVERITY is one of: CRITICAL, HIGH, MEDIUM, LOW. The `[SEVERITY]` tag and 
 
 **History reviewer instructions:**
 
-The `history-reviewer` has a different task from the other reviewers. Its job is not to find new bugs but to provide context that reveals real problems hidden in history. Spawn it as a general-purpose agent with the mandatory prompt requirements above plus this task. For each changed hunk in `PR_DIFF`:
+The `history-reviewer` has a different task from the other reviewers. Its job is not to find new bugs but to provide context that reveals real problems hidden in history. Spawn it as a general-purpose agent with the mandatory prompt requirements above plus this task.
+
+First, fetch full history: the Step 4 clone is shallow (depth 100), which truncates `git log` and makes `git blame` attribute old lines to the shallow boundary commit. Run once before any history command:
+
+```bash
+git -C "$REVIEW_DIR" fetch --unshallow origin 2>/dev/null || true
+```
+
+Then, for each changed hunk in `PR_DIFF`:
 
 1. Run `git -C "$REVIEW_DIR" log --follow -p -- <file>` to understand the commit history of changed files
 2. Run `git -C "$REVIEW_DIR" blame -L <start>,<end> -- <file>` on the changed lines to see who introduced them and when

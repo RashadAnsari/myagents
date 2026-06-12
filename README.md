@@ -47,7 +47,7 @@ Slash commands available in Claude Code and Cursor sessions.
 |---------|-------------|
 | `/reviewcrew` | Full codebase audit: runs all review agents in parallel and writes `REVIEW_REPORT.md` |
 | `/reportloop` | Walk through every issue in `REVIEW_REPORT.md` interactively: explain, fix, or skip one by one |
-| `/statusline` | Configure the Claude Code statusline: shows git branch, current directory, model, and time (Claude Code only) |
+| `/statusline` | Configure the Claude Code statusline: shows current directory, git branch and dirty state, model, context usage, and time (Claude Code only) |
 | `/commit` | Stage all changes and create a git commit with an appropriate message |
 | `/commit-pr` | Stage all changes, commit, and open a pull request. Creates a new branch first if currently on main or master |
 | `/pr-review <url>` | Review a GitHub pull request: selects relevant reviewers, loads project and user memory, hunts for ripple effects, humanizes findings, then asks which to post before submitting via `gh` |
@@ -105,7 +105,7 @@ Behavioral guidelines injected into agent prompts.
 | `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Auto-installs bun if not present. |
 | `markitdown` | Converts files, URLs, and documents to Markdown. Supports PDF, Word, PowerPoint, Excel, HTML, CSV, JSON, XML, ZIP, images (OCR), audio (transcription), EPubs, and YouTube URLs. Runs via `uv tool run markitdown-mcp`; auto-installs uv on first use. |
 
-Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite` by default. User memory is stored in the same database. Set `AGENT_MEMORY_DIR` to override. Project memories are scoped to the repository root; user memories are global across all projects.
+Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite` by default. User memory is stored in the same database. Set `AGENT_MEMORY_DIR` to override. Project memories are scoped to the repository identity (a fingerprint of the normalized `origin` remote URL, so they follow the repo across clones and machines; the local root path is the fallback for repos without a remote). User memories are global across all projects. `project_search` accepts `all_projects: true` to search every known project's memories at once, with each result carrying `project_name` and `project_root` provenance.
 
 #### Hooks
 

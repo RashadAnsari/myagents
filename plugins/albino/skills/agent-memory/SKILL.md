@@ -1,7 +1,7 @@
 ---
 name: agent-memory
 description: Use the agent-memory MCP server to retrieve, verify, and store durable project knowledge and global user knowledge before and after non-trivial work.
-allowed-tools: [mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search, mcp__plugin_albino_agent-memory__project_remember, mcp__plugin_albino_agent-memory__user_remember, mcp__plugin_albino_agent-memory__project_update, mcp__plugin_albino_agent-memory__user_update, mcp__plugin_albino_agent-memory__project_forget, mcp__plugin_albino_agent-memory__user_forget]
+allowed-tools: [mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search, mcp__plugin_albino_agent-memory__project_remember, mcp__plugin_albino_agent-memory__user_remember, mcp__plugin_albino_agent-memory__project_update, mcp__plugin_albino_agent-memory__user_update, mcp__plugin_albino_agent-memory__project_forget, mcp__plugin_albino_agent-memory__user_forget, mcp__plugin_albino_agent-memory__project_purge, mcp__plugin_albino_agent-memory__user_purge]
 ---
 
 # Project Memory & User Memory
@@ -28,6 +28,7 @@ These are hard requirements. No exceptions.
 |---|---|
 | What does this user prefer? | `user_search` |
 | What has been decided in this project? | `project_search` |
+| Was a similar problem solved in another project? | `project_search` with `all_projects: true` |
 | Should I store this? | Only if a future agent needs it and it passes the quality rules below |
 | Is this project-specific or cross-project? | Project-specific: `project_remember`, cross-project: `user_remember` |
 
@@ -107,6 +108,8 @@ You MUST call project memory before any work on a codebase:
 2. Verify findings against the actual repo before acting on them.
 
 Memory can be stale. Always confirm what it says against current files, tests, and docs.
+
+To find knowledge from other repositories, such as a similar problem solved elsewhere or a convention shared across projects, call `project_search` with `all_projects: true`. Results then include `project_name` and `project_root` showing where each memory came from. Treat cross-project results as leads, not facts about the current repo: they describe a different codebase.
 
 ### When to Write
 
