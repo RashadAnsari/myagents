@@ -50,7 +50,6 @@ Slash commands available in Claude Code and Cursor sessions.
 | `/statusline` | Configure the Claude Code statusline: shows git branch, current directory, model, and time (Claude Code only) |
 | `/commit` | Stage all changes and create a git commit with an appropriate message |
 | `/commit-pr` | Stage all changes, commit, and open a pull request. Creates a new branch first if currently on main or master |
-| `/caveman` | Kill verbosity for the session: drops filler, hedging, and pleasantries. Injects a brevity prefix into all spawned subagent prompts to keep tool results small |
 | `/pr-review <url>` | Review a GitHub pull request: selects relevant reviewers, loads project and user memory, hunts for ripple effects, humanizes findings, then asks which to post before submitting via `gh` |
 | `/remember <what>` | Save something to agent memory: classifies the input (or current session learnings if omitted) as project or user memory and stores it via the agent-memory MCP server |
 | `/forget <what>` | Remove something from agent memory: searches both project and user memory and immediately soft-deletes all matching entries |
@@ -92,6 +91,7 @@ Behavioral guidelines injected into agent prompts.
 
 | Skill | Description |
 |-------|-------------|
+| `caveman` | Kills verbosity for the session: drops filler, hedging, and pleasantries. Injects a brevity prefix into all spawned subagent prompts to keep tool results small. Exit with "stop caveman" or "normal mode" |
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 | `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
