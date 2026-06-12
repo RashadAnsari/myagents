@@ -102,7 +102,7 @@ Behavioral guidelines injected into agent prompts.
 | Server | Description |
 |--------|-------------|
 | `agent-memory` | Stores and retrieves durable project knowledge and user preferences across sessions using semantic search. Rejects vague, duplicate, or secret-containing entries. |
-| `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Auto-installs bun if not present. |
+| `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Auto-installs bun if not present. If `PLAYWRIGHT_MCP_EXTENSION_TOKEN` is exported, starts with `--extension` to drive your real browser through the Playwright Chrome extension. |
 | `markitdown` | Converts files, URLs, and documents to Markdown. Supports PDF, Word, PowerPoint, Excel, HTML, CSV, JSON, XML, ZIP, images (OCR), audio (transcription), EPubs, and YouTube URLs. Runs via `uv tool run markitdown-mcp`; auto-installs uv on first use. |
 
 Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite` by default. User memory is stored in the same database. Set `AGENT_MEMORY_DIR` to override. Project memories are scoped to the repository identity (a fingerprint of the normalized `origin` remote URL, so they follow the repo across clones and machines; the local root path is the fallback for repos without a remote). User memories are global across all projects. `project_search` accepts `all_projects: true` to search every known project's memories at once, with each result carrying `project_name` and `project_root` provenance.
@@ -126,7 +126,7 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 | Server | Description |
 |--------|-------------|
 | `agent-memory` | Stores and retrieves durable user preferences and knowledge across sessions. Runs via `run-with-uv.sh`; auto-installs `uv` on first use. |
-| `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Runs via `run-with-bunx.sh`; auto-installs `bun` on first use. |
+| `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Runs via `run-with-bunx.sh`; auto-installs `bun` on first use. If `PLAYWRIGHT_MCP_EXTENSION_TOKEN` is set in the app's environment, starts with `--extension` to drive your real browser through the Playwright Chrome extension. |
 | `markitdown` | Converts files, URLs, and documents to Markdown. Supports PDF, Word, PowerPoint, Excel, HTML, CSV, JSON, XML, ZIP, images (OCR), audio (transcription), EPubs, and YouTube URLs. Runs via `run-with-uv.sh`; auto-installs `uv` on first use. |
 
 ### Skills

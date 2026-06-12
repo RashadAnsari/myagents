@@ -11,7 +11,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "PLUGIN=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$PLUGIN\" ] && PLUGIN=\"$(pwd)\"; exec \"$PLUGIN/scripts/run-with-bunx.sh\" @playwright/mcp@latest"
+        "PLUGIN=\"${CLAUDE_PLUGIN_ROOT}\"; [ -z \"$PLUGIN\" ] && PLUGIN=\"$(pwd)\"; EXT=\"\"; [ -n \"${PLAYWRIGHT_MCP_EXTENSION_TOKEN:-}\" ] && EXT=\"--extension\"; exec \"$PLUGIN/scripts/run-with-bunx.sh\" @playwright/mcp@latest $EXT"
       ]
     },
     "markitdown": {
