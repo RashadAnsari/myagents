@@ -91,7 +91,6 @@ Behavioral guidelines injected into agent prompts.
 
 | Skill | Description |
 |-------|-------------|
-| `caveman` | Kills verbosity for the session: drops filler, hedging, and pleasantries. Injects a brevity prefix into all spawned subagent prompts to keep tool results small. Exit with "stop caveman" or "normal mode" |
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 | `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
