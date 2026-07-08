@@ -91,6 +91,7 @@ Behavioral guidelines injected into agent prompts.
 
 | Skill | Description |
 |-------|-------------|
+| `llm-council` | Runs a decision through 5 AI advisors who analyze it independently, peer-review each other anonymously, and synthesize a final verdict |
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 | `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
