@@ -136,6 +136,7 @@ Skills for Claude Desktop are managed directly inside the app. Go to **Customize
 | Skill | Description |
 |-------|-------------|
 | `agent-memory` | Remembers personal context across everyday conversations: health, food, travel, habits, goals, and communication style |
+| `llm-council` | Runs a decision through 5 AI advisors who analyze it independently, peer-review each other anonymously, and synthesize a final verdict |
 | `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
 
 ---
