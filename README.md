@@ -125,7 +125,6 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 
 | Server | Description |
 |--------|-------------|
-| `agent-memory` | Stores and retrieves durable user preferences and knowledge across sessions. Runs via `run-with-uv.sh`; auto-installs `uv` on first use. |
 | `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Runs via `run-with-bunx.sh`; auto-installs `bun` on first use. If `PLAYWRIGHT_MCP_EXTENSION_TOKEN` is set in the app's environment, starts with `--extension` to drive your real browser through the Playwright Chrome extension. |
 | `markitdown` | Converts files, URLs, and documents to Markdown. Supports PDF, Word, PowerPoint, Excel, HTML, CSV, JSON, XML, ZIP, images (OCR), audio (transcription), EPubs, and YouTube URLs. Runs via `run-with-uv.sh`; auto-installs `uv` on first use. |
 | `linkedin` | Access LinkedIn profiles, companies, and job postings through your own browser session via [`mcp-server-linkedin`](https://github.com/stickerdaniel/linkedin-mcp-server). No API keys: a LinkedIn login window opens on the first tool call that needs authentication (or run `uvx mcp-server-linkedin@latest --login` once). Runs via `run-with-uv.sh` with the upstream-recommended `@latest` tag; auto-installs `uv` on first use. |
@@ -136,7 +135,6 @@ Skills for Claude Desktop are managed directly inside the app. Go to **Customize
 
 | Skill | Description |
 |-------|-------------|
-| `agent-memory` | Remembers personal context across everyday conversations: health, food, travel, habits, goals, and communication style |
 | `llm-council` | Runs a decision through 5 AI advisors who analyze it independently, peer-review each other anonymously, and synthesize a final verdict |
 | `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
 

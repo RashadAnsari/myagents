@@ -27,10 +27,9 @@ Each is a thinking style, not a persona. They create three tensions: Contrarian 
 
 First gather context, spending no more than about 30 seconds:
 
-- Search user memory with `user_search` for facts relevant to the decision (goals, audience, constraints, past decisions).
 - Scan the workspace for context files: any `memory/` files, files the user referenced or attached, and prior council transcripts.
 
-Then reframe the raw question into a single neutral prompt every advisor receives. Include the core decision, key context from the user, key context from memory and workspace files, and what is at stake. Do not add your own opinion or steer it. If the question is too vague to frame, ask exactly one clarifying question, then proceed. Keep the framed question for the transcript.
+Then reframe the raw question into a single neutral prompt every advisor receives. Include the core decision, key context from the user, key context from workspace files, and what is at stake. Do not add your own opinion or steer it. If the question is too vague to frame, ask exactly one clarifying question, then proceed. Keep the framed question for the transcript.
 
 ### Step 2: Convene the council
 

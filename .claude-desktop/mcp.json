@@ -1,12 +1,5 @@
 {
   "mcpServers": {
-    "agent-memory": {
-      "command": "bash",
-      "args": [
-        "-c",
-        "DISABLE_PROJECT_MEMORY=true ~/.myagents/plugins/albino/scripts/run-with-uv.sh run --project ~/.myagents/plugins/albino/mcp-servers/agent-memory agent-memory"
-      ]
-    },
     "playwright": {
       "command": "bash",
       "args": [
