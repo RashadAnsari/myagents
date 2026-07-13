@@ -18,7 +18,7 @@ These are hard requirements. No exceptions.
 
 **Session bootstrap is mandatory.** Before your first response in any session, you MUST call `project_search` and `user_search` with specific terms from the current task. These calls are required, not optional. Do not respond to the user before making them. Do this silently without narrating it to the user.
 
-**Per-turn write-back is required.** Before producing your final response each turn, ask: did I learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha discovered, a convention established, an architecture fact clarified. If yes, you MUST call `project_remember` or `user_remember` before finishing. This is not optional. Do not skip it. Do not defer it. If nothing durable was learned this turn, skip the write.
+**Per-turn write-back is required.** Before producing your final response each turn, ask: did I learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha discovered, a convention established, an architecture fact clarified. If yes, you MUST call `project_remember` or `user_remember` before finishing. This is not optional. Do not skip it. Do not defer it. If nothing durable was learned this turn, skip the write, and if a stop-hook check asks the question, reply with exactly "Nothing durable learned." and finish; no explanation or summary.
 
 ---
 

@@ -79,7 +79,7 @@ Specialist review agents spawned in parallel by `/reviewcrew`, also available in
 
 Behavioral guidelines injected into agent prompts.
 
-**Mandatory** (always active, injected at session start via the `session-start` hook for both Claude Code and Cursor):
+**Mandatory** (always active; the `session-start` hook for both Claude Code and Cursor instructs the agent to load each one in full before its first response, not just apply the one-line summary):
 
 | Skill | Description |
 |-------|-------------|
@@ -113,7 +113,7 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 |------|-------|-----------|-------------|
 | `session-start` | `SessionStart` / `sessionStart` | Claude Code, Cursor | Injects mandatory skills, memory read/write rules, and session bootstrap at the start of every session |
 | `user-prompt-submit` | `UserPromptSubmit` | Claude Code | Re-injects a one-line reminder on every prompt (search memory first, apply `AGENTS.md` and mandatory skills, store durable learnings), since session-start context decays over long conversations. Cursor gets the same effect via the always-applied `session-start` rule instead |
-| `stop` | `Stop` / `stop` | Claude Code, Cursor | Checks at the end of every turn whether durable learnings (decisions, preferences, gotchas, conventions) were stored to agent memory before the agent finishes |
+| `stop` | `Stop` / `stop` | Claude Code, Cursor | Checks at the end of every turn whether durable learnings (decisions, preferences, gotchas, conventions) were stored to agent memory before the agent finishes; when there is nothing to store the agent answers only "Nothing durable learned." |
 
 ---
 

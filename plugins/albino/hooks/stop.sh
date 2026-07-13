@@ -3,7 +3,7 @@ set -euo pipefail
 
 INPUT="$(cat)"
 
-CHECK="Before finishing: did you learn anything durable this turn (a decision made, a user preference stated, a gotcha found, a convention established, an architecture fact clarified)? If yes, store it with project_remember or user_remember now. If nothing durable was learned, finish your response."
+CHECK="Before finishing: did you learn anything durable this turn (a decision made, a user preference stated, a gotcha found, a convention established, an architecture fact clarified)? If yes, store it with project_remember or user_remember now. If nothing durable was learned, respond with exactly \"Nothing durable learned.\" and finish; do not explain, summarize, or restate anything."
 
 if [ "${PLATFORM:-}" = "cursor" ]; then
   # Only nudge completed turns, and only if this hook has not already submitted

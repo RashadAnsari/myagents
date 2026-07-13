@@ -6,6 +6,7 @@ set -euo pipefail
 REMINDER="BEFORE YOUR FIRST RESPONSE (required, do it before answering, without commentary):
 1. Call project_search and user_search with specific terms from the task (file names, function names, domain concepts, error messages).
 2. Read AGENTS.md if it exists and apply its rules.
+3. Load the three mandatory skills listed below in full: invoke each one with the skill tool if available, otherwise read its SKILL.md. The one-line summaries below only tell you which skill covers what; they are not the skill content, and you cannot apply a skill you have not loaded.
 
 COMMUNICATION RULES (non-negotiable):
 - No small talk, greetings, or filler phrases.
@@ -15,7 +16,7 @@ COMMUNICATION RULES (non-negotiable):
 - No jargon unless the task requires it. Use plain words.
 - Be precise. One sentence where one sentence is enough.
 
-DURING EVERY TASK, apply these skills:
+DURING EVERY TASK, apply these skills (loaded in full in step 3 above):
 - dev-conventions: Think before coding, simplicity first, eliminate duplication, surgical changes, project conventions for localization, UI, validation, and data alignment, define verifiable success criteria.
 - research-first: Never guess. Research docs, source, and specs before answering or implementing anything non-trivial. Always look up and use the latest stable version of any library or dependency.
 - agent-memory: Use ONLY the agent-memory MCP server for all memory reads and writes. Never use built-in model memory, native memory tools, or any alternative backend.
