@@ -7,13 +7,6 @@
         "EXT=\"\"; [ -n \"${PLAYWRIGHT_MCP_EXTENSION_TOKEN:-}\" ] && EXT=\"--extension\"; ~/.myagents/plugins/albino/scripts/run-with-bunx.sh @playwright/mcp@latest $EXT"
       ]
     },
-    "markitdown": {
-      "command": "bash",
-      "args": [
-        "-c",
-        "~/.myagents/plugins/albino/scripts/run-with-uv.sh tool run markitdown-mcp"
-      ]
-    },
     "linkedin": {
       "command": "bash",
       "args": [
