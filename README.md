@@ -96,6 +96,7 @@ Behavioral guidelines injected into agent prompts.
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 | `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
 | `plugin-authoring` | Best practices for writing skills, commands, and agents: descriptions, structure, token efficiency, frontmatter, and tool scoping |
+| `eu-ai-act` | Reference knowledge on the EU AI Act: risk tiers, obligations, compliance deadlines, penalties, and scope assessment |
 
 #### MCP Servers
 
