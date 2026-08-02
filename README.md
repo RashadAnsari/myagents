@@ -91,7 +91,6 @@ Behavioral guidelines injected into agent prompts.
 
 | Skill | Description |
 |-------|-------------|
-| `llm-council` | Runs a decision through 5 AI advisors who analyze it independently, peer-review each other anonymously, and synthesize a final verdict |
 | `humanizer` | Removes signs of AI-generated writing from text |
 | `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
 | `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
@@ -128,14 +127,6 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 |--------|-------------|
 | `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Runs via `run-with-bunx.sh`; auto-installs `bun` on first use. If `PLAYWRIGHT_MCP_EXTENSION_TOKEN` is set in the app's environment, starts with `--extension` to drive your real browser through the Playwright Chrome extension. |
 | `linkedin` | Access LinkedIn profiles, companies, and job postings through your own browser session via [`mcp-server-linkedin`](https://github.com/stickerdaniel/linkedin-mcp-server). No API keys: a LinkedIn login window opens on the first tool call that needs authentication (or run `uvx mcp-server-linkedin@latest --login` once). Runs via `run-with-uv.sh` with the upstream-recommended `@latest` tag; auto-installs `uv` on first use. |
-
-### Skills
-
-Skills for Claude Desktop are managed directly inside the app. Go to **Customize > Skills** to add, remove, or reorder skills. The installer does not manage skills for Claude Desktop.
-
-| Skill | Description |
-|-------|-------------|
-| `llm-council` | Runs a decision through 5 AI advisors who analyze it independently, peer-review each other anonymously, and synthesize a final verdict |
 
 ---
 
