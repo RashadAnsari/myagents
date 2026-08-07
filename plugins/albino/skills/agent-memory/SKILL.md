@@ -29,8 +29,10 @@ These are hard requirements. No exceptions.
 | What does this user prefer? | `user_search` |
 | What has been decided in this project? | `project_search` |
 | Was a similar problem solved in another project? | `project_search` with `all_projects: true` |
+| What is the context of a sibling / upstream / downstream repo? | `project_search` with `all_projects: true`, then read the `project_root` it belongs to |
+| I learned a durable fact about a *different* repo | `project_remember` / `project_update` with that repo's `project_root` |
 | Should I store this? | Only if a future agent needs it and it passes the quality rules below |
-| Is this project-specific or cross-project? | Project-specific: `project_remember`, cross-project: `user_remember` |
+| Is this project-specific or cross-project? | This repo: `project_remember`; another repo: `project_remember` with its `project_root`; about the user everywhere: `user_remember` |
 
 ---
 
@@ -109,7 +111,7 @@ You MUST call project memory before any work on a codebase:
 
 Memory can be stale. Always confirm what it says against current files, tests, and docs.
 
-To find knowledge from other repositories, such as a similar problem solved elsewhere or a convention shared across projects, call `project_search` with `all_projects: true`. Results then include `project_name` and `project_root` showing where each memory came from. Treat cross-project results as leads, not facts about the current repo: they describe a different codebase.
+Do not limit yourself to the current repo. Many tasks span more than one codebase: a shared API contract, a client and its server, a monorepo split across sibling checkouts, a convention set in one repo that governs others. When the task touches another repo, or when this repo's memory is thin, call `project_search` with `all_projects: true` to pull context from every known project. Results include `project_name` and `project_root` showing where each memory came from. Treat cross-project results as leads, not facts about the current repo: they describe a different codebase, so verify against that repo's files before you rely on them. See "Cross-Project Memory" below for when to read from and write to another repo.
 
 ### When to Write
 
@@ -170,6 +172,53 @@ Durable = decision, convention, architecture fact, gotcha, workflow step, depend
 
 ---
 
+## Cross-Project Memory
+
+Project memory is not sealed off per repo. Every `project_*` tool takes a `project_root` argument, so you can read from and write to any known project, not just the current working directory. Use this when work legitimately spans repos: shared contracts, client/server pairs, split monorepos, or a convention defined in one repo that governs others.
+
+### Reading Another Repo's Memory
+
+Reach for cross-project context when:
+
+- The task references another repo by name, or an interface shared with it (an API, an event schema, a protocol).
+- You are changing something in this repo that a known sibling / upstream / downstream repo depends on.
+- The current repo's memory is thin and a similar problem was likely solved elsewhere.
+
+How:
+
+```
+1. project_search <task-terms> all_projects:true
+2. Read project_name / project_root on each hit to see which repo it describes.
+3. To go deeper on one repo, call project_search again with that repo's project_root.
+4. Verify any cross-repo fact against that repo's actual files before acting: it is a lead, not ground truth for this repo.
+```
+
+### Writing to Another Repo's Memory
+
+Sometimes the durable thing you learned belongs to a *different* repo than the one you are working in: you discovered a gotcha in a shared library while debugging here, or a decision made in this repo imposes a constraint on a downstream repo. Store it where a future agent working in *that* repo will find it.
+
+How:
+
+```
+1. Get the target repo's project_root (from an all_projects:true search result, or a known checkout path).
+2. project_remember content:<durable fact> project_root:<target repo root>
+3. To correct an existing memory in another repo, project_update id:<id> project_root:<target repo root>.
+```
+
+When to write cross-project instead of to the current repo:
+
+- The fact is about the *other* repo's code, conventions, or behavior, not this one.
+- A change here creates a constraint or breakage risk that only matters when someone edits the other repo.
+
+Guardrails:
+
+- Only write to a repo you have confirmed exists (it appeared in an `all_projects` search, or you know its checkout path). Do not invent a `project_root`.
+- Write the fact from the perspective of an agent working *in* the target repo, naming this repo explicitly when the fact is about a cross-repo relationship (e.g. "Consumed by <this-repo>; changing this field's shape breaks it").
+- A fact that is genuinely about the user, not any single repo, still goes to `user_remember`.
+- All quality rules still apply: specific, ≥ 40 characters or ≥ 7 words, no secrets, no duplicates.
+
+---
+
 ## Searching Effectively
 
 Both `project_search` and `user_search` use vector KNN search. Queries and memories are embedded with `BAAI/bge-small-en-v1.5` (384-dimensional), and nearest neighbours are retrieved by cosine distance. This means search finds memories by meaning, not word overlap: "login issue" will surface "authentication problem with tokens" even though the two share no words.
@@ -196,4 +245,7 @@ Both `project_search` and `user_search` use vector KNN search. Queries and memor
 | "User uses VS Code with Prettier" | `user_remember` |
 | "Run `uv run pytest` before any push in this repo" | `project_remember` |
 
-When in doubt: if it applies only to this repo, use project memory. If it applies regardless of which repo you are in, use user memory.
+| "Changing this field breaks the downstream `web-client` repo" | `project_remember` with `web-client`'s `project_root` |
+| "The shared `auth-lib` repo silently retries on 429" | `project_remember` with `auth-lib`'s `project_root` |
+
+When in doubt: if it applies to a specific repo, use project memory scoped to *that* repo's `project_root` (this one, or another). If it applies regardless of which repo you are in, use user memory. See "Cross-Project Memory" for reading from and writing to other repos.
