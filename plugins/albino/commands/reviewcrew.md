@@ -34,6 +34,7 @@ Agents to spawn in parallel:
 11. **api-design-reviewer**: REST/GraphQL naming, HTTP semantics, versioning, error shape, backward compatibility
 12. **database-reviewer**: schema design, migration safety, indexing, constraints, query patterns
 13. **i18n-reviewer**: hardcoded strings, date/number formatting, pluralization, RTL, locale handling
+14. **unused-code-reviewer**: unused code, tests, CI, infrastructure, containers, scripts, schema, config, docs, and assets
 
 ## Step 3: Collect All Results
 
@@ -53,7 +54,7 @@ Write the full consolidated report to `REVIEW_REPORT.md` in the project root, st
 <full output from that reviewer>
 ```
 
-Use the reviewer's area name for the heading (e.g. `## Security Review`, `## API Design Review`, `## AGENTS.md Consistency Review`).
+Use the reviewer's area name for the heading (e.g. `## Security Review`, `## API Design Review`, `## Unused Code Review`, `## AGENTS.md Consistency Review`).
 
 ## Rules
 

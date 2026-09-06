@@ -12,7 +12,9 @@ Rules for all agents and subagents working in this repository.
 
 **`plugins/albino/commands/pr-review.md`**: add the new agent to the predefined reviewer list in Step 6 ("Select Relevant Reviewers"), including the detection rule that determines when it should be included based on changed file types or paths. If the agent is always relevant regardless of file type, add it to the "Always include" list.
 
-**Failure to update both files when adding a review agent is a violation of this rule.**
+**`plugins/albino/commands/audit.md`**: add the new agent as a row in the reviewer table in Step 1, with its short name, what it covers, and any aliases the user might type for it.
+
+**Failure to update all three files when adding a review agent is a violation of this rule.**
 
 Review agents are any agent file whose name ends in `-reviewer.md` inside `plugins/albino/agents/`.
 

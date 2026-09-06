@@ -112,6 +112,8 @@ Analyze `CHANGED_FILES` and apply the rules below to build the list of reviewers
 
 **Include `database-reviewer`** if any changed path contains `migrations/`, `migration/`, `db/`, `database/`, or `prisma/`, or if any changed file has extension `.sql`, or is named `schema.prisma`, or matches `*.migration.ts`, `*.migration.js`, or `*.migration.py`.
 
+**Include `unused-code-reviewer`** if the diff deletes or renames any exported symbol, route, component, test, script, config key, translation key, asset, CI job, or infrastructure resource, or if any changed file removes an import, or if the PR title or body mentions refactor, cleanup, migration, deprecation, or removal.
+
 **Include `agents-md-reviewer`** if `AGENTS.md` is in the changed files, or if any changed path contains `.claude/`, `rules/`, `hooks/`, `commands/`, or `agents/`.
 
 **Spawn additional custom reviewers** if the PR touches areas not covered by any of the above. Look at the diff and ask: is there a meaningful review angle that none of the selected reviewers will cover? If yes, spawn a purpose-built reviewer agent for it. Examples:

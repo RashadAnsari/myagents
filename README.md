@@ -46,6 +46,7 @@ Slash commands available in Claude Code and Cursor sessions.
 | Command | Description |
 |---------|-------------|
 | `/reviewcrew` | Full codebase audit: runs all review agents in parallel and writes `REVIEW_REPORT.md` |
+| `/audit [reviewer] [path]` | Run a single specialist reviewer of your choice against the codebase, optionally scoped to a path, and get its findings in the terminal |
 | `/reportloop` | Walk through every issue in `REVIEW_REPORT.md` interactively: explain, fix, or skip one by one |
 | `/statusline` | Configure the Claude Code statusline: shows current directory, git branch and dirty state, model, context usage, and time (Claude Code only) |
 | `/commit` | Stage all changes and create a git commit with an appropriate message |
@@ -74,6 +75,7 @@ Specialist review agents spawned in parallel by `/reviewcrew`, also available in
 | `api-design-reviewer` | REST/GraphQL naming, HTTP semantics, versioning, error shape, and backward compatibility |
 | `database-reviewer` | Schema design, migration safety, indexing strategy, constraints, and query patterns |
 | `i18n-reviewer` | Hardcoded strings, date/number formatting, pluralization, RTL layout, and locale handling |
+| `unused-code-reviewer` | Unused and dead artifacts across the whole repository: code, tests, CI, infrastructure, containers, scripts, schema, config, docs, and assets |
 
 #### Skills
 
