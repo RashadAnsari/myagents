@@ -2,7 +2,6 @@
 name: performance-reviewer
 description: Reviews the codebase for performance bottlenecks, algorithmic complexity, memory issues, and query inefficiencies. Spawn when user asks to "performance review", "find bottlenecks", "check query performance", or "review memory usage".
 tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
-model: sonnet
 readonly: true
 ---
 

@@ -2,7 +2,6 @@
 name: logging-reviewer
 description: Reviews the codebase for logging and monitoring gaps. Spawn when user asks to "review logging", "check monitoring", "audit observability", or "find logging issues".
 tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
-model: sonnet
 readonly: true
 ---
 

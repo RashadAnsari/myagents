@@ -2,7 +2,6 @@
 name: architecture-reviewer
 description: 'Reviews the codebase for architectural issues: structure, coupling, separation of concerns, cohesion, and scalability. Spawn when user asks to "architecture review", "check structure", "review coupling", or "audit separation of concerns".'
 tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
-model: opus
 readonly: true
 ---
 

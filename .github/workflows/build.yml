@@ -25,6 +25,9 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Install Codex CLI
+        run: npm install -g @openai/codex
+
       - name: Cache HuggingFace model
         uses: actions/cache@v4
         with:
@@ -37,6 +40,12 @@ jobs:
 
       - name: Validate
         run: make validate
+
+      - name: Install the plugin into Codex
+        run: |
+          codex plugin marketplace add .
+          codex plugin add albino@myagents
+          codex plugin list | grep -q "installed, enabled"
 
       - name: Check formatting
         run: |

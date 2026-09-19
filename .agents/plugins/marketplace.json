@@ -1,0 +1,25 @@
+{
+  "name": "myagents",
+  "interface": {
+    "displayName": "myagents",
+    "description": "Rashad Ansari's plugin marketplace for Codex."
+  },
+  "owner": {
+    "name": "Rashad Ansari",
+    "url": "https://github.com/RashadAnsari/myagents"
+  },
+  "plugins": [
+    {
+      "name": "albino",
+      "source": {
+        "source": "local",
+        "path": "./plugins/albino"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

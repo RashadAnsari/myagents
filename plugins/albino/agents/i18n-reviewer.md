@@ -2,7 +2,6 @@
 name: i18n-reviewer
 description: 'Reviews the codebase for internationalization and localization gaps: hardcoded strings, date/number formatting, locale handling, pluralization, and RTL support. Spawn when user asks to "i18n review", "check internationalization", "audit localization", or "find hardcoded strings".'
 tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
-model: sonnet
 readonly: true
 ---
 

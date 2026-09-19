@@ -18,13 +18,15 @@ Rules for all agents and subagents working in this repository.
 
 Review agents are any agent file whose name ends in `-reviewer.md` inside `plugins/albino/agents/`.
 
+Codex needs no manual update here. `plugins/albino/scripts/gen-codex-agents.sh` generates the Codex TOML definitions from the Markdown agent files at install time, so the Markdown stays the single source of truth.
+
 ---
 
 ## Skill Reminder Rule
 
 The mandatory skill list is injected once at session start via two mechanisms that must always stay in sync:
 
-- `plugins/albino/hooks/session-start.sh`: runs on Claude Code (`SessionStart` hook) and Cursor (`sessionStart` hook). The Cursor branch is currently a no-op due to a platform bug where `additional_context` is silently dropped. Keep the hook in place for when Cursor fixes it.
+- `plugins/albino/hooks/session-start.sh`: runs on Claude Code (`SessionStart` hook), Cursor (`sessionStart` hook), and Codex (`SessionStart` hook). Claude Code and Codex share one output schema, so both use the same branch. The Cursor branch is currently a no-op due to a platform bug where `additional_context` is silently dropped. Keep the hook in place for when Cursor fixes it.
 - `plugins/albino/rules/session-start.mdc`: active workaround for Cursor. Injected as an `alwaysApply` rule via `plugins/albino/.cursor-plugin/plugin.json`. This is the mechanism that actually delivers context to Cursor agents today.
 
 The skills currently injected:
@@ -42,6 +44,34 @@ These skills are mandatory and always active. Additional skills are available in
 If yes: add it to the skills list in BOTH `plugins/albino/hooks/session-start.sh` AND `plugins/albino/rules/session-start.mdc`. If no: leave both unchanged.
 
 Do not silently add or skip skills. Always ask. Never update one file without updating the other.
+
+---
+
+## Codex Parity Rule
+
+Codex is supported through `plugins/albino/.codex-plugin/`, beside the existing `.claude-plugin/` and `.cursor-plugin/` manifests. This mirrors how OpenAI ships its own plugins: none of the 62 plugins in `openai/plugins` uses a root `plugin.json`.
+
+Do not add a root `plugin.json` or a root `mcp.json`. A root `plugin.json` makes Codex load the plugin through the Agent Plugins loader, which has no hook support and silently drops every hook the plugin declares (openai/codex#39895). It also stops Codex reading `.mcp.json`, forcing a duplicate MCP file.
+
+One pair of files must stay in sync:
+
+- `plugins/albino/.claude-plugin/plugin.json` and `plugins/albino/.codex-plugin/plugin.json`: same name, version, description, and author, and the same hook events wired to the same scripts. Both declare their hooks inline, as the Cursor manifest does.
+
+`plugins/albino/.mcp.json` is shared by all three platforms. Each server sets `"cwd": "."`, which Codex resolves to the plugin root so the `$(pwd)` fallback in the command finds the plugin; Claude Code and Cursor use `${CLAUDE_PLUGIN_ROOT}` and ignore `cwd`. Declaring the file explicitly as `"mcpServers": "./.mcp.json"` in the Codex manifest is what makes Codex read it.
+
+Codex has no equivalent of `claude plugin validate`. CI instead installs the plugin with the real CLI (`codex plugin marketplace add .` then `codex plugin add albino@myagents`), which catches a broken manifest or a wrong marketplace source path. It does not check hooks or MCP config, so those stay a review concern.
+
+Codex takes commands from a plugin, but only some of them. On install it converts a plugin's `commands/` into skills named `<plugin>:source-command-<name>`, skipping any command that uses `$ARGUMENTS` or `$1`, uses Claude Code inline shell expansion (`` !`cmd` ``), or is larger than roughly 3.8 KB. Those three limits are not announced anywhere: a command that crosses one is dropped silently. Custom prompts in `$CODEX_HOME/prompts`, the other way a command could reach Codex, stopped loading in codex-cli 0.117.0 (openai/codex#15941), so a skipped command would otherwise not reach Codex at all.
+
+`plugins/albino/scripts/gen-codex-command-skills.sh` covers the gap by generating the skipped commands into `$CODEX_HOME/skills/` as `albino-command-<name>`. It reads the `migrated-command-skills` directory Codex writes to decide which to skip, rather than reimplementing the rules above, so no command is published twice and a command that later crosses the size limit moves between the two paths on its own. Do not hardcode that skip list.
+
+Skills take no arguments, so `$ARGUMENTS` is replaced with a phrase telling the agent to take the subject from the user's message. Keep using `description` and `argument-hint` in command frontmatter, and keep a fallback instruction wherever inline shell expansion is used.
+
+Codex cannot load subagents from a plugin. `plugins/albino/scripts/gen-codex-agents.sh` generates them into `$CODEX_HOME/agents/` as TOML.
+
+Both generators prune what they previously wrote when its source file is gone, and both mark their output so they never touch anything hand-written in `$CODEX_HOME`.
+
+Codex ships plugin hooks as untrusted. They are registered and enabled but do not run until the user reviews them once with `/hooks` in the Codex TUI. That is a per-machine step the installer cannot do.
 
 ---
 

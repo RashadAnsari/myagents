@@ -2,7 +2,6 @@
 name: unused-code-reviewer
 description: 'Reviews the whole repository for unused and dead artifacts: unreferenced code and exports, unreachable branches, orphaned files, dead tests and fixtures, unused CI jobs and workflow inputs, unreferenced infrastructure and container config, obsolete migrations, flags, dependencies, docs, and assets. Spawn when user asks to "find dead code", "unused code review", "check for unused exports", "find unused CI or infra config", or "audit dead code".'
 tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
-model: sonnet
 readonly: true
 ---
 

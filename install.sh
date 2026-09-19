@@ -25,10 +25,16 @@ CLAUDE_DESKTOP_CONFIG_DIR="$HOME/Library/Application Support/Claude"
 CLAUDE_DESKTOP_CONFIG="$CLAUDE_DESKTOP_CONFIG_DIR/claude_desktop_config.json"
 CLAUDE_DESKTOP_MCP_SRC="$INSTALL_DIR/.claude-desktop/mcp.json"
 
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+CODEX_PROMPTS_DIR="$CODEX_HOME/prompts"
+CODEX_AGENTS_DIR="$CODEX_HOME/agents"
+CODEX_SKILLS_DIR="$CODEX_HOME/skills"
+
 registered=false
 claude_detected=false
 cursor_detected=false
 claude_desktop_detected=false
+codex_detected=false
 failed_registry=false
 
 # Helpers
@@ -143,6 +149,51 @@ if [ -d "$HOME/.cursor" ]; then
   echo "  • Cursor detected. Reload your window to load the plugin (Ctrl+Shift+P - 'Reload Window')."
 fi
 
+if command -v codex &>/dev/null; then
+  codex_detected=true
+  echo "Setting up Codex integration..."
+
+  # Codex reads the plugin (skills, MCP servers, hooks) from the marketplace
+  # manifest in .agents/plugins/. Both commands are idempotent.
+  if codex plugin marketplace add "$INSTALL_DIR" >/dev/null && codex plugin add "$PLUGIN_ID" >/dev/null; then
+    echo "  ✓ Plugin installed into Codex"
+  else
+    echo "  ✗ Could not install the plugin. Run 'codex plugin add $PLUGIN_ID' to see why."
+  fi
+
+  # Codex converts some plugin commands into skills on install, but skips any
+  # that take arguments, use Claude Code inline shell expansion, or are over
+  # roughly 3.8 KB. Custom prompts, the other way to publish a command, stopped
+  # loading in codex-cli 0.117.0, so the skipped ones are generated as skills.
+  migrated_dir=""
+  for candidate in "$CODEX_HOME/plugins/cache/$MARKETPLACE_NAME/$PLUGIN_NAME"/*/.codex-plugin/migrated-command-skills; do
+    [ -d "$candidate" ] && migrated_dir="$candidate"
+  done
+
+  # Remove the prompts earlier versions of this installer created. Codex no
+  # longer reads them, so they would just be dead files.
+  for link in "$CODEX_PROMPTS_DIR"/*.md; do
+    [ -L "$link" ] || continue
+    case "$(readlink "$link")" in "$PLUGIN_SRC"/commands/*) rm -f "$link" ;; esac
+  done
+
+  if "$PLUGIN_SRC/scripts/gen-codex-command-skills.sh" "$CODEX_SKILLS_DIR" "$migrated_dir" 2>/dev/null; then
+    echo "  ✓ Commands generated as skills"
+  else
+    echo "  ✗ Could not generate command skills."
+  fi
+
+  # Codex cannot load subagents from a plugin, so they are generated as TOML
+  # from the Markdown agent files.
+  if "$PLUGIN_SRC/scripts/gen-codex-agents.sh" "$CODEX_AGENTS_DIR" 2>/dev/null; then
+    echo "  ✓ Agent definitions generated"
+  else
+    echo "  ✗ Could not generate agent definitions."
+  fi
+
+  echo "  • Restart Codex to load the changes."
+fi
+
 if [ -d "$CLAUDE_DESKTOP_CONFIG_DIR" ]; then
   claude_desktop_detected=true
   echo "Setting up Claude Desktop integration..."
@@ -192,6 +243,7 @@ printf " Plugin registered : %s\n" "$( [ "$registered" = true ] && echo "✓ yes
 printf " Cursor            : %s\n" "$( [ "$cursor_detected" = true ] && echo "✓ detected" || echo "not found" )"
 printf " Claude Code       : %s\n" "$( [ "$claude_detected" = true ] && echo "✓ detected" || echo "not found" )"
 printf " Claude Desktop    : %s\n" "$( [ "$claude_desktop_detected" = true ] && echo "✓ detected" || echo "not found" )"
+printf " Codex             : %s\n" "$( [ "$codex_detected" = true ] && echo "✓ detected" || echo "not found" )"
 echo "────────────────────────────────"
 echo " Rerun this script at any time to update."
 echo ""
