@@ -43,7 +43,7 @@ Personal productivity plugin for Claude Code, Cursor, and Codex.
 
 #### Commands
 
-Slash commands available in Claude Code and Cursor sessions. On Codex the same files are installed as custom prompts, so they are invoked as `/prompts:<name>`.
+Slash commands available in Claude Code and Cursor sessions. Codex does not load custom prompts, so the same files reach it as skills instead, named `albino:source-command-<name>` or `albino-command-<name>`. Ask for them by name rather than with a slash. See [Platform Support](#platform-support).
 
 | Command | Description |
 |---------|-------------|
