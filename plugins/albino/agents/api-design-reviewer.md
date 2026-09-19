@@ -2,7 +2,6 @@
 name: api-design-reviewer
 description: Reviews REST and GraphQL API design for consistency, naming conventions, versioning, error shape, idempotency, and backward compatibility. Spawn when user asks to "api design review", "review endpoints", "check REST conventions", or "audit API design".
 tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
-model: sonnet
 readonly: true
 ---
 

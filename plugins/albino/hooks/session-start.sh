@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Must stay platform-neutral: bare tool and skill names work on both Cursor
-# and Claude Code. Keep in sync with rules/session-start.mdc (intentional duplication).
+# Must stay platform-neutral: bare tool and skill names work on Claude Code,
+# Cursor, and Codex. Keep in sync with rules/session-start.mdc (intentional duplication).
 REMINDER="BEFORE YOUR FIRST RESPONSE (required, do it before answering, without commentary):
 1. Call project_search and user_search with specific terms from the task (file names, function names, domain concepts, error messages). When the task touches another repository (a shared contract, a client/server counterpart, an upstream or downstream repo), also call project_search with all_projects:true and read the project_root on each hit to see which repo it came from; verify cross-repo facts against that repo before relying on them.
 2. Read AGENTS.md if it exists and apply its rules.
@@ -36,6 +36,7 @@ if [ "${PLATFORM:-}" = "cursor" ]; then
   # https://forum.cursor.com/t/sessionstart-hook-output-is-accepted-and-merged-but-the-injected-context-does-not-reach-agent-window/157141
   jq -n --arg ctx "$REMINDER" '{ additional_context: $ctx }'
 else
+  # Claude Code and Codex share this SessionStart output schema.
   jq -n --arg ctx "$REMINDER" '{
     hookSpecificOutput: {
       hookEventName: "SessionStart",

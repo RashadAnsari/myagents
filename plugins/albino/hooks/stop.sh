@@ -17,8 +17,9 @@ if [ "${PLATFORM:-}" = "cursor" ]; then
     echo '{}'
   fi
 else
-  # stop_hook_active is true when the agent is already continuing because this
-  # hook blocked the previous stop. Let it through to avoid an infinite loop.
+  # Claude Code and Codex share this Stop schema. stop_hook_active is true when
+  # the agent is already continuing because this hook blocked the previous stop.
+  # Let it through to avoid an infinite loop.
   active="$(jq -r '.stop_hook_active // false' <<<"$INPUT")"
   if [ "$active" = "true" ]; then
     exit 0

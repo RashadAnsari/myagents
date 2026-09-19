@@ -5,7 +5,7 @@ allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*), Bash(git
 
 ## Context
 
-The `!` prefix on each line below runs the shell command inline and injects its output before the prompt is submitted.
+The `!` prefix on each line below runs the shell command inline and injects its output before the prompt is submitted. If the lines below still show the literal commands, this platform does not expand them: run each command yourself first and use its output as the context.
 
 - Current git status: !`git status`
 - Current git diff (staged and unstaged changes): !`git diff HEAD`

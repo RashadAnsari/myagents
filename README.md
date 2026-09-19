@@ -1,6 +1,6 @@
 # myagents
 
-Personal plugin marketplace for Claude Code, Cursor, and Claude Desktop. Brings Rashad's workflows, review agents, and development conventions to any project.
+Personal plugin marketplace for Claude Code, Cursor, Codex, and Claude Desktop. Brings Rashad's workflows, review agents, and development conventions to any project.
 
 ---
 
@@ -14,6 +14,7 @@ Installs for whichever platforms are detected:
 
 - **Claude Code**: registers the marketplace and installs the plugin
 - **Cursor**: symlinks the plugin to `~/.cursor/plugins/local/albino`
+- **Codex**: adds the marketplace and installs the plugin with `codex plugin add`, then generates command skills into `~/.codex/skills/` and agent definitions into `~/.codex/agents/`. Run `/hooks` once in Codex to trust the plugin's hooks
 - **Claude Desktop**: merges MCP servers into `claude_desktop_config.json`
 
 Rerun to update. Restart your editor after install.
@@ -28,6 +29,7 @@ Rerun to update. Restart your editor after install.
   - [Skills](#skills)
   - [MCP Servers](#mcp-servers)
   - [Hooks](#hooks)
+- [Platform Support](#platform-support)
 - [Claude Desktop](#claude-desktop)
 - [Repository Rules](#repository-rules)
 
@@ -37,11 +39,11 @@ Rerun to update. Restart your editor after install.
 
 ### albino
 
-Personal productivity plugin for Claude Code and Cursor.
+Personal productivity plugin for Claude Code, Cursor, and Codex.
 
 #### Commands
 
-Slash commands available in Claude Code and Cursor sessions.
+Slash commands available in Claude Code and Cursor sessions. On Codex the same files are installed as custom prompts, so they are invoked as `/prompts:<name>`.
 
 | Command | Description |
 |---------|-------------|
@@ -113,9 +115,31 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 
 | Hook | Event | Platforms | Description |
 |------|-------|-----------|-------------|
-| `session-start` | `SessionStart` / `sessionStart` | Claude Code, Cursor | Injects mandatory skills, memory read/write rules, and session bootstrap at the start of every session |
-| `user-prompt-submit` | `UserPromptSubmit` | Claude Code | Re-injects a one-line reminder on every prompt (search memory first, apply `AGENTS.md` and mandatory skills, store durable learnings), since session-start context decays over long conversations. Cursor gets the same effect via the always-applied `session-start` rule instead |
-| `stop` | `Stop` / `stop` | Claude Code, Cursor | Checks at the end of every turn whether durable learnings (decisions, preferences, gotchas, conventions) were stored to agent memory before the agent finishes; when there is nothing to store the agent answers only "Nothing durable learned." |
+| `session-start` | `SessionStart` / `sessionStart` | Claude Code, Cursor, Codex | Injects mandatory skills, memory read/write rules, and session bootstrap at the start of every session |
+| `user-prompt-submit` | `UserPromptSubmit` | Claude Code, Codex | Re-injects a one-line reminder on every prompt (search memory first, apply `AGENTS.md` and mandatory skills, store durable learnings), since session-start context decays over long conversations. Cursor gets the same effect via the always-applied `session-start` rule instead |
+| `stop` | `Stop` / `stop` | Claude Code, Cursor, Codex | Checks at the end of every turn whether durable learnings (decisions, preferences, gotchas, conventions) were stored to agent memory before the agent finishes; when there is nothing to store the agent answers only "Nothing durable learned." |
+
+---
+
+## Platform Support
+
+Every platform reads the same source files. Only the packaging around them differs.
+
+| Component | Claude Code | Cursor | Codex |
+|-----------|-------------|--------|-------|
+| Manifest | `.claude-plugin/plugin.json` | `.cursor-plugin/plugin.json` | `.codex-plugin/plugin.json` |
+| Marketplace | `.claude-plugin/marketplace.json` | `.cursor-plugin/marketplace.json` | `.agents/plugins/marketplace.json` |
+| Skills | plugin `skills/` | plugin `skills/` | plugin `skills/` |
+| MCP servers | `.mcp.json` | `.mcp.json` | `.mcp.json` |
+| Hooks | manifest `hooks` block | manifest `hooks` block | manifest `hooks` block |
+| Commands | plugin `commands/` | plugin `commands/` | plugin `commands/`, or generated into `$CODEX_HOME/skills/` where Codex skips one |
+| Agents | plugin `agents/` | plugin `agents/` | generated into `$CODEX_HOME/agents/` as TOML |
+| Repository rules | `AGENTS.md` | `AGENTS.md` | `AGENTS.md` |
+
+Two things work differently on Codex:
+
+- **Commands** become skills. Codex converts a plugin's commands itself, but skips any that use `$ARGUMENTS`, use Claude Code inline shell expansion, or exceed roughly 3.8 KB, so `install.sh` generates those into `$CODEX_HOME/skills/` as `albino-command-<name>`. Skills take no arguments, so `$ARGUMENTS` becomes an instruction to take the subject from the request. `allowed-tools` is ignored, and the commands that spawn reviewers (`/reviewcrew`, `/audit`, `/pr-review`, `/enrich`) depend on the generated agent definitions being present.
+- **Agents** are projected to TOML by `plugins/albino/scripts/gen-codex-agents.sh`. The Markdown files stay the source of truth, and `readonly: true` becomes `sandbox_mode = "read-only"`. Rerun the script, or the installer, after editing an agent.
 
 ---
 

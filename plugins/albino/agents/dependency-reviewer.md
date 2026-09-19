@@ -2,7 +2,6 @@
 name: dependency-reviewer
 description: Reviews dependencies for vulnerabilities, outdated packages, unused packages, and supply chain risks. Spawn when user asks to "review dependencies", "check packages", "find outdated deps", or "audit dependencies".
 tools: [Read, Glob, Grep, WebSearch, WebFetch, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
-model: sonnet
 readonly: true
 ---
 

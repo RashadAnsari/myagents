@@ -2,7 +2,6 @@
 name: docs-reviewer
 description: Reviews documentation for accuracy, completeness, and staleness. Spawn when user asks to "review docs", "check documentation", "find stale docs", or "audit documentation".
 tools: [Read, Glob, Grep, WebFetch, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
-model: sonnet
 readonly: true
 ---
 

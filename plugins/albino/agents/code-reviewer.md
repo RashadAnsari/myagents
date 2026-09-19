@@ -2,7 +2,6 @@
 name: code-reviewer
 description: Reviews the codebase for correctness, style, patterns, and anti-patterns. Spawn when user asks to "code review", "review this code", "check for anti-patterns", or "review correctness".
 tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
-model: opus
 readonly: true
 ---
 

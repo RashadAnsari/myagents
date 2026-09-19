@@ -2,7 +2,6 @@
 name: database-reviewer
 description: Reviews database schema design, migration safety, indexing strategy, query patterns, and data integrity. Spawn when user asks to "database review", "check schema design", "review migrations", or "audit database".
 tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
-model: sonnet
 readonly: true
 ---
 

@@ -1,0 +1,48 @@
+{
+  "name": "albino",
+  "version": "0.2.0",
+  "description": "Personal productivity plugin: brings Rashad's workflows to Codex.",
+  "author": {
+    "name": "Rashad Ansari",
+    "url": "https://github.com/RashadAnsari"
+  },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": {
+    "hooks": {
+      "SessionStart": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "PLATFORM=codex bash \"${PLUGIN_ROOT}/hooks/session-start.sh\"",
+              "timeout": 30
+            }
+          ]
+        }
+      ],
+      "UserPromptSubmit": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "PLATFORM=codex bash \"${PLUGIN_ROOT}/hooks/user-prompt-submit.sh\"",
+              "timeout": 30
+            }
+          ]
+        }
+      ],
+      "Stop": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "PLATFORM=codex bash \"${PLUGIN_ROOT}/hooks/stop.sh\"",
+              "timeout": 30
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

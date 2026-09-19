@@ -2,7 +2,6 @@
 name: test-reviewer
 description: Reviews tests for coverage, quality, missing cases, and structure. Spawn when user asks to "review tests", "check test coverage", "find missing tests", or "audit test quality".
 tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
-model: sonnet
 readonly: true
 ---
 
