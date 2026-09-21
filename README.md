@@ -115,8 +115,8 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 
 | Hook | Event | Platforms | Description |
 |------|-------|-----------|-------------|
-| `session-start` | `SessionStart` / `sessionStart` | Claude Code, Cursor, Codex | Injects mandatory skills, memory read/write rules, and session bootstrap at the start of every session |
-| `user-prompt-submit` | `UserPromptSubmit` | Claude Code, Codex | Re-injects a one-line reminder on every prompt (search memory first, apply `AGENTS.md` and mandatory skills, store durable learnings), since session-start context decays over long conversations. Cursor gets the same effect via the always-applied `session-start` rule instead |
+| `session-start` | `SessionStart` / `sessionStart` | Claude Code, Cursor, Codex | Injects mandatory skills, memory read/write rules, communication rules (answer first, be precise, keep it short, no AI slop), and session bootstrap at the start of every session |
+| `user-prompt-submit` | `UserPromptSubmit` | Claude Code, Codex | Re-injects a one-line reminder on every prompt (search memory first, apply `AGENTS.md` and mandatory skills, store durable learnings, answer first and keep it short and precise), since session-start context decays over long conversations. Cursor gets the same effect via the always-applied `session-start` rule instead |
 | `stop` | `Stop` / `stop` | Claude Code, Cursor, Codex | Checks at the end of every turn whether durable learnings (decisions, preferences, gotchas, conventions) were stored to agent memory before the agent finishes; when there is nothing to store the agent answers only "Nothing durable learned." |
 
 ---

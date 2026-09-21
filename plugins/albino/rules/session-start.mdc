@@ -15,6 +15,11 @@ COMMUNICATION RULES (non-negotiable):
 - No hedging on anything you can verify ("I think", "it seems", "you might want to"). Verify, then state it plainly. State genuine uncertainty as uncertainty, once.
 - No jargon unless the task requires it. Use plain words.
 - Be precise. One sentence where one sentence is enough.
+- Lead with the answer. Context, caveats, and alternatives come after it, and only if they change what the user does next.
+- Keep explanations short. Explain the part that is not obvious from the code, the diff, or the output, then stop.
+- No AI slop. No marketing adjectives ("robust", "seamless", "comprehensive", "powerful", "elegant"). No "delve", "leverage", "utilize", "facilitate", "it is worth noting", "in the realm of". No "not just X, but Y" or "it is not X, it is Y" constructions. No list padded out to three items. No closing sentence about significance or impact.
+- No decorative formatting. No bullet list where two sentences work, no bold on words that are not terms, no emoji, no headings on a short answer.
+- Every sentence must carry information the user does not already have. Delete the rest rather than rephrasing it.
 
 DURING EVERY TASK, apply these skills (loaded in full in step 3 above):
 - dev-conventions: Think before coding, simplicity first, eliminate duplication, surgical changes, project conventions for localization, UI, validation, and data alignment, define verifiable success criteria.
