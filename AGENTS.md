@@ -55,7 +55,7 @@ Do not add a root `plugin.json` or a root `mcp.json`. A root `plugin.json` makes
 
 One pair of files must stay in sync:
 
-- `plugins/albino/.claude-plugin/plugin.json` and `plugins/albino/.codex-plugin/plugin.json`: same name, version, description, and author, and the same hook events wired to the same scripts. Both declare their hooks inline, as the Cursor manifest does.
+- `plugins/albino/.claude-plugin/plugin.json` and `plugins/albino/.codex-plugin/plugin.json`: same name, version, and author, the same description apart from the platform it names, and the same hook events wired to the same scripts. Both declare their hooks inline, as the Cursor manifest does.
 
 `plugins/albino/.mcp.json` is shared by all three platforms. Each server sets `"cwd": "."`, which Codex resolves to the plugin root so the `$(pwd)` fallback in the command finds the plugin; Claude Code and Cursor use `${CLAUDE_PLUGIN_ROOT}` and ignore `cwd`. Declaring the file explicitly as `"mcpServers": "./.mcp.json"` in the Codex manifest is what makes Codex read it.
 
@@ -79,7 +79,7 @@ Codex ships plugin hooks as untrusted. They are registered and enabled but do no
 
 The root `install.sh` and `uninstall.sh` only fetch the repo, run `plugins/<name>/install.sh` or `plugins/<name>/uninstall.sh` for every plugin folder that has an `install.sh`, and print a summary. `uninstall.sh` then deletes `~/.myagents`, keeping `agent-memory/` unless `--purge` is passed. Everything specific to a plugin (registration, platform setup, generated files) lives in that plugin's own scripts, never in the root scripts.
 
-Every plugin folder must ship both `install.sh` and `uninstall.sh`. Each one reads `MYAGENTS_DIR` and `MYAGENTS_MARKETPLACE` from the environment, sources `scripts/install-lib.sh`, checks its own prerequisites with `need`, and ends with `finish`. `uninstall.sh` must undo every step `install.sh` takes on every platform, including files the plugin writes at runtime outside its own folder, and must leave anything the user created untouched. When you add an install step, add its removal in the same change.
+Every plugin folder must ship both `install.sh` and `uninstall.sh`. Each one reads `MYAGENTS_DIR` and `MYAGENTS_MARKETPLACE` from the environment, sources `scripts/install-lib.sh`, checks its own prerequisites (with `need` when a missing tool should stop the whole plugin), and ends with `finish`. `uninstall.sh` must undo every step `install.sh` takes on every platform, including files the plugin writes at runtime outside its own folder, and must leave anything the user created untouched. When you add an install step, add its removal in the same change.
 
 System tools a plugin needs at install time or runtime go in `requirements.list` at the repository root, as `<command> <homebrew formula>`, not in the plugin's script. The root installer installs a formula only when its command is not on PATH, and installs Homebrew first when something is missing (`ensure_homebrew`). These tools, Homebrew, and its PATH line in the shell profile are the one exception to the undo rule: uninstall keeps them, since other software may depend on them.
 

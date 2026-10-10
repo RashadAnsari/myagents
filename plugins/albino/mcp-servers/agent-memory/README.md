@@ -52,7 +52,8 @@ The database files are ignored by git.
 | Variable | Default | Description |
 | --- | --- | --- |
 | `AGENT_MEMORY_DIR` | `~/.myagents/agent-memory` | Directory where `memory.sqlite` is stored. |
-| `DISABLE_PROJECT_MEMORY` | unset | Set to `true`, `1`, or `yes` to disable all project memory tools at startup. When set, `project_remember`, `project_search`, `project_update`, `project_forget`, and `project_purge` are not registered and will not appear in the tool list. User memory tools are unaffected. Useful for installations where project-scoped memory is not wanted, such as Claude Desktop. |
+| `DISABLE_PROJECT_MEMORY` | unset | Set to `true`, `1`, or `yes` to disable all project memory tools at startup. When set, `project_remember`, `project_search`, `project_update`, `project_forget`, and `project_purge` are not registered and will not appear in the tool list. User memory tools are unaffected. Useful for clients that have no project context, where project-scoped memory is not wanted. |
+| `AGENT_MEMORY_EMBEDDING_MODEL` | `BAAI/bge-small-en-v1.5` | `fastembed` model used to embed memories and queries. It must produce 384-dimension vectors, the size the vector tables are created with, and switching models on an existing database leaves older memories embedded with the previous model. |
 
 ## Project Memory
 

@@ -158,7 +158,7 @@ The rest load when a task calls for them:
 | `playwright` | Browser automation: navigate, click, fill forms, take screenshots, and inspect the page. Set `PLAYWRIGHT_MCP_EXTENSION_TOKEN` to drive your real browser through the Playwright Chrome extension |
 | `markitdown` | Converts PDF, Word, PowerPoint, Excel, HTML, images (OCR), audio (transcription), EPUB, and YouTube URLs to Markdown |
 
-Each server installs its own runtime (`bun` or `uv`) on first use.
+The installer installs `uv` and `bun`, which the servers run on. If one is missing, for example when albino was added through its marketplace instead of the installer, the server installs it on first use.
 
 #### Hooks
 
@@ -276,7 +276,7 @@ Rerunning the uninstaller is safe: steps with nothing left to undo report "Alrea
 
 ## Adding a plugin
 
-Each folder in `plugins/` holds either a full plugin or just the scripts that install a third-party one. Add `plugins/<name>/install.sh` and `plugins/<name>/uninstall.sh`, and the root scripts pick them up. They run with `bash`, with `MYAGENTS_DIR` (the checkout path) and `MYAGENTS_MARKETPLACE` (`myagents`) exported.
+Each folder in `plugins/` holds either a full plugin or just the scripts that install a third-party one. A third-party plugin is installed the way its own README documents for each tool: its marketplace, its own CLI, or the Skills CLI. Add `plugins/<name>/install.sh` and `plugins/<name>/uninstall.sh`, and the root scripts pick them up. They run with `bash`, with `MYAGENTS_DIR` (the checkout path) and `MYAGENTS_MARKETPLACE` (`myagents`) exported.
 
 Source `scripts/install-lib.sh` so both scripts are safe to rerun and print the same messages as the other plugins. A third-party plugin published as Claude Code and Codex marketplaces needs only this:
 
