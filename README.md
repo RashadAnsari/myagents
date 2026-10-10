@@ -35,6 +35,11 @@ albino
   ✓ Codex           Installed. Restart Codex, then run /hooks once to trust its hooks.
   ✓ Claude Desktop  MCP servers added. Restart Claude Desktop to load them.
 
+context7
+  ✓ Claude Code     Installed. Restart open sessions, then run /mcp once to sign in to Context7.
+  ✓ Cursor          Installed. Sign in to Context7 when Cursor asks, or from Cursor Settings > MCP.
+  ✓ Codex           Installed. Run 'codex mcp login context7' once to sign in.
+
 ponytail
   ✓ Claude Code     Installed. Restart open sessions to load it.
   ✓ Codex           Installed. Restart Codex, then run /hooks once to trust its hooks.
@@ -52,6 +57,7 @@ ui-ux-pro-max
 
 Summary
   ✓ albino          Ready.
+  ✓ context7        Ready.
   ✓ ponytail        Ready.
   ✓ security-audit  Ready.
   ✓ ui-ux-pro-max   Ready.
@@ -72,7 +78,7 @@ To update, run the same install command again.
 
 ## Contents
 
-- [Plugins](#plugins): [albino](#albino), [ponytail](#ponytail), [security-audit](#security-audit), [ui-ux-pro-max](#ui-ux-pro-max)
+- [Plugins](#plugins): [albino](#albino), [ponytail](#ponytail), [security-audit](#security-audit), [context7](#context7), [ui-ux-pro-max](#ui-ux-pro-max)
 - [Platform support](#platform-support)
 - [Agent memory](#agent-memory)
 - [Installing, updating, and uninstalling](#installing-updating-and-uninstalling)
@@ -175,6 +181,12 @@ Each server installs its own runtime (`bun` or `uv`) on first use.
 
 The installer adds it with the [Skills CLI](https://skills.sh), with install telemetry turned off. It needs `node`, and building or running the audited code needs an OS-level sandbox; without one, the skill reports those leads as unconfirmed instead of executing the target.
 
+### context7
+
+[Context7](https://github.com/upstash/context7) by Upstash gives agents current, version-specific documentation for libraries and frameworks, pulled from their source repositories, so they stop guessing at APIs that changed after their training data. It pairs with albino's `research-first` skill, which tells agents to check the docs before answering; Context7 is where they read them. Ask a library question and it resolves the library, then fetches the relevant docs.
+
+The installer runs Context7's own `ctx7 setup --mcp --oauth` for each tool, which adds its MCP server, a rule that tells the agent when to use it, and a `context7-mcp` skill. Sign-in happens in the app the first time, so no API key is stored on disk: run `/mcp` in Claude Code, sign in when Cursor asks, or run `codex mcp login context7`. For Codex, the rule is added as a marked block in `~/.codex/AGENTS.md`, and uninstalling removes only that block. Telemetry is turned off.
+
 ### ui-ux-pro-max
 
 [UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) by nextlevelbuilder gives agents a searchable local design database: 79 styles, 192 product palettes, 74 font pairings, 119 UX guidelines, 25 chart types, and guidance for 22 stacks, from React and SwiftUI to Flutter and Tailwind. It activates on its own when you build, review, or fix an interface, and can generate a design system for your product. It overlaps with albino's `frontend-design` skill, which sets a visual direction; this one supplies the concrete styles, palettes, and stack rules.
@@ -194,6 +206,7 @@ It ships seven skills: `ui-ux-pro-max`, `design`, `design-system`, `ui-styling` 
 | albino MCP servers | ✓ | ✓ | ✓ | ✓ `playwright`, `linkedin` |
 | ponytail | ✓ | ✓ hooks | ✓ after `/hooks` | |
 | security-audit | ✓ | ✓ | ✓ | |
+| context7 | ✓ | ✓ | ✓ | |
 | ui-ux-pro-max | ✓ | ✓ | ✓ | |
 
 <details>
