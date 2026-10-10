@@ -10,14 +10,77 @@ Personal plugin marketplace for Claude Code, Cursor, Codex, and Claude Desktop. 
 curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/install.sh | bash
 ```
 
-Installs for whichever platforms are detected:
+The installer downloads the repo to `~/.myagents`, then runs `plugins/<name>/install.sh` for every plugin folder that has one. It installs each plugin into whichever of Claude Code, Cursor, Codex, and Claude Desktop it finds, and ends with a summary of what is ready and what failed.
+
+Rerun the same command to update. Every step is safe to repeat: a rerun updates what is there and never duplicates settings, hooks, or links. `~/.myagents` is managed by the installer, so a rerun resets it to the latest version and discards local edits to tracked files. Untracked files, such as the agent-memory database, are kept.
+
+`albino` installs for whichever platforms are detected:
 
 - **Claude Code**: registers the marketplace and installs the plugin
 - **Cursor**: symlinks the plugin to `~/.cursor/plugins/local/albino`
 - **Codex**: adds the marketplace and installs the plugin with `codex plugin add`, then generates command skills into `~/.codex/skills/` and agent definitions into `~/.codex/agents/`. Run `/hooks` once in Codex to trust the plugin's hooks
 - **Claude Desktop**: merges MCP servers into `claude_desktop_config.json`
 
-Rerun to update. Restart your editor after install.
+Restart your editor after install.
+
+## Uninstall
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/uninstall.sh | bash
+```
+
+Runs `plugins/<name>/uninstall.sh` for every plugin, which undoes each install step on every platform, including the settings, hooks, MCP servers, and generated Codex skills and agents. Then it deletes `~/.myagents`. Your own settings, hooks, skills, and agents are left alone. Your agent memory in `~/.myagents/agent-memory` is kept; to delete it too, add `--purge`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/uninstall.sh | bash -s -- --purge
+```
+
+Rerunning is safe: steps with nothing left to undo report "Already removed." If a step fails, `~/.myagents` is kept so you can fix the problem and rerun.
+
+## Adding a plugin to the installer
+
+Create `plugins/<name>/install.sh` and `plugins/<name>/uninstall.sh`. The root scripts run them with `bash` and export `MYAGENTS_DIR` (the checkout path) and `MYAGENTS_MARKETPLACE` (`myagents`). The folder can hold a full plugin from this repo, or only the two scripts for a third-party plugin.
+
+Source `scripts/install-lib.sh` and use its helpers, so both scripts are safe to rerun and their messages match the other plugins. A third-party plugin published as Claude Code and Codex marketplaces needs only this:
+
+```bash
+# install.sh
+#!/usr/bin/env bash
+set -euo pipefail
+source "$MYAGENTS_DIR/scripts/install-lib.sh"
+
+REPO_URL="https://github.com/owner/repo.git"
+
+has_claude_code && claude_marketplace_plugin "$REPO_URL" <marketplace> <plugin>
+has_codex && codex_marketplace_plugin "$REPO_URL" <marketplace> <plugin>
+
+finish
+```
+
+```bash
+# uninstall.sh
+#!/usr/bin/env bash
+set -euo pipefail
+source "$MYAGENTS_DIR/scripts/install-lib.sh"
+
+has_claude_code && claude_marketplace_plugin_remove <marketplace> <plugin>
+has_codex && codex_marketplace_plugin_remove <marketplace> <plugin>
+
+finish
+```
+
+| Helper | Purpose |
+|--------|---------|
+| `has_claude_code`, `has_cursor`, `has_codex`, `has_claude_desktop` | Platform detection |
+| `ok`, `note`, `fail` | One status line per platform; `fail` also shows the failed command's last output lines |
+| `quietly <cmd>` | Runs a command with its output hidden unless it fails; on success the output is in `$quiet_output` |
+| `need <tool> [brew formula]` | Stops the plugin with an install hint when a tool is missing |
+| `claude_marketplace_plugin`, `codex_marketplace_plugin` | Install or update a plugin from a git-hosted marketplace |
+| `claude_marketplace_plugin_remove`, `codex_marketplace_plugin_remove` | Remove that plugin and its marketplace, or report "Already removed." |
+| `codex_has_marketplace <name>` | Check whether Codex has a marketplace configured |
+| `sync_checkout <url> <dir>` | Clone a repo, or reset it to the latest commit |
+| `link_dir <src> <link>` | Create or replace a symlink to a directory |
+| `finish` | Exit non-zero if any step failed |
 
 ---
 
@@ -29,6 +92,7 @@ Rerun to update. Restart your editor after install.
   - [Skills](#skills)
   - [MCP Servers](#mcp-servers)
   - [Hooks](#hooks)
+  - [ponytail](#ponytail)
 - [Platform Support](#platform-support)
 - [Claude Desktop](#claude-desktop)
 - [Repository Rules](#repository-rules)
@@ -119,11 +183,21 @@ Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite`
 | `user-prompt-submit` | `UserPromptSubmit` | Claude Code, Codex | Re-injects a one-line reminder on every prompt (search memory first, apply `AGENTS.md` and mandatory skills, store durable learnings, answer first and keep it short and precise), since session-start context decays over long conversations. Cursor gets the same effect via the always-applied `session-start` rule instead |
 | `stop` | `Stop` / `stop` | Claude Code, Cursor, Codex | Checks at the end of every turn whether durable learnings (decisions, preferences, gotchas, conventions) were stored to agent memory before the agent finishes; when there is nothing to store the agent answers only "Nothing durable learned." |
 
+### ponytail
+
+Third-party plugin from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) that pushes agents toward the simplest working solution (YAGNI, stdlib first). `plugins/ponytail/install.sh` installs it with each platform's own method, and updates it on rerun:
+
+- **Claude Code**: `claude plugin marketplace add` and `claude plugin install ponytail@ponytail`
+- **Codex**: `codex plugin marketplace add` and `codex plugin add ponytail@ponytail`. Run `/hooks` once in Codex to trust its hooks
+- **Cursor**: clones the repo to `plugins/ponytail/checkout/` and runs its `scripts/cursor-hooks.js install`, which adds two hooks to `~/.cursor/hooks.json`
+
+Its hooks need `node` on the PATH.
+
 ---
 
 ## Platform Support
 
-Every platform reads the same source files. Only the packaging around them differs.
+This section covers albino. Every platform reads the same source files. Only the packaging around them differs.
 
 | Component | Claude Code | Cursor | Codex |
 |-----------|-------------|--------|-------|
@@ -138,14 +212,14 @@ Every platform reads the same source files. Only the packaging around them diffe
 
 Two things work differently on Codex:
 
-- **Commands** become skills. Codex converts a plugin's commands itself, but skips any that use `$ARGUMENTS`, use Claude Code inline shell expansion, or exceed roughly 3.8 KB, so `install.sh` generates those into `$CODEX_HOME/skills/` as `albino-command-<name>`. Skills take no arguments, so `$ARGUMENTS` becomes an instruction to take the subject from the request. `allowed-tools` is ignored, and the commands that spawn reviewers (`/reviewcrew`, `/audit`, `/pr-review`, `/enrich`) depend on the generated agent definitions being present.
+- **Commands** become skills. Codex converts a plugin's commands itself, but skips any that use `$ARGUMENTS`, use Claude Code inline shell expansion, or exceed roughly 3.8 KB, so `plugins/albino/install.sh` generates those into `$CODEX_HOME/skills/` as `albino-command-<name>`. Skills take no arguments, so `$ARGUMENTS` becomes an instruction to take the subject from the request. `allowed-tools` is ignored, and the commands that spawn reviewers (`/reviewcrew`, `/audit`, `/pr-review`, `/enrich`) depend on the generated agent definitions being present.
 - **Agents** are projected to TOML by `plugins/albino/scripts/gen-codex-agents.sh`. The Markdown files stay the source of truth, and `readonly: true` becomes `sandbox_mode = "read-only"`. Rerun the script, or the installer, after editing an agent.
 
 ---
 
 ## Claude Desktop
 
-`install.sh` detects Claude Desktop automatically and merges MCP servers into `claude_desktop_config.json`. Restart Claude Desktop after running it.
+`plugins/albino/install.sh` detects Claude Desktop automatically and merges the MCP servers from `plugins/albino/.claude-desktop/mcp.json` into `claude_desktop_config.json`. Restart Claude Desktop after running it.
 
 ### MCP Servers
 

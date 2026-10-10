@@ -75,6 +75,22 @@ Codex ships plugin hooks as untrusted. They are registered and enabled but do no
 
 ---
 
+## Plugin Installer Rule
+
+The root `install.sh` and `uninstall.sh` only fetch the repo, run `plugins/<name>/install.sh` or `plugins/<name>/uninstall.sh` for every plugin folder that has an `install.sh`, and print a summary. `uninstall.sh` then deletes `~/.myagents`, keeping `agent-memory/` unless `--purge` is passed. Everything specific to a plugin (registration, platform setup, generated files) lives in that plugin's own scripts, never in the root scripts.
+
+Every plugin folder must ship both `install.sh` and `uninstall.sh`. Each one reads `MYAGENTS_DIR` and `MYAGENTS_MARKETPLACE` from the environment, sources `scripts/install-lib.sh`, checks its own prerequisites with `need`, and ends with `finish`. `uninstall.sh` must undo every step `install.sh` takes on every platform, including files the plugin writes at runtime outside its own folder, and must leave anything the user created untouched. When you add an install step, add its removal in the same change.
+
+A plugin from this repo must also be listed in `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`. A third-party plugin is a folder holding only the two scripts, which call the platform CLIs, and is not listed in either marketplace file.
+
+Every step must be idempotent. Running the installer any number of times must leave the same result as running it once, and an install rerun must update rather than fail: overwrite settings by key instead of appending, use `link_dir` for symlinks (plain `ln -sf` nests a second link inside an existing directory link), use `sync_checkout` for clones, and pair every install command with its update command. An uninstall rerun must report "Already removed." rather than fail: check that an item exists before removing it, since `claude plugin uninstall`, `claude plugin marketplace remove`, and `codex plugin marketplace remove` fail on a missing item.
+
+Test a change by running the root installer twice and then the uninstaller twice under a throwaway `HOME`, with `MYAGENTS_REPO_URL` pointing at a local commit. Diff the config files against their state before the install: after uninstall, only the user's own content may remain.
+
+All user-facing output goes through the library's `section`, `ok`, `note`, and `fail`, with the platform name (`Claude Code`, `Cursor`, `Codex`, `Claude Desktop`) as the label, in that install order. Messages are full sentences: say what happened and the one thing the user does next. Hide command output with `quietly` so it only appears on failure. Do not `echo` directly.
+
+---
+
 ## README Sync Rule
 
 After any change that affects the public surface of this project, update `README.md` (at `README.md` in the repository root) accordingly. This includes:

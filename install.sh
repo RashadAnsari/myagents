@@ -1,253 +1,81 @@
 #!/usr/bin/env bash
+# Installs or updates every plugin in myagents. Safe to rerun at any time.
 set -euo pipefail
 
+REPO_URL="${MYAGENTS_REPO_URL:-https://github.com/RashadAnsari/myagents}"
+export MYAGENTS_DIR="$HOME/.myagents"
+export MYAGENTS_MARKETPLACE="myagents"
+
 if [[ "$(uname -s)" != "Darwin" ]]; then
-  echo "✗ This installer only supports macOS. Linux and Windows are not supported yet."
+  echo "✗ myagents supports macOS only for now."
   exit 1
 fi
 
-REPO_URL="https://github.com/RashadAnsari/myagents"
-INSTALL_DIR="$HOME/.myagents"
-PLUGIN_NAME="albino"
-MARKETPLACE_NAME="myagents"
-PLUGIN_ID="${PLUGIN_NAME}@${MARKETPLACE_NAME}"
-PLUGIN_SRC="$INSTALL_DIR/plugins/$PLUGIN_NAME"
-
-CLAUDE_PLUGINS_DIR="$HOME/.claude/plugins"
-INSTALLED_PLUGINS_JSON="$CLAUDE_PLUGINS_DIR/installed_plugins.json"
-KNOWN_MARKETPLACES_JSON="$CLAUDE_PLUGINS_DIR/known_marketplaces.json"
-CLAUDE_SETTINGS_JSON="$HOME/.claude/settings.json"
-
-CURSOR_PLUGINS_DIR="$HOME/.cursor/plugins/local"
-CURSOR_PLUGIN_LINK="$CURSOR_PLUGINS_DIR/$PLUGIN_NAME"
-
-CLAUDE_DESKTOP_CONFIG_DIR="$HOME/Library/Application Support/Claude"
-CLAUDE_DESKTOP_CONFIG="$CLAUDE_DESKTOP_CONFIG_DIR/claude_desktop_config.json"
-CLAUDE_DESKTOP_MCP_SRC="$INSTALL_DIR/.claude-desktop/mcp.json"
-
-CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
-CODEX_PROMPTS_DIR="$CODEX_HOME/prompts"
-CODEX_AGENTS_DIR="$CODEX_HOME/agents"
-CODEX_SKILLS_DIR="$CODEX_HOME/skills"
-
-registered=false
-claude_detected=false
-cursor_detected=false
-claude_desktop_detected=false
-codex_detected=false
-failed_registry=false
-
-# Helpers
-
-need() {
-  if ! command -v "$1" &>/dev/null; then
-    echo "✗ '$1' is required but not installed."
-    echo "  Run: brew install $1"
-    exit 1
-  fi
-}
-
-# Fetch repo
-
-need jq # used by plugin hooks at runtime, not this script
-need git
-need python3
-
-if [ -d "$INSTALL_DIR/.git" ]; then
-  echo "Updating myagents in $INSTALL_DIR..."
-  git -C "$INSTALL_DIR" pull --ff-only
-else
-  echo "Downloading myagents into $INSTALL_DIR..."
-  git clone "$REPO_URL" "$INSTALL_DIR"
-fi
-
-[ -d "$PLUGIN_SRC" ] || { echo "✗ Install failed: plugin files are missing after download. Try deleting $INSTALL_DIR and rerunning."; exit 1; }
-
-# Register plugin in ~/.claude/
-
-echo "Registering plugin with Claude Code..."
-mkdir -p "$CLAUDE_PLUGINS_DIR"
-
-if python3 - \
-    "$INSTALL_DIR" "$PLUGIN_SRC" "$MARKETPLACE_NAME" "$PLUGIN_ID" \
-    "$KNOWN_MARKETPLACES_JSON" "$INSTALLED_PLUGINS_JSON" "$CLAUDE_SETTINGS_JSON" \
-    <<'PY'
-import datetime, json, os, sys
-
-(install_dir, plugin_src, mkt_name, plugin_id,
- known_path, installed_path, settings_path) = sys.argv[1:8]
-
-def load(path):
-    if not os.path.exists(path):
-        return {}
-    try:
-        with open(path) as f:
-            return json.load(f)
-    except (OSError, ValueError):
-        return {}
-
-def save(path, data):
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    tmp = path + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
-    os.replace(tmp, path)
-
-known = load(known_path)
-now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-known[mkt_name] = {
-    "source": {"source": "directory", "path": install_dir},
-    "installLocation": install_dir,
-    "lastUpdated": now,
-}
-save(known_path, known)
-
-installed = load(installed_path)
-installed.setdefault("version", 2)
-plugins = installed.setdefault("plugins", {})
-existing = plugins.get(plugin_id, [])
-if not isinstance(existing, list):
-    existing = []
-kept = [e for e in existing
-        if not (isinstance(e, dict) and e.get("scope") == "user")]
-kept.insert(0, {"scope": "user", "installPath": plugin_src})
-plugins[plugin_id] = kept
-save(installed_path, installed)
-
-settings = load(settings_path)
-enabled = settings.setdefault("enabledPlugins", {})
-if not isinstance(enabled, dict):
-    settings["enabledPlugins"] = enabled = {}
-enabled[plugin_id] = True
-
-extras = settings.setdefault("extraKnownMarketplaces", {})
-if not isinstance(extras, dict):
-    settings["extraKnownMarketplaces"] = extras = {}
-extras[mkt_name] = {"source": {"source": "directory", "path": install_dir}}
-save(settings_path, settings)
-PY
-then
-  registered=true
-  echo "  ✓ Plugin registered"
-else
-  echo "  ✗ Could not save plugin settings to ~/.claude/. Check file permissions and try again."
-  failed_registry=true
-fi
-
-# Platform setup
-
-if command -v claude &>/dev/null; then
-  claude_detected=true
-  echo "  • Claude Code detected. Restart any open sessions to load the plugin."
-fi
-
-if [ -d "$HOME/.cursor" ]; then
-  cursor_detected=true
-  mkdir -p "$CURSOR_PLUGINS_DIR"
-  ln -sf "$PLUGIN_SRC" "$CURSOR_PLUGIN_LINK"
-  echo "  • Cursor detected. Reload your window to load the plugin (Ctrl+Shift+P - 'Reload Window')."
-fi
-
-if command -v codex &>/dev/null; then
-  codex_detected=true
-  echo "Setting up Codex integration..."
-
-  # Codex reads the plugin (skills, MCP servers, hooks) from the marketplace
-  # manifest in .agents/plugins/. Both commands are idempotent.
-  if codex plugin marketplace add "$INSTALL_DIR" >/dev/null && codex plugin add "$PLUGIN_ID" >/dev/null; then
-    echo "  ✓ Plugin installed into Codex"
-  else
-    echo "  ✗ Could not install the plugin. Run 'codex plugin add $PLUGIN_ID' to see why."
-  fi
-
-  # Codex converts some plugin commands into skills on install, but skips any
-  # that take arguments, use Claude Code inline shell expansion, or are over
-  # roughly 3.8 KB. Custom prompts, the other way to publish a command, stopped
-  # loading in codex-cli 0.117.0, so the skipped ones are generated as skills.
-  migrated_dir=""
-  for candidate in "$CODEX_HOME/plugins/cache/$MARKETPLACE_NAME/$PLUGIN_NAME"/*/.codex-plugin/migrated-command-skills; do
-    [ -d "$candidate" ] && migrated_dir="$candidate"
-  done
-
-  # Remove the prompts earlier versions of this installer created. Codex no
-  # longer reads them, so they would just be dead files.
-  for link in "$CODEX_PROMPTS_DIR"/*.md; do
-    [ -L "$link" ] || continue
-    case "$(readlink "$link")" in "$PLUGIN_SRC"/commands/*) rm -f "$link" ;; esac
-  done
-
-  if "$PLUGIN_SRC/scripts/gen-codex-command-skills.sh" "$CODEX_SKILLS_DIR" "$migrated_dir" 2>/dev/null; then
-    echo "  ✓ Commands generated as skills"
-  else
-    echo "  ✗ Could not generate command skills."
-  fi
-
-  # Codex cannot load subagents from a plugin, so they are generated as TOML
-  # from the Markdown agent files.
-  if "$PLUGIN_SRC/scripts/gen-codex-agents.sh" "$CODEX_AGENTS_DIR" 2>/dev/null; then
-    echo "  ✓ Agent definitions generated"
-  else
-    echo "  ✗ Could not generate agent definitions."
-  fi
-
-  echo "  • Restart Codex to load the changes."
-fi
-
-if [ -d "$CLAUDE_DESKTOP_CONFIG_DIR" ]; then
-  claude_desktop_detected=true
-  echo "Setting up Claude Desktop integration..."
-  if python3 - "$CLAUDE_DESKTOP_MCP_SRC" "$CLAUDE_DESKTOP_CONFIG" <<'PY'
-import json, os, sys
-
-src_path, config_path = sys.argv[1], sys.argv[2]
-
-def load(path):
-    if not os.path.exists(path):
-        return {}
-    try:
-        with open(path) as f:
-            return json.load(f)
-    except (OSError, ValueError):
-        return {}
-
-def save(path, data):
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    tmp = path + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
-    os.replace(tmp, path)
-
-src = load(src_path)
-config = load(config_path)
-src_servers = src.get("mcpServers", {})
-config.setdefault("mcpServers", {}).update(src_servers)
-save(config_path, config)
-PY
-  then
-    echo "  ✓ MCP servers merged into Claude Desktop config"
-  else
-    echo "  ✗ Could not update Claude Desktop config. Check $CLAUDE_DESKTOP_CONFIG"
-  fi
-  echo "  • Restart Claude Desktop to load the changes."
-fi
-
-# Summary
-
-echo ""
-echo "────────────────────────────────"
-echo "   myagents install summary"
-echo "────────────────────────────────"
-printf " Plugin registered : %s\n" "$( [ "$registered" = true ] && echo "✓ yes" || echo "✗ failed" )"
-printf " Cursor            : %s\n" "$( [ "$cursor_detected" = true ] && echo "✓ detected" || echo "not found" )"
-printf " Claude Code       : %s\n" "$( [ "$claude_detected" = true ] && echo "✓ detected" || echo "not found" )"
-printf " Claude Desktop    : %s\n" "$( [ "$claude_desktop_detected" = true ] && echo "✓ detected" || echo "not found" )"
-printf " Codex             : %s\n" "$( [ "$codex_detected" = true ] && echo "✓ detected" || echo "not found" )"
-echo "────────────────────────────────"
-echo " Rerun this script at any time to update."
-echo ""
-
-if [ "$failed_registry" = true ]; then
+if ! command -v git &>/dev/null; then
+  echo "✗ git is not installed. Install it with: brew install git"
   exit 1
 fi
+
+# The folder is owned by the installer, so it is reset to the latest commit
+# rather than pulled: local edits (such as uv rewriting uv.lock) never block an
+# update. Untracked files, including the agent-memory database, are kept. This
+# also works when the folder exists but is not a clone yet.
+mkdir -p "$MYAGENTS_DIR"
+before="$(git -C "$MYAGENTS_DIR" rev-parse --short HEAD 2>/dev/null || true)"
+if ! { git -C "$MYAGENTS_DIR" init --quiet \
+  && { git -C "$MYAGENTS_DIR" remote set-url origin "$REPO_URL" 2>/dev/null \
+    || git -C "$MYAGENTS_DIR" remote add origin "$REPO_URL"; } \
+  && git -C "$MYAGENTS_DIR" fetch --quiet origin HEAD \
+  && git -C "$MYAGENTS_DIR" reset --quiet --hard FETCH_HEAD; }; then
+  echo "✗ Could not download myagents from $REPO_URL. Check your connection and try again."
+  exit 1
+fi
+after="$(git -C "$MYAGENTS_DIR" rev-parse --short HEAD)"
+
+# shellcheck source=scripts/install-lib.sh
+source "$MYAGENTS_DIR/scripts/install-lib.sh"
+
+section "myagents"
+if [ -z "$before" ]; then
+  ok "Download" "Saved to ~/.myagents (version $after)."
+elif [ "$before" = "$after" ]; then
+  ok "Update" "Already on the latest version ($after)."
+else
+  ok "Update" "Updated from $before to $after."
+fi
+
+found=()
+has_claude_code && found+=("Claude Code")
+has_cursor && found+=("Cursor")
+has_codex && found+=("Codex")
+has_claude_desktop && found+=("Claude Desktop")
+if [ ${#found[@]} -eq 0 ]; then
+  note "Apps" "No supported app found. Install Claude Code, Cursor, Codex, or Claude Desktop, then rerun."
+else
+  joined="$(printf '%s, ' "${found[@]}")"
+  ok "Apps" "Found ${joined%, }."
+fi
+
+installed=()
+failed=()
+for script in "$MYAGENTS_DIR"/plugins/*/install.sh; do
+  [ -f "$script" ] || continue
+  name="$(basename "$(dirname "$script")")"
+  section "$name"
+  if bash "$script"; then
+    installed+=("$name")
+  else
+    failed+=("$name")
+  fi
+done
+
+section "Summary"
+for name in ${installed[@]+"${installed[@]}"}; do
+  ok "$name" "Ready."
+done
+for name in ${failed[@]+"${failed[@]}"}; do
+  fail "$name" "Some steps failed. See the details above, fix them, and rerun."
+done
+printf '\nRerun this command at any time to update.\n\n'
+
+finish
