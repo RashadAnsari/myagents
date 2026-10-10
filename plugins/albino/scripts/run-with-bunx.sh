@@ -8,8 +8,9 @@ fi
 
 log() { printf '[run-with-bunx] %s\n' "$*" >&2; }
 
-# 1. Make sure the standard bun install dir is on PATH.
-export PATH="$HOME/.bun/bin:$PATH"
+# 1. Make sure the standard bun install dirs are on PATH. GUI apps start MCP
+#    servers with a minimal PATH that has neither this nor Homebrew's dirs.
+export PATH="$HOME/.bun/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 # 2. Install bun if still missing. The official installer is a single
 #    curl|bash, drops the binary in ~/.bun/bin, and is idempotent +

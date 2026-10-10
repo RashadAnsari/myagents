@@ -17,7 +17,7 @@ Coding agents start every session from zero. They forget what your team decided 
 
 ## Quick start
 
-macOS, with `git`, `python3`, and `jq` installed:
+On macOS, run this. It installs any missing tools it needs with Homebrew, and installs Homebrew first if you don't have it:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/install.sh | bash
@@ -26,6 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/instal
 ```
 myagents
   ✓ Download        Saved to ~/.myagents (version 65f708b).
+  ✓ Requirements    All installed.
   ✓ Apps            Found Claude Code, Cursor, Codex, Claude Desktop.
 
 albino
@@ -39,9 +40,15 @@ ponytail
   ✓ Codex           Installed. Restart Codex, then run /hooks once to trust its hooks.
   ✓ Cursor          Installed. Start a new chat to load it.
 
+security-audit
+  ✓ Claude Code     Installed. Restart open sessions to load it.
+  ✓ Cursor          Installed. Start a new chat to load it.
+  ✓ Codex           Installed. Restart Codex to load it.
+
 Summary
   ✓ albino          Ready.
   ✓ ponytail        Ready.
+  ✓ security-audit  Ready.
 ```
 
 Then try it in any project:
@@ -59,7 +66,7 @@ To update, run the same install command again.
 
 ## Contents
 
-- [Plugins](#plugins): [albino](#albino), [ponytail](#ponytail)
+- [Plugins](#plugins): [albino](#albino), [ponytail](#ponytail), [security-audit](#security-audit)
 - [Platform support](#platform-support)
 - [Agent memory](#agent-memory)
 - [Installing, updating, and uninstalling](#installing-updating-and-uninstalling)
@@ -156,6 +163,12 @@ Each server installs its own runtime (`bun` or `uv`) on first use.
 
 [ponytail](https://github.com/DietrichGebert/ponytail) by Dietrich Gebert is a third-party plugin that pushes agents toward the shortest solution that works: YAGNI, standard library first, no abstractions nobody asked for. The installer sets it up with each tool's own method and keeps it up to date. Its hooks need `node`.
 
+### security-audit
+
+[security-audit](https://github.com/cloudflare/security-audit-skill) by Cloudflare is the skill that seeded Cloudflare's vulnerability discovery harness. Ask for a security audit and it runs isolated agents through reconnaissance, coverage-led hunting, and validation, where a fresh agent tries to disprove every finding, then writes a report with confirmed findings and open leads. Reports default to `~/security-audit-skill/<repo-name>/`. It complements albino's `security-reviewer`, which gives a quicker single-pass review.
+
+The installer adds it with the [Skills CLI](https://skills.sh), with install telemetry turned off. It needs `node`, and building or running the audited code needs an OS-level sandbox; without one, the skill reports those leads as unconfirmed instead of executing the target.
+
 ---
 
 ## Platform support
@@ -168,6 +181,7 @@ Each server installs its own runtime (`bun` or `uv`) on first use.
 | albino hooks | ✓ | ✓ | ✓ after `/hooks` | |
 | albino MCP servers | ✓ | ✓ | ✓ | ✓ `playwright`, `linkedin` |
 | ponytail | ✓ | ✓ hooks | ✓ after `/hooks` | |
+| security-audit | ✓ | ✓ | ✓ | |
 
 <details>
 <summary>How albino is packaged for each tool</summary>
@@ -209,7 +223,9 @@ Uninstalling keeps your memory unless you pass `--purge`.
 
 ## Installing, updating, and uninstalling
 
-The installer downloads this repository to `~/.myagents`, then runs `plugins/<name>/install.sh` for each plugin. Each plugin installs into whichever tools it finds:
+The installer downloads this repository to `~/.myagents` and makes sure the tools listed in [`requirements.list`](requirements.list) are available: `jq`, `node`, `uv`, and `bun`. It installs only the ones not already on your PATH, with Homebrew, so tools you installed another way are left alone. If something is missing and Homebrew is not installed, it installs Homebrew first, which may ask for your password, and adds Homebrew to your PATH in `~/.zprofile`. `git` and `python3` come with the Xcode Command Line Tools (`xcode-select --install`).
+
+Then it runs `plugins/<name>/install.sh` for each plugin. Each plugin installs into whichever tools it finds:
 
 | Tool | What albino's installer does |
 |------|------------------------------|
@@ -220,7 +236,7 @@ The installer downloads this repository to `~/.myagents`, then runs `plugins/<na
 
 **Updating.** Run the install command again. Every step is safe to repeat: a rerun updates what is there and never duplicates settings, hooks, or links. `~/.myagents` belongs to the installer, so a rerun resets it to the latest version and discards local edits to tracked files. Untracked files, such as the memory database, are kept.
 
-**Uninstalling.** This undoes every install step on every tool, including settings, hooks, MCP servers, and the generated Codex skills and agents, then deletes `~/.myagents`. Your own settings, hooks, skills, and agents are left alone, and so is your agent memory.
+**Uninstalling.** This undoes every install step on every tool, including settings, hooks, MCP servers, and the generated Codex skills and agents, then deletes `~/.myagents`. Your own settings, hooks, skills, and agents are left alone, and so is your agent memory. Homebrew and the tools from `requirements.list` stay installed, since other software may use them; remove them with `brew uninstall` if you no longer need them.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/uninstall.sh | bash
@@ -280,6 +296,7 @@ finish
 | `claude_marketplace_plugin`, `codex_marketplace_plugin` | Install or update a plugin from a git-hosted marketplace |
 | `claude_marketplace_plugin_remove`, `codex_marketplace_plugin_remove` | Remove that plugin and its marketplace, or report "Already removed." |
 | `codex_has_marketplace <name>` | Check whether Codex has a marketplace configured |
+| `skills_cli_skill <repo-url> <skill>`, `skills_cli_skill_remove <skill>` | Install or update a standalone skill with the Skills CLI for Claude Code, Cursor, and Codex, or remove it |
 | `sync_checkout <url> <dir>` | Clone a repository, or reset it to the latest commit |
 | `link_dir <src> <link>` | Create or replace a symlink to a directory |
 | `finish` | Exit non-zero if any step failed |

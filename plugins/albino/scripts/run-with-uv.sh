@@ -8,8 +8,9 @@ fi
 
 log() { printf '[run-with-uv] %s\n' "$*" >&2; }
 
-# 1. Make sure the standard uv install dirs are on PATH.
-export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+# 1. Make sure the standard uv install dirs are on PATH. GUI apps start MCP
+#    servers with a minimal PATH that has neither these nor Homebrew's dirs.
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 # 2. Install uv if still missing. The official installer is a single
 #    curl|sh, drops the binary in ~/.local/bin, and is idempotent +

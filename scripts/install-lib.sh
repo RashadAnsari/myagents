@@ -156,3 +156,95 @@ codex_marketplace_plugin_remove() {
     fail "Codex" "Could not remove $plugin."
   fi
 }
+
+# Skills CLI (https://skills.sh) agent ids for the detected tools, with the label
+# and reload hint each status line uses.
+_skills_cli_agents() {
+  has_claude_code && echo "claude-code|Claude Code|Restart open sessions"
+  has_cursor && echo "cursor|Cursor|Start a new chat"
+  has_codex && echo "codex|Codex|Restart Codex"
+  return 0
+}
+
+# Prints one status line per detected tool: "<verb>." alone, or followed by
+# "<hint> to <action> it." when an action is given.
+_skills_cli_report() {
+  local verb="$1" action="${2:-}" id label hint
+  while IFS='|' read -r id label hint; do
+    [ -z "$id" ] && continue
+    if [ -n "$action" ]; then
+      ok "$label" "$verb. $hint to $action it."
+    else
+      ok "$label" "$verb."
+    fi
+  done < <(_skills_cli_agents)
+}
+
+_skills_cli() {
+  DISABLE_TELEMETRY=1 DO_NOT_TRACK=1 npx -y skills@latest "$@"
+}
+
+# Installs or updates a skill with the Skills CLI for every detected tool. The
+# CLI keeps the skill in ~/.agents/skills, which Cursor and Codex read, and links
+# it into ~/.claude/skills for Claude Code. Rerunning reinstalls the latest
+# version. Install telemetry is turned off.
+skills_cli_skill() {
+  local url="$1" skill="$2" agents=()
+  while IFS='|' read -r id _; do [ -n "$id" ] && agents+=("$id"); done < <(_skills_cli_agents)
+  [ ${#agents[@]} -eq 0 ] && return 0
+  if ! command -v npx &>/dev/null; then
+    fail "Requirements" "node is not installed, so $skill was skipped. Install it with: brew install node"
+  elif quietly _skills_cli add "$url" --skill "$skill" --global --agent "${agents[@]}" -y; then
+    _skills_cli_report "Installed" "load"
+  else
+    fail "Skills" "Could not install $skill."
+  fi
+}
+
+# Removes a skill the Skills CLI installed, from every tool.
+skills_cli_skill_remove() {
+  local skill="$1"
+  if [ ! -e "$HOME/.agents/skills/$skill" ] && [ ! -L "$HOME/.claude/skills/$skill" ]; then
+    _skills_cli_report "Already removed"
+  elif ! command -v npx &>/dev/null; then
+    fail "Requirements" "node is not installed, so $skill could not be removed. Install it with: brew install node"
+  elif quietly _skills_cli remove "$skill" --global -y; then
+    _skills_cli_report "Removed" "unload"
+  else
+    fail "Skills" "Could not remove $skill."
+  fi
+}
+
+_homebrew_bin() {
+  local bin
+  for bin in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+    [ -x "$bin" ] && echo "$bin" && return 0
+  done
+  return 1
+}
+
+# Makes brew available, installing Homebrew first when it is missing (its
+# installer may ask for your password). Also adds Homebrew to PATH for new
+# shells, as its installer asks you to, so the apps find what it installs.
+ensure_homebrew() {
+  command -v brew &>/dev/null && return 0
+  local bin profile line
+  if ! bin="$(_homebrew_bin)"; then
+    note "Homebrew" "Installing Homebrew to install the missing tools. It may ask for your password."
+    if ! /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/tty \
+      || ! bin="$(_homebrew_bin)"; then
+      fail "Homebrew" "Could not install Homebrew. Install it from https://brew.sh, then rerun."
+      return 1
+    fi
+    ok "Homebrew" "Installed."
+  fi
+  eval "$("$bin" shellenv)"
+
+  profile="$HOME/.zprofile"
+  [ "$(basename "${SHELL:-zsh}")" = "bash" ] && profile="$HOME/.bash_profile"
+  line="eval \"\$($bin shellenv)\""
+  if ! grep -qF "$line" "$profile" 2>/dev/null; then
+    printf '\n%s\n' "$line" >>"$profile"
+    ok "Homebrew" "Added to PATH in ~/${profile##*/}."
+  fi
+}

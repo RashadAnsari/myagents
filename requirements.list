@@ -1,0 +1,11 @@
+# Commands the myagents plugins need, with the Homebrew formula that provides
+# each one. install.sh installs a formula only when its command is not already
+# on PATH, so tools you installed another way are left alone. git and python3
+# come with the Xcode Command Line Tools.
+#
+# command  formula  needed by
+
+jq         jq       # albino hooks
+node       node     # ponytail hooks, security-audit, and the Skills CLI
+uv         uv       # albino MCP servers: agent-memory, markitdown, linkedin
+bun        bun      # albino playwright MCP server

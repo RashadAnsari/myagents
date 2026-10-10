@@ -11,8 +11,9 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 1
 fi
 
+# git and python3 come with the Xcode Command Line Tools.
 if ! command -v git &>/dev/null; then
-  echo "✗ git is not installed. Install it with: brew install git"
+  echo "✗ git is not installed. Install it with: xcode-select --install"
   exit 1
 fi
 
@@ -42,6 +43,33 @@ elif [ "$before" = "$after" ]; then
   ok "Update" "Already on the latest version ($after)."
 else
   ok "Update" "Updated from $before to $after."
+fi
+
+# Installs, with Homebrew, each command in requirements.list that is not already
+# on PATH. Homebrew itself is installed only when something is missing.
+find_missing() {
+  missing=()
+  while read -r command formula _; do
+    case "$command" in "" | \#*) continue ;; esac
+    command -v "$command" &>/dev/null || missing+=("$formula")
+  done <"$MYAGENTS_DIR/requirements.list"
+}
+
+find_missing
+# Putting Homebrew on PATH can reveal tools it already installed.
+[ ${#missing[@]} -gt 0 ] && { ensure_homebrew || true; find_missing; }
+
+if [ ${#missing[@]} -eq 0 ]; then
+  ok "Requirements" "All installed."
+else
+  formulas="$(printf '%s, ' "${missing[@]}")"
+  if ! command -v brew &>/dev/null; then
+    fail "Requirements" "Could not install ${formulas%, }, because Homebrew is not available."
+  elif quietly brew install "${missing[@]}"; then
+    ok "Requirements" "Installed ${formulas%, } with Homebrew."
+  else
+    fail "Requirements" "Could not install ${formulas%, }. Plugins that need them may fail below."
+  fi
 fi
 
 found=()
