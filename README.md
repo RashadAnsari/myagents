@@ -1,50 +1,249 @@
 # myagents
 
-Personal plugin marketplace for Claude Code, Cursor, Codex, and Claude Desktop. Brings Rashad's workflows, review agents, and development conventions to any project.
+[![Build](https://github.com/RashadAnsari/myagents/actions/workflows/build.yml/badge.svg)](https://github.com/RashadAnsari/myagents/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Platforms](https://img.shields.io/badge/works%20with-Claude%20Code%20%7C%20Cursor%20%7C%20Codex%20%7C%20Claude%20Desktop-555)
+
+**One command to give every AI coding agent you use the same memory, reviewers, and working rules.**
+
+Coding agents start every session from zero. They forget what your team decided last week, skip the conventions in `AGENTS.md`, guess at library versions, and review code in one generic pass. myagents fixes that across Claude Code, Cursor, Codex, and Claude Desktop at once:
+
+- **Memory that persists.** Agents look up project decisions and your preferences before they start, and save new ones when they finish. Memory follows the repository across clones and machines.
+- **14 specialist reviewers.** Security, performance, architecture, tests, accessibility, database, dead code, and more. Run all of them in parallel, pick one, or point them at a GitHub pull request.
+- **Rules that stay on.** Research before guessing, the simplest change that works, no filler in answers. Hooks load them at the start of every session and repeat them on every prompt, so they hold up in long conversations.
+- **One install, four tools.** The installer finds the tools you have and sets up each one the way that tool expects. Rerun it to update.
 
 ---
 
-## Install
+## Quick start
+
+macOS, with `git`, `python3`, and `jq` installed:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/install.sh | bash
 ```
 
-The installer downloads the repo to `~/.myagents`, then runs `plugins/<name>/install.sh` for every plugin folder that has one. It installs each plugin into whichever of Claude Code, Cursor, Codex, and Claude Desktop it finds, and ends with a summary of what is ready and what failed.
+```
+myagents
+  ✓ Download        Saved to ~/.myagents (version 65f708b).
+  ✓ Apps            Found Claude Code, Cursor, Codex, Claude Desktop.
 
-Rerun the same command to update. Every step is safe to repeat: a rerun updates what is there and never duplicates settings, hooks, or links. `~/.myagents` is managed by the installer, so a rerun resets it to the latest version and discards local edits to tracked files. Untracked files, such as the agent-memory database, are kept.
+albino
+  ✓ Claude Code     Installed. Restart open sessions to load it.
+  ✓ Cursor          Installed. Run 'Developer: Reload Window' to load it.
+  ✓ Codex           Installed. Restart Codex, then run /hooks once to trust its hooks.
+  ✓ Claude Desktop  MCP servers added. Restart Claude Desktop to load them.
 
-`albino` installs for whichever platforms are detected:
+ponytail
+  ✓ Claude Code     Installed. Restart open sessions to load it.
+  ✓ Codex           Installed. Restart Codex, then run /hooks once to trust its hooks.
+  ✓ Cursor          Installed. Start a new chat to load it.
 
-- **Claude Code**: registers the marketplace and installs the plugin
-- **Cursor**: symlinks the plugin to `~/.cursor/plugins/local/albino`
-- **Codex**: adds the marketplace and installs the plugin with `codex plugin add`, then generates command skills into `~/.codex/skills/` and agent definitions into `~/.codex/agents/`. Run `/hooks` once in Codex to trust the plugin's hooks
-- **Claude Desktop**: merges MCP servers into `claude_desktop_config.json`
+Summary
+  ✓ albino          Ready.
+  ✓ ponytail        Ready.
+```
 
-Restart your editor after install.
+Then try it in any project:
 
-## Uninstall
+```
+/reviewcrew                       # every reviewer in parallel, report in REVIEW_REPORT.md
+/audit security src/api           # one reviewer, one folder
+/pr-review https://github.com/org/repo/pull/42
+/remember we deploy from the release branch, never from master
+```
+
+To update, run the same install command again.
+
+---
+
+## Contents
+
+- [Plugins](#plugins): [albino](#albino), [ponytail](#ponytail)
+- [Platform support](#platform-support)
+- [Agent memory](#agent-memory)
+- [Installing, updating, and uninstalling](#installing-updating-and-uninstalling)
+- [Adding a plugin](#adding-a-plugin)
+- [License](#license)
+
+---
+
+## Plugins
+
+### albino
+
+The main plugin: commands, review agents, skills, MCP servers, and hooks.
+
+#### Commands
+
+| Command | What it does |
+|---------|--------------|
+| `/reviewcrew` | Runs every review agent in parallel and writes a consolidated `REVIEW_REPORT.md` |
+| `/reportloop` | Walks through `REVIEW_REPORT.md` one issue at a time, by severity: explains it, then fixes or skips it |
+| `/audit [reviewer] [path]` | Runs one reviewer of your choice, optionally on one path, and prints its findings |
+| `/pr-review <url>` | Reviews a GitHub pull request: picks the reviewers that fit the changed files, loads memory, checks ripple effects, lets you choose which findings to post, and submits the review with `gh` |
+| `/commit` | Stages all changes and writes a commit message in the project's existing style |
+| `/commit-pr` | Commits and opens a pull request, creating a branch first when you are on `main` or `master` |
+| `/remember <what>` | Saves something to project or user memory, or this session's learnings when given nothing |
+| `/forget <what>` | Finds and removes matching entries from project and user memory |
+| `/enrich` | Mines the 100 most recently merged pull requests for decisions, conventions, and gotchas, and saves them to project memory |
+| `/statusline` | Sets the Claude Code status line: folder, git branch and dirty state, model, context usage, and time |
+
+On Codex, commands become skills (`albino:source-command-<name>` or `albino-command-<name>`). Ask for them by name instead of with a slash.
+
+#### Review agents
+
+Used by `/reviewcrew`, `/audit`, and `/pr-review`, or on their own.
+
+| Agent | Looks for |
+|-------|-----------|
+| `security-reviewer` | Injection, XSS, auth flaws, SSRF, JWT misuse, and supply chain risk |
+| `code-reviewer` | Correctness, anti-patterns, concurrency, and memory bugs |
+| `architecture-reviewer` | Structure, coupling, cohesion, SOLID, and duplication |
+| `performance-reviewer` | Bottlenecks, complexity, slow queries, caching, and scalability |
+| `test-reviewer` | Coverage gaps, weak assertions, flaky tests, and over-mocking |
+| `logging-reviewer` | Logging and monitoring gaps, audit trails, and sensitive data in logs |
+| `dependency-reviewer` | Vulnerable, outdated, and unused packages |
+| `docs-reviewer` | Documentation that is wrong, missing, or stale |
+| `agents-md-reviewer` | Code that breaks the rules in `AGENTS.md` |
+| `accessibility-reviewer` | WCAG, ARIA, keyboard navigation, and screen reader support |
+| `api-design-reviewer` | REST and GraphQL naming, HTTP semantics, versioning, error shape, and compatibility |
+| `database-reviewer` | Schema design, migration safety, indexes, constraints, and query patterns |
+| `i18n-reviewer` | Hardcoded strings, date and number formatting, plurals, RTL, and locale handling |
+| `unused-code-reviewer` | Dead code, tests, CI jobs, infrastructure, config, docs, and assets across the whole repository |
+
+#### Skills
+
+Three skills are always on. The session-start hook tells the agent to load each one in full before its first answer.
+
+| Skill | What it enforces |
+|-------|------------------|
+| `dev-conventions` | Think before coding, the simplest change that works, no duplication, surgical edits, and checkable success criteria |
+| `research-first` | Read the docs and source before answering, and use the latest stable version of every dependency |
+| `agent-memory` | Search memory before non-trivial work, and save durable learnings after it |
+
+The rest load when a task calls for them:
+
+| Skill | Use it for |
+|-------|------------|
+| `frontend-design` | Distinctive, production-grade interfaces that avoid the generic AI look |
+| `humanizer` | Removing the signs of AI-generated writing from text |
+| `markitdown` | Converting PDFs, Office files, images, audio, and URLs to Markdown |
+| `plugin-authoring` | Writing skills, commands, and agents that trigger reliably and use few tokens |
+| `eu-ai-act` | EU AI Act risk tiers, obligations, deadlines, and penalties |
+
+#### MCP servers
+
+| Server | What it adds |
+|--------|--------------|
+| `agent-memory` | Project and user memory with semantic search. Rejects vague, duplicate, and secret-containing entries. See [Agent memory](#agent-memory) |
+| `playwright` | Browser automation: navigate, click, fill forms, take screenshots, and inspect the page. Set `PLAYWRIGHT_MCP_EXTENSION_TOKEN` to drive your real browser through the Playwright Chrome extension |
+| `markitdown` | Converts PDF, Word, PowerPoint, Excel, HTML, images (OCR), audio (transcription), EPUB, and YouTube URLs to Markdown |
+
+Claude Desktop gets `playwright` plus `linkedin`, which reads LinkedIn profiles, companies, and job posts through your own browser session via [`mcp-server-linkedin`](https://github.com/stickerdaniel/linkedin-mcp-server). It needs no API key: a login window opens the first time a tool needs it.
+
+Each server installs its own runtime (`bun` or `uv`) on first use.
+
+#### Hooks
+
+| Hook | Runs | What it does |
+|------|------|--------------|
+| `session-start` | Start of every session | Loads the mandatory skills, the memory rules, and the communication rules: answer first, be precise, no filler |
+| `user-prompt-submit` | Every prompt | Repeats a one-line reminder of those rules, since session-start context fades in long conversations |
+| `stop` | End of every turn | Asks the agent whether it learned anything durable and, if so, to save it before finishing |
+
+### ponytail
+
+[ponytail](https://github.com/DietrichGebert/ponytail) by Dietrich Gebert is a third-party plugin that pushes agents toward the shortest solution that works: YAGNI, standard library first, no abstractions nobody asked for. The installer sets it up with each tool's own method and keeps it up to date. Its hooks need `node`.
+
+---
+
+## Platform support
+
+| | Claude Code | Cursor | Codex | Claude Desktop |
+|---|:---:|:---:|:---:|:---:|
+| albino commands | ✓ | ✓ | ✓ as skills | |
+| albino review agents | ✓ | ✓ | ✓ | |
+| albino skills | ✓ | ✓ | ✓ | |
+| albino hooks | ✓ | ✓ | ✓ after `/hooks` | |
+| albino MCP servers | ✓ | ✓ | ✓ | ✓ `playwright`, `linkedin` |
+| ponytail | ✓ | ✓ hooks | ✓ after `/hooks` | |
+
+<details>
+<summary>How albino is packaged for each tool</summary>
+
+Every tool reads the same source files. Only the packaging differs.
+
+| Component | Claude Code | Cursor | Codex |
+|-----------|-------------|--------|-------|
+| Manifest | `.claude-plugin/plugin.json` | `.cursor-plugin/plugin.json` | `.codex-plugin/plugin.json` |
+| Marketplace | `.claude-plugin/marketplace.json` | `.cursor-plugin/marketplace.json` | `.agents/plugins/marketplace.json` |
+| Skills | plugin `skills/` | plugin `skills/` | plugin `skills/` |
+| MCP servers | `.mcp.json` | `.mcp.json` | `.mcp.json` |
+| Hooks | manifest `hooks` block | manifest `hooks` block | manifest `hooks` block |
+| Commands | plugin `commands/` | plugin `commands/` | plugin `commands/`, or generated into `$CODEX_HOME/skills/` where Codex skips one |
+| Agents | plugin `agents/` | plugin `agents/` | generated into `$CODEX_HOME/agents/` as TOML |
+
+Two things differ on Codex:
+
+- **Commands become skills.** Codex converts a plugin's commands itself but skips any that use `$ARGUMENTS`, use inline shell expansion, or exceed roughly 3.8 KB. The installer generates those into `$CODEX_HOME/skills/` as `albino-command-<name>`, with `$ARGUMENTS` replaced by an instruction to take the subject from the request. `allowed-tools` is ignored.
+- **Agents are generated as TOML** by `plugins/albino/scripts/gen-codex-agents.sh`. The Markdown files stay the source of truth, and `readonly: true` becomes `sandbox_mode = "read-only"`.
+
+Cursor drops the context a `sessionStart` hook returns, so the same text reaches Cursor through the always-applied rule `plugins/albino/rules/session-start.mdc`.
+
+</details>
+
+---
+
+## Agent memory
+
+Memory lives in one SQLite database at `~/.myagents/agent-memory/memory.sqlite`, outside every repository. Set `AGENT_MEMORY_DIR` to move it.
+
+- **Project memory** is tied to the repository's `origin` remote, so it follows the repo across clones and machines. Repositories without a remote fall back to their local path.
+- **User memory** holds your preferences and applies to every project.
+- `project_search` with `all_projects: true` searches every project at once, and each result says which repository it came from.
+
+Uninstalling keeps your memory unless you pass `--purge`.
+
+---
+
+## Installing, updating, and uninstalling
+
+The installer downloads this repository to `~/.myagents`, then runs `plugins/<name>/install.sh` for each plugin. Each plugin installs into whichever tools it finds:
+
+| Tool | What albino's installer does |
+|------|------------------------------|
+| Claude Code | Registers the `myagents` marketplace and enables the plugin |
+| Cursor | Links the plugin into `~/.cursor/plugins/local/albino` |
+| Codex | Adds the marketplace, installs the plugin, and generates command skills and agents. Run `/hooks` once in Codex to trust the hooks |
+| Claude Desktop | Adds the MCP servers to `claude_desktop_config.json` |
+
+**Updating.** Run the install command again. Every step is safe to repeat: a rerun updates what is there and never duplicates settings, hooks, or links. `~/.myagents` belongs to the installer, so a rerun resets it to the latest version and discards local edits to tracked files. Untracked files, such as the memory database, are kept.
+
+**Uninstalling.** This undoes every install step on every tool, including settings, hooks, MCP servers, and the generated Codex skills and agents, then deletes `~/.myagents`. Your own settings, hooks, skills, and agents are left alone, and so is your agent memory.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/uninstall.sh | bash
 ```
 
-Runs `plugins/<name>/uninstall.sh` for every plugin, which undoes each install step on every platform, including the settings, hooks, MCP servers, and generated Codex skills and agents. Then it deletes `~/.myagents`. Your own settings, hooks, skills, and agents are left alone. Your agent memory in `~/.myagents/agent-memory` is kept; to delete it too, add `--purge`:
+Add `--purge` to delete your agent memory too:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/uninstall.sh | bash -s -- --purge
 ```
 
-Rerunning is safe: steps with nothing left to undo report "Already removed." If a step fails, `~/.myagents` is kept so you can fix the problem and rerun.
+Rerunning the uninstaller is safe: steps with nothing left to undo report "Already removed." If a step fails, `~/.myagents` is kept so you can fix the problem and rerun.
 
-## Adding a plugin to the installer
+---
 
-Create `plugins/<name>/install.sh` and `plugins/<name>/uninstall.sh`. The root scripts run them with `bash` and export `MYAGENTS_DIR` (the checkout path) and `MYAGENTS_MARKETPLACE` (`myagents`). The folder can hold a full plugin from this repo, or only the two scripts for a third-party plugin.
+## Adding a plugin
 
-Source `scripts/install-lib.sh` and use its helpers, so both scripts are safe to rerun and their messages match the other plugins. A third-party plugin published as Claude Code and Codex marketplaces needs only this:
+Each folder in `plugins/` holds either a full plugin or just the scripts that install a third-party one. Add `plugins/<name>/install.sh` and `plugins/<name>/uninstall.sh`, and the root scripts pick them up. They run with `bash`, with `MYAGENTS_DIR` (the checkout path) and `MYAGENTS_MARKETPLACE` (`myagents`) exported.
+
+Source `scripts/install-lib.sh` so both scripts are safe to rerun and print the same messages as the other plugins. A third-party plugin published as Claude Code and Codex marketplaces needs only this:
 
 ```bash
-# install.sh
+# plugins/<name>/install.sh
 #!/usr/bin/env bash
 set -euo pipefail
 source "$MYAGENTS_DIR/scripts/install-lib.sh"
@@ -58,7 +257,7 @@ finish
 ```
 
 ```bash
-# uninstall.sh
+# plugins/<name>/uninstall.sh
 #!/usr/bin/env bash
 set -euo pipefail
 source "$MYAGENTS_DIR/scripts/install-lib.sh"
@@ -69,167 +268,28 @@ has_codex && codex_marketplace_plugin_remove <marketplace> <plugin>
 finish
 ```
 
+<details>
+<summary>Helpers in <code>scripts/install-lib.sh</code></summary>
+
 | Helper | Purpose |
 |--------|---------|
-| `has_claude_code`, `has_cursor`, `has_codex`, `has_claude_desktop` | Platform detection |
-| `ok`, `note`, `fail` | One status line per platform; `fail` also shows the failed command's last output lines |
-| `quietly <cmd>` | Runs a command with its output hidden unless it fails; on success the output is in `$quiet_output` |
-| `need <tool> [brew formula]` | Stops the plugin with an install hint when a tool is missing |
+| `has_claude_code`, `has_cursor`, `has_codex`, `has_claude_desktop` | Detect a tool |
+| `section`, `ok`, `note`, `fail` | Print a heading or one status line; `fail` also shows the failed command's last output lines |
+| `quietly <cmd>` | Run a command with its output hidden unless it fails; on success the output is in `$quiet_output` |
+| `need <tool> [brew formula]` | Stop the plugin with an install hint when a tool is missing |
 | `claude_marketplace_plugin`, `codex_marketplace_plugin` | Install or update a plugin from a git-hosted marketplace |
 | `claude_marketplace_plugin_remove`, `codex_marketplace_plugin_remove` | Remove that plugin and its marketplace, or report "Already removed." |
 | `codex_has_marketplace <name>` | Check whether Codex has a marketplace configured |
-| `sync_checkout <url> <dir>` | Clone a repo, or reset it to the latest commit |
+| `sync_checkout <url> <dir>` | Clone a repository, or reset it to the latest commit |
 | `link_dir <src> <link>` | Create or replace a symlink to a directory |
 | `finish` | Exit non-zero if any step failed |
 
----
+</details>
 
-## Contents
-
-- [Plugins](#plugins)
-  - [Commands](#commands)
-  - [Agents](#agents)
-  - [Skills](#skills)
-  - [MCP Servers](#mcp-servers)
-  - [Hooks](#hooks)
-  - [ponytail](#ponytail)
-- [Platform Support](#platform-support)
-- [Claude Desktop](#claude-desktop)
-- [Repository Rules](#repository-rules)
+Repository rules for contributors and agents are in [`AGENTS.md`](AGENTS.md). Run `make local` before opening a pull request.
 
 ---
 
-## Plugins
+## License
 
-### albino
-
-Personal productivity plugin for Claude Code, Cursor, and Codex.
-
-#### Commands
-
-Slash commands available in Claude Code and Cursor sessions. Codex does not load custom prompts, so the same files reach it as skills instead, named `albino:source-command-<name>` or `albino-command-<name>`. Ask for them by name rather than with a slash. See [Platform Support](#platform-support).
-
-| Command | Description |
-|---------|-------------|
-| `/reviewcrew` | Full codebase audit: runs all review agents in parallel and writes `REVIEW_REPORT.md` |
-| `/audit [reviewer] [path]` | Run a single specialist reviewer of your choice against the codebase, optionally scoped to a path, and get its findings in the terminal |
-| `/reportloop` | Walk through every issue in `REVIEW_REPORT.md` interactively: explain, fix, or skip one by one |
-| `/statusline` | Configure the Claude Code statusline: shows current directory, git branch and dirty state, model, context usage, and time (Claude Code only) |
-| `/commit` | Stage all changes and create a git commit with an appropriate message |
-| `/commit-pr` | Stage all changes, commit, and open a pull request. Creates a new branch first if currently on main or master |
-| `/pr-review <url>` | Review a GitHub pull request: selects relevant reviewers, loads project and user memory, hunts for ripple effects, humanizes findings, then asks which to post before submitting via `gh` |
-| `/remember <what>` | Save something to agent memory: classifies the input (or current session learnings if omitted) as project or user memory and stores it via the agent-memory MCP server |
-| `/forget <what>` | Remove something from agent memory: searches both project and user memory and immediately soft-deletes all matching entries |
-| `/enrich` | Enrich project memory by mining the 100 most recently merged PRs: spawns parallel extractor agents to pull decisions, conventions, gotchas, and architectural facts from PR bodies, review comments, and discussions, then writes durable learnings to project memory |
-
-#### Agents
-
-Specialist review agents spawned in parallel by `/reviewcrew`, also available individually.
-
-| Agent | Covers |
-|-------|--------|
-| `security-reviewer` | Injection, XSS, auth, SSRF, JWT, and supply chain vulnerabilities |
-| `code-reviewer` | Correctness, style, anti-patterns, performance, memory, and concurrency |
-| `architecture-reviewer` | Structure, coupling, cohesion, SOLID, duplication, and observability |
-| `performance-reviewer` | Bottlenecks, complexity, queries, caching, and scalability |
-| `test-reviewer` | Coverage, assertion quality, flakiness, mocking, and test data |
-| `logging-reviewer` | Logging gaps, audit trail, monitoring, and sensitive data in logs |
-| `dependency-reviewer` | Vulnerable, outdated, and unused packages plus supply chain risk |
-| `docs-reviewer` | Documentation accuracy, completeness, and staleness |
-| `agents-md-reviewer` | Codebase compliance with `AGENTS.md` rules |
-| `accessibility-reviewer` | WCAG compliance, ARIA usage, keyboard navigation, and screen reader support |
-| `api-design-reviewer` | REST/GraphQL naming, HTTP semantics, versioning, error shape, and backward compatibility |
-| `database-reviewer` | Schema design, migration safety, indexing strategy, constraints, and query patterns |
-| `i18n-reviewer` | Hardcoded strings, date/number formatting, pluralization, RTL layout, and locale handling |
-| `unused-code-reviewer` | Unused and dead artifacts across the whole repository: code, tests, CI, infrastructure, containers, scripts, schema, config, docs, and assets |
-
-#### Skills
-
-Behavioral guidelines injected into agent prompts.
-
-**Mandatory** (always active; the `session-start` hook for both Claude Code and Cursor instructs the agent to load each one in full before its first response, not just apply the one-line summary):
-
-| Skill | Description |
-|-------|-------------|
-| `dev-conventions` | Development conventions: think before coding, simplicity first, duplication and extraction discipline, surgical changes, localization, UI, validation, data alignment, goal-driven execution |
-| `research-first` | Research docs and source before answering or implementing anything non-trivial, including always looking up the latest stable version of any dependency |
-| `agent-memory` | Retrieves relevant project and user memory before non-trivial work and stores durable learnings after |
-
-**Opt-in** (activate manually as needed):
-
-| Skill | Description |
-|-------|-------------|
-| `humanizer` | Removes signs of AI-generated writing from text |
-| `frontend-design` | Creates distinctive, production-grade frontend interfaces: avoids generic AI aesthetics |
-| `markitdown` | Converts files, URLs, and documents to Markdown using the markitdown MCP server |
-| `plugin-authoring` | Best practices for writing skills, commands, and agents: descriptions, structure, token efficiency, frontmatter, and tool scoping |
-| `eu-ai-act` | Reference knowledge on the EU AI Act: risk tiers, obligations, compliance deadlines, penalties, and scope assessment |
-
-#### MCP Servers
-
-| Server | Description |
-|--------|-------------|
-| `agent-memory` | Stores and retrieves durable project knowledge and user preferences across sessions using semantic search. Rejects vague, duplicate, or secret-containing entries. |
-| `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Auto-installs bun if not present. If `PLAYWRIGHT_MCP_EXTENSION_TOKEN` is exported, starts with `--extension` to drive your real browser through the Playwright Chrome extension. |
-| `markitdown` | Converts files, URLs, and documents to Markdown. Supports PDF, Word, PowerPoint, Excel, HTML, CSV, JSON, XML, ZIP, images (OCR), audio (transcription), EPubs, and YouTube URLs. Runs via `uv tool run markitdown-mcp`; auto-installs uv on first use. |
-
-Project memory is stored outside git at `~/.myagents/agent-memory/memory.sqlite` by default. User memory is stored in the same database. Set `AGENT_MEMORY_DIR` to override. Project memories are scoped to the repository identity (a fingerprint of the normalized `origin` remote URL, so they follow the repo across clones and machines; the local root path is the fallback for repos without a remote). User memories are global across all projects. `project_search` accepts `all_projects: true` to search every known project's memories at once, with each result carrying `project_name` and `project_root` provenance.
-
-#### Hooks
-
-| Hook | Event | Platforms | Description |
-|------|-------|-----------|-------------|
-| `session-start` | `SessionStart` / `sessionStart` | Claude Code, Cursor, Codex | Injects mandatory skills, memory read/write rules, communication rules (answer first, be precise, keep it short, no AI slop), and session bootstrap at the start of every session |
-| `user-prompt-submit` | `UserPromptSubmit` | Claude Code, Codex | Re-injects a one-line reminder on every prompt (search memory first, apply `AGENTS.md` and mandatory skills, store durable learnings, answer first and keep it short and precise), since session-start context decays over long conversations. Cursor gets the same effect via the always-applied `session-start` rule instead |
-| `stop` | `Stop` / `stop` | Claude Code, Cursor, Codex | Checks at the end of every turn whether durable learnings (decisions, preferences, gotchas, conventions) were stored to agent memory before the agent finishes; when there is nothing to store the agent answers only "Nothing durable learned." |
-
-### ponytail
-
-Third-party plugin from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) that pushes agents toward the simplest working solution (YAGNI, stdlib first). `plugins/ponytail/install.sh` installs it with each platform's own method, and updates it on rerun:
-
-- **Claude Code**: `claude plugin marketplace add` and `claude plugin install ponytail@ponytail`
-- **Codex**: `codex plugin marketplace add` and `codex plugin add ponytail@ponytail`. Run `/hooks` once in Codex to trust its hooks
-- **Cursor**: clones the repo to `plugins/ponytail/checkout/` and runs its `scripts/cursor-hooks.js install`, which adds two hooks to `~/.cursor/hooks.json`
-
-Its hooks need `node` on the PATH.
-
----
-
-## Platform Support
-
-This section covers albino. Every platform reads the same source files. Only the packaging around them differs.
-
-| Component | Claude Code | Cursor | Codex |
-|-----------|-------------|--------|-------|
-| Manifest | `.claude-plugin/plugin.json` | `.cursor-plugin/plugin.json` | `.codex-plugin/plugin.json` |
-| Marketplace | `.claude-plugin/marketplace.json` | `.cursor-plugin/marketplace.json` | `.agents/plugins/marketplace.json` |
-| Skills | plugin `skills/` | plugin `skills/` | plugin `skills/` |
-| MCP servers | `.mcp.json` | `.mcp.json` | `.mcp.json` |
-| Hooks | manifest `hooks` block | manifest `hooks` block | manifest `hooks` block |
-| Commands | plugin `commands/` | plugin `commands/` | plugin `commands/`, or generated into `$CODEX_HOME/skills/` where Codex skips one |
-| Agents | plugin `agents/` | plugin `agents/` | generated into `$CODEX_HOME/agents/` as TOML |
-| Repository rules | `AGENTS.md` | `AGENTS.md` | `AGENTS.md` |
-
-Two things work differently on Codex:
-
-- **Commands** become skills. Codex converts a plugin's commands itself, but skips any that use `$ARGUMENTS`, use Claude Code inline shell expansion, or exceed roughly 3.8 KB, so `plugins/albino/install.sh` generates those into `$CODEX_HOME/skills/` as `albino-command-<name>`. Skills take no arguments, so `$ARGUMENTS` becomes an instruction to take the subject from the request. `allowed-tools` is ignored, and the commands that spawn reviewers (`/reviewcrew`, `/audit`, `/pr-review`, `/enrich`) depend on the generated agent definitions being present.
-- **Agents** are projected to TOML by `plugins/albino/scripts/gen-codex-agents.sh`. The Markdown files stay the source of truth, and `readonly: true` becomes `sandbox_mode = "read-only"`. Rerun the script, or the installer, after editing an agent.
-
----
-
-## Claude Desktop
-
-`plugins/albino/install.sh` detects Claude Desktop automatically and merges the MCP servers from `plugins/albino/.claude-desktop/mcp.json` into `claude_desktop_config.json`. Restart Claude Desktop after running it.
-
-### MCP Servers
-
-| Server | Description |
-|--------|-------------|
-| `playwright` | Browser automation via `@playwright/mcp`: navigate, click, fill forms, take screenshots, and inspect the DOM. Runs via `run-with-bunx.sh`; auto-installs `bun` on first use. If `PLAYWRIGHT_MCP_EXTENSION_TOKEN` is set in the app's environment, starts with `--extension` to drive your real browser through the Playwright Chrome extension. |
-| `linkedin` | Access LinkedIn profiles, companies, and job postings through your own browser session via [`mcp-server-linkedin`](https://github.com/stickerdaniel/linkedin-mcp-server). No API keys: a LinkedIn login window opens on the first tool call that needs authentication (or run `uvx mcp-server-linkedin@latest --login` once). Runs via `run-with-uv.sh` with the upstream-recommended `@latest` tag; auto-installs `uv` on first use. |
-
----
-
-## Repository Rules
-
-See `AGENTS.md` for agent and convention rules that apply to this repository.
+[MIT](LICENSE) © Rashad Ansari
