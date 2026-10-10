@@ -2,16 +2,16 @@
 
 [![Build](https://github.com/RashadAnsari/myagents/actions/workflows/build.yml/badge.svg)](https://github.com/RashadAnsari/myagents/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Platforms](https://img.shields.io/badge/works%20with-Claude%20Code%20%7C%20Cursor%20%7C%20Codex%20%7C%20Claude%20Desktop-555)
+![Platforms](https://img.shields.io/badge/works%20with-Claude%20Code%20%7C%20Cursor%20%7C%20Codex-555)
 
 **One command to give every AI coding agent you use the same memory, reviewers, and working rules.**
 
-Coding agents start every session from zero. They forget what your team decided last week, skip the conventions in `AGENTS.md`, guess at library versions, and review code in one generic pass. myagents fixes that across Claude Code, Cursor, Codex, and Claude Desktop at once:
+Coding agents start every session from zero. They forget what your team decided last week, skip the conventions in `AGENTS.md`, guess at library versions, and review code in one generic pass. myagents fixes that across Claude Code, Cursor, and Codex at once:
 
 - **Memory that persists.** Agents look up project decisions and your preferences before they start, and save new ones when they finish. Memory follows the repository across clones and machines.
 - **14 specialist reviewers.** Security, performance, architecture, tests, accessibility, database, dead code, and more. Run all of them in parallel, pick one, or point them at a GitHub pull request.
 - **Rules that stay on.** Research before guessing, the simplest change that works, no filler in answers. Hooks load them at the start of every session and repeat them on every prompt, so they hold up in long conversations.
-- **One install, four tools.** The installer finds the tools you have and sets up each one the way that tool expects. Rerun it to update.
+- **One install, three tools.** The installer finds the tools you have and sets up each one the way that tool expects. Rerun it to update.
 
 ---
 
@@ -27,13 +27,12 @@ curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/instal
 myagents
   ✓ Download        Saved to ~/.myagents (version 65f708b).
   ✓ Requirements    All installed.
-  ✓ Apps            Found Claude Code, Cursor, Codex, Claude Desktop.
+  ✓ Apps            Found Claude Code, Cursor, Codex.
 
 albino
   ✓ Claude Code     Installed. Restart open sessions to load it.
   ✓ Cursor          Installed. Run 'Developer: Reload Window' to load it.
   ✓ Codex           Installed. Restart Codex, then run /hooks once to trust its hooks.
-  ✓ Claude Desktop  MCP servers added. Restart Claude Desktop to load them.
 
 context7
   ✓ Claude Code     Installed. Restart open sessions, then run /mcp once to sign in to Context7.
@@ -159,8 +158,6 @@ The rest load when a task calls for them:
 | `playwright` | Browser automation: navigate, click, fill forms, take screenshots, and inspect the page. Set `PLAYWRIGHT_MCP_EXTENSION_TOKEN` to drive your real browser through the Playwright Chrome extension |
 | `markitdown` | Converts PDF, Word, PowerPoint, Excel, HTML, images (OCR), audio (transcription), EPUB, and YouTube URLs to Markdown |
 
-Claude Desktop gets `playwright` plus `linkedin`, which reads LinkedIn profiles, companies, and job posts through your own browser session via [`mcp-server-linkedin`](https://github.com/stickerdaniel/linkedin-mcp-server). It needs no API key: a login window opens the first time a tool needs it.
-
 Each server installs its own runtime (`bun` or `uv`) on first use.
 
 #### Hooks
@@ -197,17 +194,17 @@ It ships seven skills: `ui-ux-pro-max`, `design`, `design-system`, `ui-styling` 
 
 ## Platform support
 
-| | Claude Code | Cursor | Codex | Claude Desktop |
-|---|:---:|:---:|:---:|:---:|
-| albino commands | ✓ | ✓ | ✓ as skills | |
-| albino review agents | ✓ | ✓ | ✓ | |
-| albino skills | ✓ | ✓ | ✓ | |
-| albino hooks | ✓ | ✓ | ✓ after `/hooks` | |
-| albino MCP servers | ✓ | ✓ | ✓ | ✓ `playwright`, `linkedin` |
-| ponytail | ✓ | ✓ hooks | ✓ after `/hooks` | |
-| security-audit | ✓ | ✓ | ✓ | |
-| context7 | ✓ | ✓ | ✓ | |
-| ui-ux-pro-max | ✓ | ✓ | ✓ | |
+| | Claude Code | Cursor | Codex |
+|---|:---:|:---:|:---:|
+| albino commands | ✓ | ✓ | ✓ as skills |
+| albino review agents | ✓ | ✓ | ✓ |
+| albino skills | ✓ | ✓ | ✓ |
+| albino hooks | ✓ | ✓ | ✓ after `/hooks` |
+| albino MCP servers | ✓ | ✓ | ✓ |
+| ponytail | ✓ | ✓ hooks | ✓ after `/hooks` |
+| security-audit | ✓ | ✓ | ✓ |
+| context7 | ✓ | ✓ | ✓ |
+| ui-ux-pro-max | ✓ | ✓ | ✓ |
 
 <details>
 <summary>How albino is packaged for each tool</summary>
@@ -258,7 +255,6 @@ Then it runs `plugins/<name>/install.sh` for each plugin. Each plugin installs i
 | Claude Code | Registers the `myagents` marketplace and enables the plugin |
 | Cursor | Links the plugin into `~/.cursor/plugins/local/albino` |
 | Codex | Adds the marketplace, installs the plugin, and generates command skills and agents. Run `/hooks` once in Codex to trust the hooks |
-| Claude Desktop | Adds the MCP servers to `claude_desktop_config.json` |
 
 **Updating.** Run the install command again. Every step is safe to repeat: a rerun updates what is there and never duplicates settings, hooks, or links. `~/.myagents` belongs to the installer, so a rerun resets it to the latest version and discards local edits to tracked files. Untracked files, such as the memory database, are kept.
 
@@ -315,7 +311,7 @@ finish
 
 | Helper | Purpose |
 |--------|---------|
-| `has_claude_code`, `has_cursor`, `has_codex`, `has_claude_desktop` | Detect a tool |
+| `has_claude_code`, `has_cursor`, `has_codex` | Detect a tool |
 | `section`, `ok`, `note`, `fail` | Print a heading or one status line; `fail` also shows the failed command's last output lines |
 | `quietly <cmd>` | Run a command with its output hidden unless it fails; on success the output is in `$quiet_output` |
 | `need <tool> [brew formula]` | Stop the plugin with an install hint when a tool is missing |

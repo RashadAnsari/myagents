@@ -54,7 +54,6 @@ finish() { exit "$_failed"; }
 has_claude_code() { command -v claude &>/dev/null || [ -d "$HOME/.claude" ]; }
 has_cursor() { [ -d "$HOME/.cursor" ]; }
 has_codex() { command -v codex &>/dev/null; }
-has_claude_desktop() { [ -d "$HOME/Library/Application Support/Claude" ]; }
 
 # Exits the plugin script with an install hint when a required tool is missing.
 need() {

@@ -76,9 +76,8 @@ found=()
 has_claude_code && found+=("Claude Code")
 has_cursor && found+=("Cursor")
 has_codex && found+=("Codex")
-has_claude_desktop && found+=("Claude Desktop")
 if [ ${#found[@]} -eq 0 ]; then
-  note "Apps" "No supported app found. Install Claude Code, Cursor, Codex, or Claude Desktop, then rerun."
+  note "Apps" "No supported app found. Install Claude Code, Cursor, or Codex, then rerun."
 else
   joined="$(printf '%s, ' "${found[@]}")"
   ok "Apps" "Found ${joined%, }."

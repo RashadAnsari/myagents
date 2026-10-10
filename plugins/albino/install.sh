@@ -13,9 +13,6 @@ INSTALLED_PLUGINS_JSON="$CLAUDE_PLUGINS_DIR/installed_plugins.json"
 KNOWN_MARKETPLACES_JSON="$CLAUDE_PLUGINS_DIR/known_marketplaces.json"
 CLAUDE_SETTINGS_JSON="$HOME/.claude/settings.json"
 
-CLAUDE_DESKTOP_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-CLAUDE_DESKTOP_MCP_SRC="$PLUGIN_SRC/.claude-desktop/mcp.json"
-
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 CODEX_PROMPTS_DIR="$CODEX_HOME/prompts"
 CODEX_AGENTS_DIR="$CODEX_HOME/agents"
@@ -136,44 +133,6 @@ if has_codex; then
     fi
   else
     fail "Codex" "Could not install $PLUGIN_NAME."
-  fi
-fi
-
-# Claude Desktop has no plugin support, so only the MCP servers are added. Servers
-# with the same name are replaced, so a rerun does not duplicate them.
-if has_claude_desktop; then
-  if quietly python3 - "$CLAUDE_DESKTOP_MCP_SRC" "$CLAUDE_DESKTOP_CONFIG" <<'PY'
-import json, os, sys
-
-src_path, config_path = sys.argv[1], sys.argv[2]
-
-def load(path):
-    if not os.path.exists(path):
-        return {}
-    try:
-        with open(path) as f:
-            return json.load(f)
-    except (OSError, ValueError):
-        return {}
-
-def save(path, data):
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    tmp = path + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
-    os.replace(tmp, path)
-
-src = load(src_path)
-config = load(config_path)
-src_servers = src.get("mcpServers", {})
-config.setdefault("mcpServers", {}).update(src_servers)
-save(config_path, config)
-PY
-  then
-    ok "Claude Desktop" "MCP servers added. Restart Claude Desktop to load them."
-  else
-    fail "Claude Desktop" "Could not update $CLAUDE_DESKTOP_CONFIG."
   fi
 fi
 

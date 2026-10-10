@@ -7,5 +7,5 @@
 
 jq         jq       # albino hooks
 node       node     # ponytail hooks, security-audit, and the Skills CLI
-uv         uv       # albino MCP servers: agent-memory, markitdown, linkedin
+uv         uv       # albino MCP servers: agent-memory, markitdown
 bun        bun      # albino playwright MCP server

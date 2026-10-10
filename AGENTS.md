@@ -89,7 +89,7 @@ Every step must be idempotent. Running the installer any number of times must le
 
 Test a change by running the root installer twice and then the uninstaller twice under a throwaway `HOME`, with `MYAGENTS_REPO_URL` pointing at a local commit. Diff the config files against their state before the install: after uninstall, only the user's own content may remain.
 
-All user-facing output goes through the library's `section`, `ok`, `note`, and `fail`, with the platform name (`Claude Code`, `Cursor`, `Codex`, `Claude Desktop`) as the label, in that install order. Messages are full sentences: say what happened and the one thing the user does next. Hide command output with `quietly` so it only appears on failure. Do not `echo` directly.
+All user-facing output goes through the library's `section`, `ok`, `note`, and `fail`, with the platform name (`Claude Code`, `Cursor`, `Codex`) as the label, in that install order. Messages are full sentences: say what happened and the one thing the user does next. Hide command output with `quietly` so it only appears on failure. Do not `echo` directly.
 
 ---
 

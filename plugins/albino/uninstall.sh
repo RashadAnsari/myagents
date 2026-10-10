@@ -11,7 +11,6 @@ PLUGIN_SRC="$MYAGENTS_DIR/plugins/$PLUGIN_NAME"
 
 CLAUDE_PLUGINS_DIR="$HOME/.claude/plugins"
 CURSOR_PLUGIN_LINK="$HOME/.cursor/plugins/local/$PLUGIN_NAME"
-CLAUDE_DESKTOP_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 CODEX_PROMPTS_DIR="$CODEX_HOME/prompts"
@@ -140,43 +139,6 @@ if has_codex; then
     ok "Codex" "Removed. Restart Codex to unload it."
   else
     ok "Codex" "Already removed."
-  fi
-fi
-
-# Claude Desktop: remove the MCP servers install.sh added, by name.
-if has_claude_desktop; then
-  if quietly python3 - "$PLUGIN_SRC/.claude-desktop/mcp.json" "$CLAUDE_DESKTOP_CONFIG" <<'PY'
-import json, os, sys
-
-src_path, config_path = sys.argv[1], sys.argv[2]
-with open(src_path) as f:
-    names = json.load(f).get("mcpServers", {}).keys()
-try:
-    with open(config_path) as f:
-        config = json.load(f)
-except FileNotFoundError:
-    config = {}
-
-servers = config.get("mcpServers", {})
-gone = [name for name in names if name in servers]
-for name in gone:
-    del servers[name]
-if gone:
-    tmp = config_path + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(config, f, indent=2)
-        f.write("\n")
-    os.replace(tmp, config_path)
-print("removed" if gone else "absent")
-PY
-  then
-    if [ "$quiet_output" = "removed" ]; then
-      ok "Claude Desktop" "MCP servers removed. Restart Claude Desktop to unload them."
-    else
-      ok "Claude Desktop" "Already removed."
-    fi
-  else
-    fail "Claude Desktop" "Could not update $CLAUDE_DESKTOP_CONFIG."
   fi
 fi
 
