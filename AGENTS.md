@@ -106,6 +106,20 @@ Do not update README for internal implementation changes that are not visible to
 
 ---
 
+## Architecture Diagram Rule
+
+`README.md` shows `docs/architecture.png`, which is exported from `docs/architecture.json` with the archify skill. After any change, check whether the diagram is still accurate: a component, installer step, plugin, hook, MCP server, store, or relationship it shows was added, removed, renamed, or rewired, or a source line range it cites moved.
+
+If it changed, edit `docs/architecture.json` following the archify skill (keep every node's `sources` pointing at the right lines, and set `meta.repository.revision` to the commit that holds those lines), then run:
+
+```
+make diagram
+```
+
+This validates and renders the diagram into `.archify/` (gitignored) and exports `docs/architecture.png`. Commit both `docs/architecture.json` and `docs/architecture.png`. Archify has no export command, so `scripts/export-diagram-png.mjs` clicks the viewer's Export > PNG in headless Chrome; set `CHROME` if Chrome is not in `/Applications`, and `ARCHIFY` if the skill is not in `~/.agents/skills/archify`.
+
+---
+
 ## Verify After Changes Rule
 
 After completing any change in this repository, run the following from the repository root:

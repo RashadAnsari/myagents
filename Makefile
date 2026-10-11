@@ -1,4 +1,6 @@
-.PHONY: validate format lint test
+.PHONY: validate format lint test diagram
+
+ARCHIFY ?= $(HOME)/.agents/skills/archify/bin/archify.mjs
 
 # Run all validation, formatting, linting, and testing tasks for the Albino plugin.
 local: validate format lint test
@@ -18,3 +20,8 @@ lint:
 # Test the agent-memory MCP server.
 test:
 	uv run --directory plugins/albino/mcp-servers/agent-memory python -m pytest
+
+# Render docs/architecture.json with archify and export docs/architecture.png for the README.
+diagram:
+	node $(ARCHIFY) finalize architecture docs/architecture.json .archify/architecture.html --repo-root . --quality showcase
+	node scripts/export-diagram-png.mjs .archify/architecture.html docs/architecture.png

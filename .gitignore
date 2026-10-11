@@ -31,3 +31,6 @@ memory.sqlite-wal
 # Temp
 *.tmp
 *.log
+
+# Archify render output (docs/architecture.png is the committed export)
+.archify/

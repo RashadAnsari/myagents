@@ -81,8 +81,17 @@ To update, run the same install command again.
 
 ---
 
+## Architecture
+
+![myagents architecture](docs/architecture.png)
+
+The diagram is generated with [archify](#archify) from [docs/architecture.json](docs/architecture.json). Run `make diagram` to render and export it again.
+
+---
+
 ## Contents
 
+- [Architecture](#architecture)
 - [Plugins](#plugins): [albino](#albino), [archify](#archify), [context7](#context7), [ponytail](#ponytail), [security-audit](#security-audit), [ui-ux-pro-max](#ui-ux-pro-max)
 - [Platform support](#platform-support)
 - [Agent memory](#agent-memory)
