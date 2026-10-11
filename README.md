@@ -34,6 +34,11 @@ albino
   ✓ Cursor          Installed. Run 'Developer: Reload Window' to load it.
   ✓ Codex           Installed. Restart Codex, then run /hooks once to trust its hooks.
 
+archify
+  ✓ Claude Code     Installed. Restart open sessions to load it.
+  ✓ Cursor          Installed. Start a new chat to load it.
+  ✓ Codex           Installed. Restart Codex to load it.
+
 context7
   ✓ Claude Code     Installed. Restart open sessions, then run /mcp once to sign in to Context7.
   ✓ Cursor          Installed. Sign in to Context7 when Cursor asks, or from Cursor Settings > MCP.
@@ -56,6 +61,7 @@ ui-ux-pro-max
 
 Summary
   ✓ albino          Ready.
+  ✓ archify         Ready.
   ✓ context7        Ready.
   ✓ ponytail        Ready.
   ✓ security-audit  Ready.
@@ -77,7 +83,7 @@ To update, run the same install command again.
 
 ## Contents
 
-- [Plugins](#plugins): [albino](#albino), [ponytail](#ponytail), [security-audit](#security-audit), [context7](#context7), [ui-ux-pro-max](#ui-ux-pro-max)
+- [Plugins](#plugins): [albino](#albino), [archify](#archify), [context7](#context7), [ponytail](#ponytail), [security-audit](#security-audit), [ui-ux-pro-max](#ui-ux-pro-max)
 - [Platform support](#platform-support)
 - [Agent memory](#agent-memory)
 - [Installing, updating, and uninstalling](#installing-updating-and-uninstalling)
@@ -168,6 +174,18 @@ The installer installs `uv` and `bun`, which the servers run on. If one is missi
 | `user-prompt-submit` | Every prompt | Repeats a one-line reminder of those rules, since session-start context fades in long conversations |
 | `stop` | End of every turn | Asks the agent whether it learned anything durable and, if so, to save it before finishing |
 
+### archify
+
+[Archify](https://github.com/tt-a1i/archify) by tt-a1i turns a description, a repository, or pasted Mermaid into an interactive architecture, workflow, sequence, data-flow, or state diagram. The result is one self-contained HTML file with dark and light themes, node details, and path tracing, which you can open in any browser or send to someone, and export as PNG, SVG, or video. Ask for a diagram ("map this repository's runtime architecture", "show the checkout flow") and it activates on its own; for a repository, it can link each node to the source files behind it.
+
+The installer uses the project's documented Skills CLI command (`skills add tt-a1i/archify --skill archify --global --copy`), with install telemetry turned off. It needs `node` 18 or newer. When it delivers a diagram it may check for a newer release to show a reminder, and never updates itself; set `ARCHIFY_UPDATE_CHECK_DISABLED=1` to turn that check off.
+
+### context7
+
+[Context7](https://github.com/upstash/context7) by Upstash gives agents current, version-specific documentation for libraries and frameworks, pulled from their source repositories, so they stop guessing at APIs that changed after their training data. It pairs with albino's `research-first` skill, which tells agents to check the docs before answering; Context7 is where they read them. Ask a library question and it resolves the library, then fetches the relevant docs.
+
+The installer runs Context7's own `ctx7 setup --mcp --oauth` for each tool, which adds its MCP server, a rule that tells the agent when to use it, and a `context7-mcp` skill. Sign-in happens in the app the first time, so no API key is stored on disk: run `/mcp` in Claude Code, sign in when Cursor asks, or run `codex mcp login context7`. For Codex, the rule is added as a marked block in `~/.codex/AGENTS.md`, and uninstalling removes only that block. Telemetry is turned off.
+
 ### ponytail
 
 [ponytail](https://github.com/DietrichGebert/ponytail) by Dietrich Gebert is a third-party plugin that pushes agents toward the shortest solution that works: YAGNI, standard library first, no abstractions nobody asked for. The installer sets it up with each tool's own method and keeps it up to date. Its hooks need `node`.
@@ -177,12 +195,6 @@ The installer installs `uv` and `bun`, which the servers run on. If one is missi
 [security-audit](https://github.com/cloudflare/security-audit-skill) by Cloudflare is the skill that seeded Cloudflare's vulnerability discovery harness. Ask for a security audit and it runs isolated agents through reconnaissance, coverage-led hunting, and validation, where a fresh agent tries to disprove every finding, then writes a report with confirmed findings and open leads. Reports default to `~/security-audit-skill/<repo-name>/`. It complements albino's `security-reviewer`, which gives a quicker single-pass review.
 
 The installer adds it with the [Skills CLI](https://skills.sh), with install telemetry turned off. It needs `node`, and building or running the audited code needs an OS-level sandbox; without one, the skill reports those leads as unconfirmed instead of executing the target.
-
-### context7
-
-[Context7](https://github.com/upstash/context7) by Upstash gives agents current, version-specific documentation for libraries and frameworks, pulled from their source repositories, so they stop guessing at APIs that changed after their training data. It pairs with albino's `research-first` skill, which tells agents to check the docs before answering; Context7 is where they read them. Ask a library question and it resolves the library, then fetches the relevant docs.
-
-The installer runs Context7's own `ctx7 setup --mcp --oauth` for each tool, which adds its MCP server, a rule that tells the agent when to use it, and a `context7-mcp` skill. Sign-in happens in the app the first time, so no API key is stored on disk: run `/mcp` in Claude Code, sign in when Cursor asks, or run `codex mcp login context7`. For Codex, the rule is added as a marked block in `~/.codex/AGENTS.md`, and uninstalling removes only that block. Telemetry is turned off.
 
 ### ui-ux-pro-max
 
@@ -201,9 +213,10 @@ It ships seven skills: `ui-ux-pro-max`, `design`, `design-system`, `ui-styling` 
 | albino skills | ✓ | ✓ | ✓ |
 | albino hooks | ✓ | ✓ | ✓ after `/hooks` |
 | albino MCP servers | ✓ | ✓ | ✓ |
+| archify | ✓ | ✓ | ✓ |
+| context7 | ✓ | ✓ | ✓ |
 | ponytail | ✓ | ✓ hooks | ✓ after `/hooks` |
 | security-audit | ✓ | ✓ | ✓ |
-| context7 | ✓ | ✓ | ✓ |
 | ui-ux-pro-max | ✓ | ✓ | ✓ |
 
 <details>
@@ -318,7 +331,7 @@ finish
 | `claude_marketplace_plugin`, `codex_marketplace_plugin` | Install or update a plugin from a git-hosted marketplace |
 | `claude_marketplace_plugin_remove`, `codex_marketplace_plugin_remove` | Remove that plugin and its marketplace, or report "Already removed." |
 | `codex_has_marketplace <name>` | Check whether Codex has a marketplace configured |
-| `skills_cli_skill <repo-url> <skill>`, `skills_cli_skill_remove <skill>` | Install or update a standalone skill with the Skills CLI for Claude Code, Cursor, and Codex, or remove it |
+| `skills_cli_skill <repo-url> <skill> [skills add flags...]`, `skills_cli_skill_remove <skill>` | Install or update a standalone skill with the Skills CLI for Claude Code, Cursor, and Codex, passing any extra flags its own install command uses, or remove it |
 | `sync_checkout <url> <dir>` | Clone a repository, or reset it to the latest commit |
 | `link_dir <src> <link>` | Create or replace a symlink to a directory |
 | `finish` | Exit non-zero if any step failed |

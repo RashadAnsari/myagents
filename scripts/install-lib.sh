@@ -185,15 +185,17 @@ _skills_cli() {
 
 # Installs or updates a skill with the Skills CLI for every detected tool. The
 # CLI keeps the skill in ~/.agents/skills, which Cursor and Codex read, and links
-# it into ~/.claude/skills for Claude Code. Rerunning reinstalls the latest
-# version. Install telemetry is turned off.
+# it into ~/.claude/skills for Claude Code. Extra arguments are passed to
+# `skills add`, for flags a skill's own install command uses, such as --copy.
+# Rerunning reinstalls the latest version. Install telemetry is turned off.
 skills_cli_skill() {
   local url="$1" skill="$2" agents=()
+  shift 2
   while IFS='|' read -r id _; do [ -n "$id" ] && agents+=("$id"); done < <(_skills_cli_agents)
   [ ${#agents[@]} -eq 0 ] && return 0
   if ! command -v npx &>/dev/null; then
     fail "Requirements" "node is not installed, so $skill was skipped. Install it with: brew install node"
-  elif quietly _skills_cli add "$url" --skill "$skill" --global --agent "${agents[@]}" -y; then
+  elif quietly _skills_cli add "$url" --skill "$skill" --global --agent "${agents[@]}" "$@" -y; then
     _skills_cli_report "Installed" "load"
   else
     fail "Skills" "Could not install $skill."
@@ -203,7 +205,9 @@ skills_cli_skill() {
 # Removes a skill the Skills CLI installed, from every tool.
 skills_cli_skill_remove() {
   local skill="$1"
-  if [ ! -e "$HOME/.agents/skills/$skill" ] && [ ! -L "$HOME/.claude/skills/$skill" ]; then
+  # -L also catches a Claude Code link whose target is already gone.
+  if [ ! -e "$HOME/.agents/skills/$skill" ] && [ ! -e "$HOME/.claude/skills/$skill" ] \
+    && [ ! -L "$HOME/.claude/skills/$skill" ]; then
     _skills_cli_report "Already removed"
   elif ! command -v npx &>/dev/null; then
     fail "Requirements" "node is not installed, so $skill could not be removed. Install it with: brew install node"
