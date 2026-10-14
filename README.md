@@ -155,7 +155,7 @@ Three skills are always on. The session-start hook tells the agent to load each 
 |-------|------------------|
 | `dev-conventions` | Think before coding, the simplest change that works, no duplication, surgical edits, and checkable success criteria |
 | `research-first` | Read the docs and source before answering, and use the latest stable version of every dependency |
-| `agent-memory` | Search memory before non-trivial work, and save durable learnings after it |
+| `agent-memory` | Search memory before non-trivial work, and save durable learnings after it, telling you each one in the chat |
 
 The rest load when a task calls for them:
 
@@ -183,7 +183,7 @@ The installer installs `uv` and `bun`, which the servers run on. If one is missi
 |------|------|--------------|
 | `session-start` | Start of every session | Loads the mandatory skills, the memory rules, and the communication rules: answer first, be precise, no filler |
 | `user-prompt-submit` | Every prompt | Repeats a one-line reminder of those rules, since session-start context fades in long conversations |
-| `stop` | End of every turn | Asks the agent whether it learned anything durable and, if so, to save it before finishing |
+| `stop` | End of every turn | Asks the agent whether it learned anything durable and, if so, to save it and tell you what it saved and why |
 
 ### archify
 

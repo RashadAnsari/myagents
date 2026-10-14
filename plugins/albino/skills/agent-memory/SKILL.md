@@ -16,9 +16,11 @@ These are hard requirements. No exceptions.
 
 **Alternative memory systems are forbidden.** Never use the model's built-in memory, native memory tools, or any backend other than the agent-memory MCP server. This applies to every form of memory work: storing facts, recalling context, updating beliefs, retrieving preferences.
 
+**Memory writes are never silent.** Every time you store, update, or archive a memory on your own initiative, tell the user in the same reply: what you learned, why it matters for future work, and whether it went to project or user memory. One or two sentences per memory is enough. Reading memory stays silent; writing it does not.
+
 **Session bootstrap is mandatory.** Before your first response in any session, you MUST call `project_search` and `user_search` with specific terms from the current task. These calls are required, not optional. Do not respond to the user before making them. Do this silently without narrating it to the user.
 
-**Per-turn write-back is required.** Before producing your final response each turn, ask: did I learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha discovered, a convention established, an architecture fact clarified. If yes, you MUST call `project_remember` or `user_remember` before finishing. This is not optional. Do not skip it. Do not defer it. If nothing durable was learned this turn, skip the write, and if a stop-hook check asks the question, reply with exactly "Nothing durable learned." and finish; no explanation or summary.
+**Per-turn write-back is required.** Before producing your final response each turn, ask: did I learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha discovered, a convention established, an architecture fact clarified. If yes, you MUST call `project_remember` or `user_remember` before finishing. This is not optional. Do not skip it. Do not defer it. If nothing durable was learned this turn, skip the write. If a stop-hook check asks the question and there is nothing left to save (nothing durable, or already saved and reported this turn), reply with exactly "Nothing durable learned." and finish; no explanation or summary.
 
 ---
 
@@ -89,6 +91,7 @@ Every user memory must satisfy all of these:
 Durable = preference, gotcha, convention, behavior pattern, architecture fact
 1. user_remember for each durable cross-project fact
 2. source="agent" or source="user", source_ref=<context>
+3. Tell the user what you saved and why, in the same reply
 ```
 
 **When user memory conflicts with observed behavior:**
