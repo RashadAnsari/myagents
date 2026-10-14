@@ -1,6 +1,8 @@
 ---
+name: pr-review
+disable-model-invocation: true
 description: 'Review a GitHub pull request: analyzes changed files to select relevant reviewers, loads project and user memory, runs reviewers in parallel, lets the user pick which findings to post, then submits the review on behalf of the user via gh CLI'
-argument-hint: [github-pr-url]
+argument-hint: '[github-pr-url]'
 allowed-tools: [Agent, Bash, Read, Write, Glob, Grep, AskUserQuestion, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
 ---
 
@@ -9,6 +11,8 @@ MANDATORY: Load the humanizer skill (`albino:humanizer`) now and keep all its ru
 # PR Review
 
 Review the GitHub pull request: $ARGUMENTS
+
+If the line above still shows a placeholder instead of a value, this platform does not pass arguments to skills: take the value from the user's message instead, and treat it as empty when the message gives none. Read every later mention of the placeholder as that value.
 
 ## Step 1: Validate Input
 

@@ -1,6 +1,7 @@
 ---
+name: remember
 description: Save something to agent memory - picks project or user scope automatically from context
-argument-hint: [what to remember]
+argument-hint: '[what to remember]'
 allowed-tools: [Bash, mcp__plugin_albino_agent-memory__project_remember, mcp__plugin_albino_agent-memory__user_remember]
 ---
 
@@ -9,6 +10,8 @@ allowed-tools: [Bash, mcp__plugin_albino_agent-memory__project_remember, mcp__pl
 Save one or more durable memories using the agent-memory MCP server.
 
 Subject: $ARGUMENTS
+
+If the line above still shows a placeholder instead of a value, this platform does not pass arguments to skills: take the value from the user's message instead, and treat it as empty when the message gives none. Read every later mention of the placeholder as that value.
 
 ## Step 1: Determine what to remember
 

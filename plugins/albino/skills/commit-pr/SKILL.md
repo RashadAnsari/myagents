@@ -1,4 +1,6 @@
 ---
+name: commit-pr
+disable-model-invocation: true
 description: Create a git commit and open a pull request (creates a new branch first if on main/master)
 allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git diff:*), Bash(git branch:*), Bash(git checkout:*), Bash(git log:*), Bash(git push:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(gh pr edit:*), Bash(gh repo view:*)
 ---

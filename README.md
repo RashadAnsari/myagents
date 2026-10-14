@@ -105,11 +105,13 @@ The diagram is generated with [archify](#archify) from [docs/architecture.json](
 
 ### albino
 
-The main plugin: commands, review agents, skills, MCP servers, and hooks.
+The main plugin: review agents, skills, MCP servers, and hooks.
 
-#### Commands
+#### Workflow skills
 
-| Command | What it does |
+Skills you run by name. They replaced the old slash commands, which all three tools are moving away from.
+
+| Skill | What it does |
 |---------|--------------|
 | `/reviewcrew` | Runs every review agent in parallel and writes a consolidated `REVIEW_REPORT.md` |
 | `/reportloop` | Walks through `REVIEW_REPORT.md` one issue at a time, by severity: explains it, then fixes or skips it |
@@ -122,7 +124,7 @@ The main plugin: commands, review agents, skills, MCP servers, and hooks.
 | `/enrich` | Mines the 100 most recently merged pull requests for decisions, conventions, and gotchas, and saves them to project memory |
 | `/statusline` | Sets the Claude Code status line: folder, git branch and dirty state, model, context usage, and time |
 
-On Codex, commands become skills (`albino:source-command-<name>` or `albino-command-<name>`). Ask for them by name instead of with a slash.
+Run one with `/<name>` in Claude Code (or `/albino:<name>` when another plugin uses the same name) and Cursor, and with `$<name>` or `/skills` in Codex. Claude Code fills in the arguments after the name; Cursor and Codex do not pass arguments to skills, so give the subject in the same message instead. `commit`, `commit-pr`, `pr-review`, `forget`, `enrich`, `reviewcrew`, and `statusline` run only when you type them, never on the agent's own initiative.
 
 #### Review agents
 
@@ -145,7 +147,7 @@ Used by `/reviewcrew`, `/audit`, and `/pr-review`, or on their own.
 | `i18n-reviewer` | Hardcoded strings, date and number formatting, plurals, RTL, and locale handling |
 | `unused-code-reviewer` | Dead code, tests, CI jobs, infrastructure, config, docs, and assets across the whole repository |
 
-#### Skills
+#### Knowledge skills
 
 Three skills are always on. The session-start hook tells the agent to load each one in full before its first answer.
 
@@ -162,7 +164,7 @@ The rest load when a task calls for them:
 | `frontend-design` | Distinctive, production-grade interfaces that avoid the generic AI look |
 | `humanizer` | Removing the signs of AI-generated writing from text |
 | `markitdown` | Converting PDFs, Office files, images, audio, and URLs to Markdown |
-| `plugin-authoring` | Writing skills, commands, and agents that trigger reliably and use few tokens |
+| `plugin-authoring` | Writing skills and agents that trigger reliably and use few tokens |
 | `eu-ai-act` | EU AI Act risk tiers, obligations, deadlines, and penalties |
 
 #### MCP servers
@@ -217,7 +219,6 @@ It ships seven skills: `ui-ux-pro-max`, `design`, `design-system`, `ui-styling` 
 
 | | Claude Code | Cursor | Codex |
 |---|:---:|:---:|:---:|
-| albino commands | ✓ | ✓ | ✓ as skills |
 | albino review agents | ✓ | ✓ | ✓ |
 | albino skills | ✓ | ✓ | ✓ |
 | albino hooks | ✓ | ✓ | ✓ after `/hooks` |
@@ -240,13 +241,11 @@ Every tool reads the same source files. Only the packaging differs.
 | Skills | plugin `skills/` | plugin `skills/` | plugin `skills/` |
 | MCP servers | `.mcp.json` | `.mcp.json` | `.mcp.json` |
 | Hooks | manifest `hooks` block | manifest `hooks` block | manifest `hooks` block |
-| Commands | plugin `commands/` | plugin `commands/` | plugin `commands/`, or generated into `$CODEX_HOME/skills/` where Codex skips one |
 | Agents | plugin `agents/` | plugin `agents/` | generated into `$CODEX_HOME/agents/` as TOML |
 
-Two things differ on Codex:
+albino has no slash commands. Claude Code merged commands into skills, Cursor migrates them to skills with `/migrate-to-skills`, and Codex deprecated custom prompts in favor of skills, so every workflow is a skill in `skills/`. Only Claude Code fills in `$ARGUMENTS`, applies `allowed-tools`, and runs `` !`cmd` `` lines; each skill that uses them tells the agent what to do when they are left as written.
 
-- **Commands become skills.** Codex converts a plugin's commands itself but skips any that use `$ARGUMENTS`, use inline shell expansion, or exceed roughly 3.8 KB. The installer generates those into `$CODEX_HOME/skills/` as `albino-command-<name>`, with `$ARGUMENTS` replaced by an instruction to take the subject from the request. `allowed-tools` is ignored.
-- **Agents are generated as TOML** by `plugins/albino/scripts/gen-codex-agents.sh`. The Markdown files stay the source of truth, and `readonly: true` becomes `sandbox_mode = "read-only"`.
+Codex cannot load agents from a plugin, so `plugins/albino/scripts/gen-codex-agents.sh` generates them as TOML. The Markdown files stay the source of truth, and `readonly: true` becomes `sandbox_mode = "read-only"`.
 
 Cursor drops the context a `sessionStart` hook returns, so the same text reaches Cursor through the always-applied rule `plugins/albino/rules/session-start.mdc`.
 
@@ -276,11 +275,11 @@ Then it runs `plugins/<name>/install.sh` for each plugin. Each plugin installs i
 |------|------------------------------|
 | Claude Code | Registers the `myagents` marketplace and enables the plugin |
 | Cursor | Links the plugin into `~/.cursor/plugins/local/albino` |
-| Codex | Adds the marketplace, installs the plugin, and generates command skills and agents. Run `/hooks` once in Codex to trust the hooks |
+| Codex | Adds the marketplace, installs the plugin, and generates the agents. Run `/hooks` once in Codex to trust the hooks |
 
 **Updating.** Run the install command again. Every step is safe to repeat: a rerun updates what is there and never duplicates settings, hooks, or links. `~/.myagents` belongs to the installer, so a rerun resets it to the latest version and discards local edits to tracked files. Untracked files, such as the memory database, are kept.
 
-**Uninstalling.** This undoes every install step on every tool, including settings, hooks, MCP servers, and the generated Codex skills and agents, then deletes `~/.myagents`. Your own settings, hooks, skills, and agents are left alone, and so is your agent memory. Homebrew and the tools from `requirements.list` stay installed, since other software may use them; remove them with `brew uninstall` if you no longer need them.
+**Uninstalling.** This undoes every install step on every tool, including settings, hooks, MCP servers, and the generated Codex agents, then deletes `~/.myagents`. Your own settings, hooks, skills, and agents are left alone, and so is your agent memory. Homebrew and the tools from `requirements.list` stay installed, since other software may use them; remove them with `brew uninstall` if you no longer need them.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/uninstall.sh | bash

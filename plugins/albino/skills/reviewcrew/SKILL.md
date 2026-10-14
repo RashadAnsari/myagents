@@ -1,4 +1,6 @@
 ---
+name: reviewcrew
+disable-model-invocation: true
 description: 'Run a full codebase audit: spawns all specialist reviewers in parallel and writes a consolidated report to REVIEW_REPORT.md'
 allowed-tools: [Agent, Read, Write, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
 ---

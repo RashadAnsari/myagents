@@ -1,12 +1,15 @@
 ---
+name: audit
 description: 'Run a single specialist reviewer of your choice against the codebase: pick one review agent (security, performance, unused code, and so on), optionally scope it to a path, and get its findings in the terminal'
-argument-hint: [reviewer-name] [path]
+argument-hint: '[reviewer-name] [path]'
 allowed-tools: [Agent, Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
 ---
 
 # Audit
 
 Run one specialist reviewer against this codebase: $ARGUMENTS
+
+If the line above still shows a placeholder instead of a value, this platform does not pass arguments to skills: take the value from the user's message instead, and treat it as empty when the message gives none. Read every later mention of the placeholder as that value.
 
 Use this instead of `/reviewcrew` when only one review angle matters. `/reviewcrew` runs all reviewers and writes a report file: this command runs exactly one and answers in the terminal.
 

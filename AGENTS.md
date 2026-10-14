@@ -8,11 +8,11 @@ Rules for all agents and subagents working in this repository.
 
 **When a new review agent is added to `plugins/albino/agents/`, the following MUST be updated in the same change:**
 
-**`plugins/albino/commands/reviewcrew.md`**: add the new agent to the "Spawn All Reviewers in Parallel" list (Step 1) and add its corresponding section to the report structure (Step 3).
+**`plugins/albino/skills/reviewcrew/SKILL.md`**: add the new agent to the "Spawn All Reviewers in Parallel" list (Step 1) and add its corresponding section to the report structure (Step 3).
 
-**`plugins/albino/commands/pr-review.md`**: add the new agent to the predefined reviewer list in Step 6 ("Select Relevant Reviewers"), including the detection rule that determines when it should be included based on changed file types or paths. If the agent is always relevant regardless of file type, add it to the "Always include" list.
+**`plugins/albino/skills/pr-review/SKILL.md`**: add the new agent to the predefined reviewer list in Step 6 ("Select Relevant Reviewers"), including the detection rule that determines when it should be included based on changed file types or paths. If the agent is always relevant regardless of file type, add it to the "Always include" list.
 
-**`plugins/albino/commands/audit.md`**: add the new agent as a row in the reviewer table in Step 1, with its short name, what it covers, and any aliases the user might type for it.
+**`plugins/albino/skills/audit/SKILL.md`**: add the new agent as a row in the reviewer table in Step 1, with its short name, what it covers, and any aliases the user might type for it.
 
 **Failure to update all three files when adding a review agent is a violation of this rule.**
 
@@ -61,17 +61,25 @@ One pair of files must stay in sync:
 
 Codex has no equivalent of `claude plugin validate`. CI instead installs the plugin with the real CLI (`codex plugin marketplace add .` then `codex plugin add albino@myagents`), which catches a broken manifest or a wrong marketplace source path. It does not check hooks or MCP config, so those stay a review concern.
 
-Codex takes commands from a plugin, but only some of them. On install it converts a plugin's `commands/` into skills named `<plugin>:source-command-<name>`, skipping any command that uses `$ARGUMENTS` or `$1`, uses Claude Code inline shell expansion (`` !`cmd` ``), or is larger than roughly 3.8 KB. Those three limits are not announced anywhere: a command that crosses one is dropped silently. Custom prompts in `$CODEX_HOME/prompts`, the other way a command could reach Codex, stopped loading in codex-cli 0.117.0 (openai/codex#15941), so a skipped command would otherwise not reach Codex at all.
-
-`plugins/albino/scripts/gen-codex-command-skills.sh` covers the gap by generating the skipped commands into `$CODEX_HOME/skills/` as `albino-command-<name>`. It reads the `migrated-command-skills` directory Codex writes to decide which to skip, rather than reimplementing the rules above, so no command is published twice and a command that later crosses the size limit moves between the two paths on its own. Do not hardcode that skip list.
-
-Skills take no arguments, so `$ARGUMENTS` is replaced with a phrase telling the agent to take the subject from the user's message. Keep using `description` and `argument-hint` in command frontmatter, and keep a fallback instruction wherever inline shell expansion is used.
-
-Codex cannot load subagents from a plugin. `plugins/albino/scripts/gen-codex-agents.sh` generates them into `$CODEX_HOME/agents/` as TOML.
-
-Both generators prune what they previously wrote when its source file is gone, and both mark their output so they never touch anything hand-written in `$CODEX_HOME`.
+Codex cannot load subagents from a plugin. `plugins/albino/scripts/gen-codex-agents.sh` generates them into `$CODEX_HOME/agents/` as TOML. It prunes what it previously wrote when its source file is gone, and marks its output so it never touches anything hand-written in `$CODEX_HOME`.
 
 Codex ships plugin hooks as untrusted. They are registered and enabled but do not run until the user reviews them once with `/hooks` in the Codex TUI. That is a per-machine step the installer cannot do.
+
+---
+
+## Skills Only Rule
+
+The albino plugin has no `commands/` folder. Every workflow the user runs by name (`commit`, `pr-review`, `remember`, and the rest) is a skill in `plugins/albino/skills/<name>/SKILL.md`, and all three platforms load it from there:
+
+- Claude Code merged custom commands into skills: a skill creates the same `/albino:<name>` command and takes `$ARGUMENTS`, `argument-hint`, `allowed-tools`, and inline shell expansion (`` !`cmd` ``).
+- Cursor runs a skill with `/<name>`. Its `/migrate-to-skills` turns commands into skills the same way.
+- Codex deprecated custom prompts in favor of skills and loads plugin skills through `"skills": "./skills/"` in its manifest. Run one with `$<name>` or `/skills`.
+
+Do not add a `commands/` folder or a command generator back. Write every new workflow as a skill with `name` matching its folder.
+
+Only Claude Code fills in `$ARGUMENTS` and runs `` !`cmd` `` lines. A skill that uses `$ARGUMENTS` must say, right after its first use, to take the value from the user's message when the placeholder is not filled in, and a skill that uses `` !`cmd` `` must tell the agent to run the commands itself when they are not expanded.
+
+Every skill with side effects or a high cost (`commit`, `commit-pr`, `pr-review`, `forget`, `enrich`, `reviewcrew`, `statusline`) runs only when the user asks for it by name. It sets `disable-model-invocation: true` in `SKILL.md`, which Claude Code and Cursor read, and has an `agents/openai.yaml` with `policy: allow_implicit_invocation: false`, since Codex ignores that field. Give every new skill of that kind both. In Claude Code the model cannot see such a skill at all, so the user must type its `/` command. Cursor has had a bug where plugin skills with the flag vanish from the `/` menu (forum.cursor.com, March 2026); if they do, that is the cause.
 
 ---
 

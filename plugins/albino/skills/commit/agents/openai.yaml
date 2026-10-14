@@ -1,0 +1,4 @@
+# Codex reads this file and ignores disable-model-invocation in SKILL.md. Hides
+# the skill from the model so it runs only when the user mentions it with $commit.
+policy:
+  allow_implicit_invocation: false

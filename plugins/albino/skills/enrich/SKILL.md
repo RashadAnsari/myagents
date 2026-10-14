@@ -1,4 +1,6 @@
 ---
+name: enrich
+disable-model-invocation: true
 description: 'Enrich project memory by mining 100 recently merged PRs: extracts decisions, conventions, gotchas, and architectural facts from PR discussions, review comments, and PR bodies'
 allowed-tools: [Agent, Bash, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__project_remember, mcp__plugin_albino_agent-memory__user_search]
 ---

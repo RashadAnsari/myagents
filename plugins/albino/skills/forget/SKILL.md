@@ -1,6 +1,8 @@
 ---
+name: forget
+disable-model-invocation: true
 description: Search agent memory and forget entries matching the given description
-argument-hint: [what to forget]
+argument-hint: '[what to forget]'
 allowed-tools: [Bash, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search, mcp__plugin_albino_agent-memory__project_forget, mcp__plugin_albino_agent-memory__user_forget]
 ---
 
@@ -9,6 +11,8 @@ allowed-tools: [Bash, mcp__plugin_albino_agent-memory__project_search, mcp__plug
 Search agent memory and forget every entry that matches.
 
 Subject: $ARGUMENTS
+
+If the line above still shows a placeholder instead of a value, this platform does not pass arguments to skills: take the value from the user's message instead, and treat it as empty when the message gives none. Read every later mention of the placeholder as that value.
 
 ## Step 1: Validate input
 
