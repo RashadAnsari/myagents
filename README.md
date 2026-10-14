@@ -102,7 +102,7 @@ The diagram is generated with [archify](#archify) from [docs/architecture.json](
 - [Platform support](#platform-support)
 - [Agent memory](#agent-memory)
 - [Installing, updating, and uninstalling](#installing-updating-and-uninstalling)
-- [Adding a plugin](#adding-a-plugin)
+- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -181,8 +181,6 @@ The rest load when a task calls for them:
 | `playwright` | Browser automation: navigate, click, fill forms, take screenshots, and inspect the page. Set `PLAYWRIGHT_MCP_EXTENSION_TOKEN` to drive your real browser through the Playwright Chrome extension |
 | `markitdown` | Converts PDF, Word, PowerPoint, Excel, HTML, images (OCR), audio (transcription), EPUB, and YouTube URLs to Markdown |
 
-The installer installs `uv` and `bun`, which the servers run on. If one is missing, for example when albino was added through its marketplace instead of the installer, the server installs it on first use.
-
 #### Hooks
 
 | Hook | Runs | What it does |
@@ -195,35 +193,33 @@ The installer installs `uv` and `bun`, which the servers run on. If one is missi
 
 [Archify](https://github.com/tt-a1i/archify) by tt-a1i turns a description, a repository, or pasted Mermaid into an interactive architecture, workflow, sequence, data-flow, or state diagram. The result is one self-contained HTML file with dark and light themes, node details, and path tracing, which you can open in any browser or send to someone, and export as PNG, SVG, or video. Ask for a diagram ("map this repository's runtime architecture", "show the checkout flow") and it activates on its own; for a repository, it can link each node to the source files behind it.
 
-The installer uses the project's documented Skills CLI command (`skills add tt-a1i/archify --skill archify --global --copy`), with install telemetry turned off. It needs `node` 18 or newer. When it delivers a diagram it may check for a newer release to show a reminder, and never updates itself; set `ARCHIFY_UPDATE_CHECK_DISABLED=1` to turn that check off.
+When it delivers a diagram it may check for a newer release to show a reminder, and never updates itself; set `ARCHIFY_UPDATE_CHECK_DISABLED=1` to turn that check off.
 
 ### context7
 
 [Context7](https://github.com/upstash/context7) by Upstash gives agents current, version-specific documentation for libraries and frameworks, pulled from their source repositories, so they stop guessing at APIs that changed after their training data. It pairs with albino's `research-first` skill, which tells agents to check the docs before answering; Context7 is where they read them. Ask a library question and it resolves the library, then fetches the relevant docs.
 
-The installer runs Context7's own `ctx7 setup --mcp --oauth` for each tool, which adds its MCP server, a rule that tells the agent when to use it, and a `context7-mcp` skill. Sign-in happens in the app the first time, so no API key is stored on disk: run `/mcp` in Claude Code, sign in when Cursor asks, or run `codex mcp login context7`. For Codex, the rule is added as a marked block in `~/.codex/AGENTS.md`, and uninstalling removes only that block. Telemetry is turned off.
+Sign in once per tool, so no API key is stored on disk: run `/mcp` in Claude Code, sign in when Cursor asks, or run `codex mcp login context7`.
 
 ### emil-skills
 
 [Emil Kowalski's skills](https://github.com/emilkowalski/skills) teach agents the small interface details they tend to get wrong: the right easing and duration for an animation, a soft shadow instead of a hard border, motion that does not drop frames. They draw on his work at Vercel and Linear. The set covers building, reviewing, and auditing animations (`animate`, `animate-expo`, `review-animations`, `improve-animations`, `find-animation-opportunities`, `animation-performance`, `animation-vocabulary`), general design (`emil-design-eng`, `apple-design`, `mobile-native`, `break-ui`, `prototype`, `pick-ui-library`), Swift (`write-swift`), and his Sonner toast library (`ask-sonner`). They complement albino's `frontend-design` skill, which sets a visual direction, and ui-ux-pro-max, which supplies styles and palettes; these focus on motion and polish.
 
-The installer uses the project's documented Skills CLI command (`skills add emilkowalski/skills`) with every skill selected, with install telemetry turned off, so skills the repository adds later come in on the next update. Uninstalling removes only the skills the CLI recorded as coming from this repository. It needs `node`.
-
 ### ponytail
 
-[ponytail](https://github.com/DietrichGebert/ponytail) by Dietrich Gebert is a third-party plugin that pushes agents toward the shortest solution that works: YAGNI, standard library first, no abstractions nobody asked for. The installer sets it up with each tool's own method and keeps it up to date. Its hooks need `node`.
+[ponytail](https://github.com/DietrichGebert/ponytail) by Dietrich Gebert is a third-party plugin that pushes agents toward the shortest solution that works: YAGNI, standard library first, no abstractions nobody asked for.
 
 ### security-audit
 
 [security-audit](https://github.com/cloudflare/security-audit-skill) by Cloudflare is the skill that seeded Cloudflare's vulnerability discovery harness. Ask for a security audit and it runs isolated agents through reconnaissance, coverage-led hunting, and validation, where a fresh agent tries to disprove every finding, then writes a report with confirmed findings and open leads. Reports default to `~/security-audit-skill/<repo-name>/`. It complements albino's `security-reviewer`, which gives a quicker single-pass review.
 
-The installer adds it with the [Skills CLI](https://skills.sh), with install telemetry turned off. It needs `node`, and building or running the audited code needs an OS-level sandbox; without one, the skill reports those leads as unconfirmed instead of executing the target.
+Building or running the audited code needs an OS-level sandbox; without one, the skill reports those leads as unconfirmed instead of executing the target.
 
 ### ui-ux-pro-max
 
 [UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) by nextlevelbuilder gives agents a searchable local design database: 79 styles, 192 product palettes, 74 font pairings, 119 UX guidelines, 25 chart types, and guidance for 22 stacks, from React and SwiftUI to Flutter and Tailwind. It activates on its own when you build, review, or fix an interface, and can generate a design system for your product. It overlaps with albino's `frontend-design` skill, which sets a visual direction; this one supplies the concrete styles, palettes, and stack rules.
 
-It ships seven skills: `ui-ux-pro-max`, `design`, `design-system`, `ui-styling` (shadcn/ui and Tailwind), `brand`, `banner-design`, and `slides`. The installer follows the project's own instructions: the upstream marketplace for Claude Code, and its `uipro` CLI for Cursor (`~/.cursor/skills`) and Codex (`~/.agents/skills`). Its search scripts need `python3`.
+It ships seven skills: `ui-ux-pro-max`, `design`, `design-system`, `ui-styling` (shadcn/ui and Tailwind), `brand`, `banner-design`, and `slides`.
 
 ---
 
@@ -242,28 +238,6 @@ It ships seven skills: `ui-ux-pro-max`, `design`, `design-system`, `ui-styling` 
 | security-audit | ✓ | ✓ | ✓ |
 | ui-ux-pro-max | ✓ | ✓ | ✓ |
 
-<details>
-<summary>How albino is packaged for each tool</summary>
-
-Every tool reads the same source files. Only the packaging differs.
-
-| Component | Claude Code | Cursor | Codex |
-|-----------|-------------|--------|-------|
-| Manifest | `.claude-plugin/plugin.json` | `.cursor-plugin/plugin.json` | `.codex-plugin/plugin.json` |
-| Marketplace | `.claude-plugin/marketplace.json` | `.cursor-plugin/marketplace.json` | `.agents/plugins/marketplace.json` |
-| Skills | plugin `skills/` | plugin `skills/` | plugin `skills/` |
-| MCP servers | `.mcp.json` | `.mcp.json` | `.mcp.json` |
-| Hooks | manifest `hooks` block | manifest `hooks` block | manifest `hooks` block |
-| Agents | plugin `agents/` | plugin `agents/` | generated into `$CODEX_HOME/agents/` as TOML |
-
-albino has no slash commands. Claude Code merged commands into skills, Cursor migrates them to skills with `/migrate-to-skills`, and Codex deprecated custom prompts in favor of skills, so every workflow is a skill in `skills/`. Only Claude Code fills in `$ARGUMENTS`, applies `allowed-tools`, and runs `` !`cmd` `` lines; each skill that uses them tells the agent what to do when they are left as written.
-
-Codex cannot load agents from a plugin, so `plugins/albino/scripts/gen-codex-agents.sh` generates them as TOML. The Markdown files stay the source of truth, and `readonly: true` becomes `sandbox_mode = "read-only"`.
-
-Cursor drops the context a `sessionStart` hook returns, so the same text reaches Cursor through the always-applied rule `plugins/albino/rules/session-start.mdc`.
-
-</details>
-
 ---
 
 ## Agent memory
@@ -280,19 +254,13 @@ Uninstalling keeps your memory unless you pass `--purge`.
 
 ## Installing, updating, and uninstalling
 
-The installer downloads this repository to `~/.myagents` and makes sure the tools listed in [`requirements.list`](requirements.list) are available: `jq`, `node`, `uv`, and `bun`. It installs only the ones not already on your PATH, with Homebrew, so tools you installed another way are left alone. If something is missing and Homebrew is not installed, it installs Homebrew first, which may ask for your password, and adds Homebrew to your PATH in `~/.zprofile`. `git` and `python3` come with the Xcode Command Line Tools (`xcode-select --install`).
+**Installing.** Run the command from [Quick start](#quick-start). The installer downloads this repository to `~/.myagents`, installs any missing tools from [`requirements.list`](requirements.list) with Homebrew (installing Homebrew first if needed, which may ask for your password), then sets up every plugin in each of Claude Code, Cursor, and Codex that it finds. Tools you already have are left alone. `git` and `python3` come with the Xcode Command Line Tools (`xcode-select --install`).
 
-Then it runs `plugins/<name>/install.sh` for each plugin. Each plugin installs into whichever tools it finds:
-
-| Tool | What albino's installer does |
-|------|------------------------------|
-| Claude Code | Registers the `myagents` marketplace and enables the plugin |
-| Cursor | Links the plugin into `~/.cursor/plugins/local/albino` |
-| Codex | Adds the marketplace, installs the plugin, and generates the agents. Run `/hooks` once in Codex to trust the hooks |
+Each line of the output says what to do next, such as restarting a tool, signing in to Context7, or running `/hooks` once in Codex to trust the hooks.
 
 **Updating.** Run the install command again. Every step is safe to repeat: a rerun updates what is there and never duplicates settings, hooks, or links. `~/.myagents` belongs to the installer, so a rerun resets it to the latest version and discards local edits to tracked files. Untracked files, such as the memory database, are kept.
 
-**Uninstalling.** This undoes every install step on every tool, including settings, hooks, MCP servers, and the generated Codex agents, then deletes `~/.myagents`. Your own settings, hooks, skills, and agents are left alone, and so is your agent memory. Homebrew and the tools from `requirements.list` stay installed, since other software may use them; remove them with `brew uninstall` if you no longer need them.
+**Uninstalling.** This undoes every install step on every tool, including settings, hooks, and MCP servers, then deletes `~/.myagents`. Your own settings, hooks, skills, and agents are left alone, and so is your agent memory. Homebrew and the tools from `requirements.list` stay installed, since other software may use them; remove them with `brew uninstall` if you no longer need them.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/uninstall.sh | bash
@@ -308,59 +276,9 @@ Rerunning the uninstaller is safe: steps with nothing left to undo report "Alrea
 
 ---
 
-## Adding a plugin
+## Contributing
 
-Each folder in `plugins/` holds either a full plugin or just the scripts that install a third-party one. A third-party plugin is installed the way its own README documents for each tool: its marketplace, its own CLI, or the Skills CLI. Add `plugins/<name>/install.sh` and `plugins/<name>/uninstall.sh`, and the root scripts pick them up. They run with `bash`, with `MYAGENTS_DIR` (the checkout path) and `MYAGENTS_MARKETPLACE` (`myagents`) exported.
-
-Source `scripts/install-lib.sh` so both scripts are safe to rerun and print the same messages as the other plugins. A third-party plugin published as Claude Code and Codex marketplaces needs only this:
-
-```bash
-# plugins/<name>/install.sh
-#!/usr/bin/env bash
-set -euo pipefail
-source "$MYAGENTS_DIR/scripts/install-lib.sh"
-
-REPO_URL="https://github.com/owner/repo.git"
-
-has_claude_code && claude_marketplace_plugin "$REPO_URL" <marketplace> <plugin>
-has_codex && codex_marketplace_plugin "$REPO_URL" <marketplace> <plugin>
-
-finish
-```
-
-```bash
-# plugins/<name>/uninstall.sh
-#!/usr/bin/env bash
-set -euo pipefail
-source "$MYAGENTS_DIR/scripts/install-lib.sh"
-
-has_claude_code && claude_marketplace_plugin_remove <marketplace> <plugin>
-has_codex && codex_marketplace_plugin_remove <marketplace> <plugin>
-
-finish
-```
-
-<details>
-<summary>Helpers in <code>scripts/install-lib.sh</code></summary>
-
-| Helper | Purpose |
-|--------|---------|
-| `has_claude_code`, `has_cursor`, `has_codex` | Detect a tool |
-| `section`, `ok`, `note`, `fail` | Print a heading or one status line; `fail` also shows the failed command's last output lines |
-| `quietly <cmd>` | Run a command with its output hidden unless it fails; on success the output is in `$quiet_output` |
-| `need <tool> [brew formula]` | Stop the plugin with an install hint when a tool is missing |
-| `claude_marketplace_plugin`, `codex_marketplace_plugin` | Install or update a plugin from a git-hosted marketplace |
-| `claude_marketplace_plugin_remove`, `codex_marketplace_plugin_remove` | Remove that plugin and its marketplace, or report "Already removed." |
-| `codex_has_marketplace <name>` | Check whether Codex has a marketplace configured |
-| `skills_cli_skill <repo-url> <skill> [skills add flags...]`, `skills_cli_skill_remove <skill>` | Install or update a standalone skill with the Skills CLI for Claude Code, Cursor, and Codex, passing any extra flags its own install command uses, or remove it |
-| `skills_cli_repo <repo-url> [skills add flags...]`, `skills_cli_repo_remove <repo-url>` | Install or update every skill in a repository with the Skills CLI, or remove the skills it installed from that repository |
-| `sync_checkout <url> <dir>` | Clone a repository, or reset it to the latest commit |
-| `link_dir <src> <link>` | Create or replace a symlink to a directory |
-| `finish` | Exit non-zero if any step failed |
-
-</details>
-
-Repository rules for contributors and agents are in [`AGENTS.md`](AGENTS.md). Run `make local` before opening a pull request.
+Repository rules for contributors and agents, including how to add a plugin, are in [`AGENTS.md`](AGENTS.md). Run `make local` before opening a pull request.
 
 ---
 
