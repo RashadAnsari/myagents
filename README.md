@@ -44,6 +44,11 @@ context7
   ✓ Cursor          Installed. Sign in to Context7 when Cursor asks, or from Cursor Settings > MCP.
   ✓ Codex           Installed. Run 'codex mcp login context7' once to sign in.
 
+emil-skills
+  ✓ Claude Code     Installed. Restart open sessions to load it.
+  ✓ Cursor          Installed. Start a new chat to load it.
+  ✓ Codex           Installed. Restart Codex to load it.
+
 ponytail
   ✓ Claude Code     Installed. Restart open sessions to load it.
   ✓ Codex           Installed. Restart Codex, then run /hooks once to trust its hooks.
@@ -63,6 +68,7 @@ Summary
   ✓ albino          Ready.
   ✓ archify         Ready.
   ✓ context7        Ready.
+  ✓ emil-skills     Ready.
   ✓ ponytail        Ready.
   ✓ security-audit  Ready.
   ✓ ui-ux-pro-max   Ready.
@@ -92,7 +98,7 @@ The diagram is generated with [archify](#archify) from [docs/architecture.json](
 ## Contents
 
 - [Architecture](#architecture)
-- [Plugins](#plugins): [albino](#albino), [archify](#archify), [context7](#context7), [ponytail](#ponytail), [security-audit](#security-audit), [ui-ux-pro-max](#ui-ux-pro-max)
+- [Plugins](#plugins): [albino](#albino), [archify](#archify), [context7](#context7), [emil-skills](#emil-skills), [ponytail](#ponytail), [security-audit](#security-audit), [ui-ux-pro-max](#ui-ux-pro-max)
 - [Platform support](#platform-support)
 - [Agent memory](#agent-memory)
 - [Installing, updating, and uninstalling](#installing-updating-and-uninstalling)
@@ -197,6 +203,12 @@ The installer uses the project's documented Skills CLI command (`skills add tt-a
 
 The installer runs Context7's own `ctx7 setup --mcp --oauth` for each tool, which adds its MCP server, a rule that tells the agent when to use it, and a `context7-mcp` skill. Sign-in happens in the app the first time, so no API key is stored on disk: run `/mcp` in Claude Code, sign in when Cursor asks, or run `codex mcp login context7`. For Codex, the rule is added as a marked block in `~/.codex/AGENTS.md`, and uninstalling removes only that block. Telemetry is turned off.
 
+### emil-skills
+
+[Emil Kowalski's skills](https://github.com/emilkowalski/skills) teach agents the small interface details they tend to get wrong: the right easing and duration for an animation, a soft shadow instead of a hard border, motion that does not drop frames. They draw on his work at Vercel and Linear. The set covers building, reviewing, and auditing animations (`animate`, `animate-expo`, `review-animations`, `improve-animations`, `find-animation-opportunities`, `animation-performance`, `animation-vocabulary`), general design (`emil-design-eng`, `apple-design`, `mobile-native`, `break-ui`, `prototype`, `pick-ui-library`), Swift (`write-swift`), and his Sonner toast library (`ask-sonner`). They complement albino's `frontend-design` skill, which sets a visual direction, and ui-ux-pro-max, which supplies styles and palettes; these focus on motion and polish.
+
+The installer uses the project's documented Skills CLI command (`skills add emilkowalski/skills`) with every skill selected, with install telemetry turned off, so skills the repository adds later come in on the next update. Uninstalling removes only the skills the CLI recorded as coming from this repository. It needs `node`.
+
 ### ponytail
 
 [ponytail](https://github.com/DietrichGebert/ponytail) by Dietrich Gebert is a third-party plugin that pushes agents toward the shortest solution that works: YAGNI, standard library first, no abstractions nobody asked for. The installer sets it up with each tool's own method and keeps it up to date. Its hooks need `node`.
@@ -225,6 +237,7 @@ It ships seven skills: `ui-ux-pro-max`, `design`, `design-system`, `ui-styling` 
 | albino MCP servers | ✓ | ✓ | ✓ |
 | archify | ✓ | ✓ | ✓ |
 | context7 | ✓ | ✓ | ✓ |
+| emil-skills | ✓ | ✓ | ✓ |
 | ponytail | ✓ | ✓ hooks | ✓ after `/hooks` |
 | security-audit | ✓ | ✓ | ✓ |
 | ui-ux-pro-max | ✓ | ✓ | ✓ |
@@ -340,6 +353,7 @@ finish
 | `claude_marketplace_plugin_remove`, `codex_marketplace_plugin_remove` | Remove that plugin and its marketplace, or report "Already removed." |
 | `codex_has_marketplace <name>` | Check whether Codex has a marketplace configured |
 | `skills_cli_skill <repo-url> <skill> [skills add flags...]`, `skills_cli_skill_remove <skill>` | Install or update a standalone skill with the Skills CLI for Claude Code, Cursor, and Codex, passing any extra flags its own install command uses, or remove it |
+| `skills_cli_repo <repo-url> [skills add flags...]`, `skills_cli_repo_remove <repo-url>` | Install or update every skill in a repository with the Skills CLI, or remove the skills it installed from that repository |
 | `sync_checkout <url> <dir>` | Clone a repository, or reset it to the latest commit |
 | `link_dir <src> <link>` | Create or replace a symlink to a directory |
 | `finish` | Exit non-zero if any step failed |

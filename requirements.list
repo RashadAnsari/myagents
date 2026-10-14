@@ -5,7 +5,7 @@
 #
 # command  formula  needed by
 
-jq         jq       # albino hooks
+jq         jq       # albino hooks, skills_cli_repo_remove
 node       node     # ponytail hooks, security-audit, and the Skills CLI
 uv         uv       # albino MCP servers: agent-memory, markitdown
 bun        bun      # albino playwright MCP server
