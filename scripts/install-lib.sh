@@ -183,23 +183,43 @@ _skills_cli() {
   DISABLE_TELEMETRY=1 DO_NOT_TRACK=1 npx -y skills@latest "$@"
 }
 
+# Runs `skills add` for every detected tool, reporting failure under <name>.
+_skills_cli_add() {
+  local name="$1" agents=()
+  shift
+  while IFS='|' read -r id _; do [ -n "$id" ] && agents+=("$id"); done < <(_skills_cli_agents)
+  [ ${#agents[@]} -eq 0 ] && return 0
+  if ! command -v npx &>/dev/null; then
+    fail "Requirements" "node is not installed, so $name was skipped. Install it with: brew install node"
+  elif quietly _skills_cli add "$@" --global --agent "${agents[@]}" -y; then
+    _skills_cli_report "Installed" "load"
+  else
+    fail "Skills" "Could not install $name."
+  fi
+}
+
+# Runs `skills remove` for the given skills, reporting failure under <name>.
+_skills_cli_remove() {
+  local name="$1"
+  shift
+  if ! command -v npx &>/dev/null; then
+    fail "Requirements" "node is not installed, so $name could not be removed. Install it with: brew install node"
+  elif quietly _skills_cli remove "$@" --global -y; then
+    _skills_cli_report "Removed" "unload"
+  else
+    fail "Skills" "Could not remove $name."
+  fi
+}
+
 # Installs or updates a skill with the Skills CLI for every detected tool. The
 # CLI keeps the skill in ~/.agents/skills, which Cursor and Codex read, and links
 # it into ~/.claude/skills for Claude Code. Extra arguments are passed to
 # `skills add`, for flags a skill's own install command uses, such as --copy.
 # Rerunning reinstalls the latest version. Install telemetry is turned off.
 skills_cli_skill() {
-  local url="$1" skill="$2" agents=()
+  local url="$1" skill="$2"
   shift 2
-  while IFS='|' read -r id _; do [ -n "$id" ] && agents+=("$id"); done < <(_skills_cli_agents)
-  [ ${#agents[@]} -eq 0 ] && return 0
-  if ! command -v npx &>/dev/null; then
-    fail "Requirements" "node is not installed, so $skill was skipped. Install it with: brew install node"
-  elif quietly _skills_cli add "$url" --skill "$skill" --global --agent "${agents[@]}" "$@" -y; then
-    _skills_cli_report "Installed" "load"
-  else
-    fail "Skills" "Could not install $skill."
-  fi
+  _skills_cli_add "$skill" "$url" --skill "$skill" "$@"
 }
 
 # Removes a skill the Skills CLI installed, from every tool.
@@ -209,13 +229,43 @@ skills_cli_skill_remove() {
   if [ ! -e "$HOME/.agents/skills/$skill" ] && [ ! -e "$HOME/.claude/skills/$skill" ] \
     && [ ! -L "$HOME/.claude/skills/$skill" ]; then
     _skills_cli_report "Already removed"
-  elif ! command -v npx &>/dev/null; then
-    fail "Requirements" "node is not installed, so $skill could not be removed. Install it with: brew install node"
-  elif quietly _skills_cli remove "$skill" --global -y; then
-    _skills_cli_report "Removed" "unload"
   else
-    fail "Skills" "Could not remove $skill."
+    _skills_cli_remove "$skill" "$skill"
   fi
+}
+
+# Installs or updates every skill in a GitHub repository with the Skills CLI,
+# the same way as skills_cli_skill. Skills the repository adds later come in on
+# the next run.
+skills_cli_repo() {
+  local url="$1"
+  shift
+  _skills_cli_add "$(_skills_cli_source "$url")" "$url" --skill '*' "$@"
+}
+
+# Removes every skill the Skills CLI installed from a GitHub repository. The
+# CLI's lock file records each skill's source, so skills from other
+# repositories are left alone.
+skills_cli_repo_remove() {
+  local source skills=()
+  source="$(_skills_cli_source "$1")"
+  while IFS= read -r skill; do [ -n "$skill" ] && skills+=("$skill"); done < <(
+    jq -r --arg source "$source" \
+      '.skills // {} | to_entries[] | select(.value.source == $source) | .key' \
+      "$HOME/.agents/.skill-lock.json" 2>/dev/null
+  )
+  if [ ${#skills[@]} -eq 0 ]; then
+    _skills_cli_report "Already removed"
+  else
+    _skills_cli_remove "$source" "${skills[@]}"
+  fi
+}
+
+# Turns a GitHub URL into the owner/repo form the Skills CLI records as source.
+_skills_cli_source() {
+  local source="${1#https://github.com/}"
+  source="${source%/}"
+  echo "${source%.git}"
 }
 
 _homebrew_bin() {
