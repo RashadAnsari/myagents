@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// Exports an Archify HTML diagram to PNG. Archify has no export command: PNG
-// export lives only in the viewer's Export menu, so this opens the page in
-// headless Chrome and clicks Export > PNG, capturing the file it downloads.
+// Exports an Archify HTML diagram to PNG in the dark theme. Archify has no
+// export command: PNG export lives only in the viewer's Export menu, so this
+// opens the page in headless Chrome and clicks Export > PNG, capturing the
+// file it downloads.
 //
 // Usage: node scripts/export-diagram-png.mjs <diagram.html> <output.png>
 // Set CHROME to the Chrome executable when it is not in /Applications.
@@ -72,27 +73,46 @@ function waitForDevToolsPort(chrome) {
 }
 
 async function openPage(port, url) {
-  const response = await fetch(`http://127.0.0.1:${port}/json/new?${url}`, { method: "PUT" });
+  const response = await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url)}`, { method: "PUT" });
   const target = await response.json();
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((ok) => socket.addEventListener("open", ok, { once: true }));
   return socket;
 }
 
+let nextMessageId = 1;
+
 function evaluate(socket, expression) {
+  const id = nextMessageId++;
   return new Promise((ok) => {
-    socket.addEventListener("message", (event) => {
+    const onMessage = (event) => {
       const message = JSON.parse(event.data);
-      if (message.id === 1) ok(message);
-    });
+      if (message.id !== id) return;
+      socket.removeEventListener("message", onMessage);
+      ok(message);
+    };
+    socket.addEventListener("message", onMessage);
     socket.send(
       JSON.stringify({
-        id: 1,
+        id,
         method: "Runtime.evaluate",
         params: { expression, awaitPromise: true, returnByValue: true },
       }),
     );
   });
+}
+
+// A new tab starts on about:blank and navigates afterwards, so the export
+// script must wait until the viewer itself has loaded.
+async function waitForViewer(socket) {
+  const ready = `document.readyState === "complete" && !!document.getElementById("btn-export")`;
+  const deadline = Date.now() + EXPORT_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const reply = await evaluate(socket, ready);
+    if (reply.result?.result?.value === true) return;
+    await new Promise((ok) => setTimeout(ok, 100));
+  }
+  throw new Error("The diagram page did not load in time.");
 }
 
 async function main() {
@@ -106,7 +126,12 @@ async function main() {
   const chrome = launchChrome(profileDir);
   try {
     const port = await waitForDevToolsPort(chrome);
-    const socket = await openPage(port, pathToFileURL(resolve(htmlPath)).href);
+    // Without ?theme=dark the viewer follows the system color scheme, which
+    // differs between machines (headless Chrome on Linux reports light).
+    const pageUrl = pathToFileURL(resolve(htmlPath));
+    pageUrl.searchParams.set("theme", "dark");
+    const socket = await openPage(port, pageUrl.href);
+    await waitForViewer(socket);
     const reply = await evaluate(socket, `(${exportPngInPage})(${EXPORT_TIMEOUT_MS})`);
     socket.close();
 
@@ -122,7 +147,8 @@ async function main() {
     process.exitCode = 1;
   } finally {
     chrome.kill();
-    rmSync(profileDir, { recursive: true, force: true });
+    // Chrome can still be writing to its profile right after kill(), so retry.
+    rmSync(profileDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   }
 }
 

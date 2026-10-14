@@ -1,4 +1,6 @@
 ---
+name: statusline
+disable-model-invocation: true
 description: Configure the Claude Code statusline to show current directory, git branch and dirty state, model, context usage, and time. Writes the statusline script and updates ~/.claude/settings.json.
 allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion]
 ---

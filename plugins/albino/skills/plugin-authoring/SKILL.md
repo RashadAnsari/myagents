@@ -1,11 +1,11 @@
 ---
 name: plugin-authoring
-description: 'Best practices for writing skills, commands, and agents: descriptions, structure, token efficiency, frontmatter, tool scoping, and common authoring mistakes. Activate when creating or editing a SKILL.md, a command file, or an agent file, or when the user asks to "write a skill", "add a command", "create an agent", or "review this skill".'
+description: 'Best practices for writing skills and agents: descriptions, structure, token efficiency, frontmatter, tool scoping, and common authoring mistakes. Activate when creating or editing a SKILL.md, a command file, or an agent file, or when the user asks to "write a skill", "add a command", "create an agent", or "review this skill".'
 ---
 
 # Plugin Authoring
 
-Rules for writing skills, commands, and agents. Apply them when creating or editing any of these files.
+Rules for writing skills and agents. Apply them when creating or editing any of these files.
 
 ## Universal Rules
 
@@ -24,17 +24,17 @@ Frontmatter: `name` (lowercase letters, numbers, hyphens, max 64 chars) and `des
 - Keep the body under 500 lines. When approaching the limit, split detail into supporting files in the skill directory and link them from SKILL.md, one level deep only. Give reference files longer than 100 lines a table of contents.
 - Match specificity to fragility. Judgment tasks get short, high-freedom guidance. Fragile sequences get exact commands with "do not modify" instructions. One default approach with an escape hatch beats a menu of options.
 - For multi-step workflows, write numbered steps. For quality-critical output, build a feedback loop: produce, validate, fix, repeat until the validator passes.
-- Side-effect workflows the user must trigger themselves (commit, deploy, publish) would normally set `disable-model-invocation: true`, but this repo omits the flag for now: some editors currently hide plugin-delivered skills with it from the command menu entirely, making them un-invokable. Re-add it once that bug is fixed. Background knowledge that is not a meaningful action: set `user-invocable: false`.
+- Side-effect or high-cost workflows the user must trigger themselves (commit, deploy, publish) set `disable-model-invocation: true`. The model then cannot see the skill at all, so the user must type its `/` command. Codex ignores that flag, so also add `agents/openai.yaml` beside `SKILL.md` with `policy: allow_implicit_invocation: false`. Cursor has had a bug where plugin skills with the flag vanish from the `/` menu; if they do, that is the cause. Background knowledge that is not a meaningful action: set `user-invocable: false`.
 - Bundled scripts: instruct execution, not reading, unless the algorithm itself is the reference. Scripts must handle their own error cases instead of failing back to the model, and every constant needs a justifying comment.
 - A loaded skill stays in context for the whole session. Write standing instructions, not one-time steps.
 
-## Commands
+## Workflow Skills
 
-A command is a skill invoked by name, so all skill rules apply, plus:
+Write every workflow the user runs by name as a skill, never as a command: Claude Code merged commands into skills, Cursor migrates them, and Codex deprecated custom prompts. All skill rules apply, plus:
 
 - Scope `allowed-tools` to exactly what the task needs (e.g. `Bash(git add:*)`, not `Bash`).
-- Declare `argument-hint` when the command takes arguments, and consume them with `$ARGUMENTS` or positional placeholders. Validate missing arguments first and show a usage line.
-- Inject live data with `` !`command` `` lines so the prompt arrives with current state (diff, status, branch) instead of instructing the model to fetch it.
+- Declare `argument-hint` when the skill takes arguments, and consume them with `$ARGUMENTS` or positional placeholders. Validate missing arguments first and show a usage line. Only Claude Code fills them in, so say right after the first use to take the value from the user's message when the placeholder is left as written.
+- Inject live data with `` !`command` `` lines so the prompt arrives with current state (diff, status, branch) instead of instructing the model to fetch it. Only Claude Code runs them, so tell the agent to run the commands itself when they are left as written.
 - End with an explicit task framing: what to do, what not to do, what output is allowed.
 
 ## Agents

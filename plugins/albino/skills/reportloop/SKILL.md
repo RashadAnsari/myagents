@@ -1,4 +1,5 @@
 ---
+name: reportloop
 description: 'Interactively walk through all issues in REVIEW_REPORT.md: explains each issue, asks to fix or skip, handles follow-up questions, and applies fixes one by one in severity order.'
 allowed-tools: [Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion]
 ---
