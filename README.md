@@ -234,7 +234,7 @@ It ships seven skills: `ui-ux-pro-max`, `design`, `design-system`, `ui-styling` 
 | archify | ✓ | ✓ | ✓ |
 | context7 | ✓ | ✓ | ✓ |
 | emil-skills | ✓ | ✓ | ✓ |
-| ponytail | ✓ | ✓ hooks | ✓ after `/hooks` |
+| ponytail | ✓ | ✓ | ✓ after `/hooks` |
 | security-audit | ✓ | ✓ | ✓ |
 | ui-ux-pro-max | ✓ | ✓ | ✓ |
 

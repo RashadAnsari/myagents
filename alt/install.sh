@@ -1,14 +1,24 @@
 #!/usr/bin/env bash
 # Installs or updates the complete ECC setup (https://github.com/affaan-m/ECC)
-# for Claude Code, Cursor, and Codex. Not part of the myagents installer: run
-# it on its own. Safe to rerun, every step updates in place. See README.md.
+# for Claude Code, Cursor, and Codex. Safe to rerun, every step updates in
+# place. See README.md.
 #
 # Usage: install.sh [--no-observer]
 set -euo pipefail
 
-ALT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Run from a clone, the library sits next to this folder. Piped from curl there
+# is no folder, so the library is downloaded from GitHub instead.
+LIB="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd)/../scripts/install-lib.sh"
+if [ ! -f "$LIB" ]; then
+  LIB="$(mktemp)"
+  trap 'rm -f "$LIB"' EXIT
+  if ! curl -fsSL "https://raw.githubusercontent.com/RashadAnsari/myagents/master/scripts/install-lib.sh" -o "$LIB"; then
+    echo "✗ Could not download the myagents install library. Check your connection and try again."
+    exit 1
+  fi
+fi
 # shellcheck source=../scripts/install-lib.sh
-source "$ALT_DIR/../scripts/install-lib.sh"
+source "$LIB"
 
 REPO_URL="https://github.com/affaan-m/ECC.git"
 CLAUDE_MARKETPLACE_DIR="$HOME/.claude/plugins/marketplaces/ecc"

@@ -1,14 +1,15 @@
-# ECC (standalone)
+# ECC
 
 Installs [ECC](https://github.com/affaan-m/ECC) for Claude Code, Cursor, and Codex: its plugin (agents, skills, commands, hooks), common rules, memory, and continuous learning.
-
-This folder is not part of the myagents installer. Run it yourself.
 
 ## Install
 
 ```bash
-bash alt/install.sh                 # everything
-bash alt/install.sh --no-observer   # everything except the background observer
+# everything
+curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/alt/install.sh | bash
+
+# everything except the background observer
+curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/alt/install.sh | bash -s -- --no-observer
 ```
 
 Needs `git`, `node` 18+, `npm`, and `python3`. Rerun to update. Restart your tools afterwards.
@@ -57,8 +58,11 @@ Project memories are in `.ecc/memory/project` in the repository, git-ignored by 
 ## Uninstall
 
 ```bash
-bash alt/uninstall.sh            # keeps memories, instincts, and session summaries
-bash alt/uninstall.sh --purge    # deletes them too
+# keeps memories, instincts, and session summaries
+curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/alt/uninstall.sh | bash
+
+# deletes them too
+curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/alt/uninstall.sh | bash -s -- --purge
 ```
 
 Removes the plugin, MCP servers, rules, observer setting, and npm package. Your other entries in `~/.cursor/mcp.json` and the Codex config are kept. Project vaults are never touched. Safe to rerun.
