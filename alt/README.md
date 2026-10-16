@@ -20,13 +20,15 @@ Needs `git`, `node` 18+, `npm`, and `python3`. Rerun to update. Restart your too
 
 | Part | Claude Code | Cursor | Codex |
 |---|---|---|---|
-| Plugin `ecc@ecc` | ✓ | ✓ via the Claude Code plugin | ✓ |
-| Session hooks (save, reload, pre-compact snapshot) | ✓ | ✓ via the Claude Code plugin | Session start only |
-| Common rules in `~/.claude/rules/ecc` | ✓ | | |
+| Plugin `ecc@ecc` | ✓ | ✓ | ✓ |
+| Session hooks (save, reload, pre-compact snapshot) | ✓ | ✓ | Session start only |
+| Rules | Common rules in `~/.claude/rules/ecc` | ECC's Cursor rules | |
 | `ecc-memory-vault` MCP server | ✓ | ✓ | ✓ |
-| Background observer | ✓ | ✓ via the Claude Code plugin | |
+| Background observer | ✓ | | |
 
-Cursor has no ECC plugin. It loads the Claude Code one through its "Include third-party Plugins, Skills, and other configs" setting (on by default), so it needs Claude Code installed. Codex runs plugin hooks only after you approve them once with `/hooks`.
+Cursor has no ECC plugin, so the script builds one plugin folder from ECC's repository that every tool uses: `~/.cursor/plugins/local/ecc` with Cursor, `~/.local/share/ecc-plugin` without. Cursor loads it in every workspace, and loads it once even when its "Include third-party Plugins, Skills, and other configs" setting also imports Claude Code's plugins. Cursor's hooks do not record tool calls, so the observer learns from Claude Code only.
+
+Codex runs plugin hooks only after you approve them once with `/hooks`. Commands are skills there, such as `ecc:source-command-learn`.
 
 ## Using memory
 
@@ -65,4 +67,4 @@ curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/alt/un
 curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/alt/uninstall.sh | bash -s -- --purge
 ```
 
-Removes the plugin, MCP servers, rules, observer setting, and npm package. Your other entries in `~/.cursor/mcp.json` and the Codex config are kept. Project vaults are never touched. Safe to rerun.
+Removes everything the installer added, from every tool: the plugin folder and its registrations, MCP servers, rules, observer setting, and npm package. Your other settings in each tool are kept. Project vaults are never touched. Safe to rerun.

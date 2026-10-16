@@ -21,9 +21,17 @@ fi
 source "$LIB"
 
 LEARN_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/ecc-homunculus"
-CURSOR_MCP="$HOME/.cursor/mcp.json"
+CURSOR_PLUGIN_DIR="$HOME/.cursor/plugins/local/ecc"
+DATA_PLUGIN_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/ecc-plugin"
 MCP_NAME="ecc-memory-vault"
 PURGE=false
+
+# ECC's hooks in Codex keep their session data in ~/.claude, so that folder
+# alone does not mean Claude Code is installed. Every Claude Code keeps its
+# settings in ~/.claude.json, and plugins/ holds what install.sh registered.
+claude_code_present() {
+  command -v claude &>/dev/null || [ -f "$HOME/.claude.json" ] || [ -d "$HOME/.claude/plugins" ]
+}
 
 case "${1:-}" in
   "") ;;
@@ -49,47 +57,79 @@ learning_remove() {
   fi
 }
 
+# Drops the entries install.sh wrote in ~/.claude/ and prints whether there were any.
+claude_unregister() {
+  node - "$HOME/.claude" <<'JS'
+const fs = require("fs"), path = require("path");
+const [claudeDir] = process.argv.slice(2);
+let changed = false;
+const update = (file, change) => {
+  file = path.join(claudeDir, file);
+  let data;
+  try { data = JSON.parse(fs.readFileSync(file, "utf8")); } catch { return; }
+  if (!change(data)) return;
+  changed = true;
+  // A registry left with nothing in it goes, as Claude Code recreates it when needed.
+  const empty = Object.keys(data).filter(k => k !== "version").every(k =>
+    data[k] && typeof data[k] === "object" && Object.keys(data[k]).length === 0);
+  if (empty && file.includes(`${path.sep}plugins${path.sep}`)) fs.rmSync(file);
+  else fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
+};
+// Removes a key, and its section too when that leaves the section empty.
+const drop = (data, section, key) => {
+  const parent = section ? data[section] : data;
+  if (!parent || typeof parent !== "object" || !(key in parent)) return false;
+  delete parent[key];
+  if (section && Object.keys(parent).length === 0) delete data[section];
+  return true;
+};
+update("plugins/known_marketplaces.json", d => drop(d, null, "ecc"));
+update("plugins/installed_plugins.json", d => drop(d, "plugins", "ecc@ecc"));
+update("settings.json", d => [drop(d, "enabledPlugins", "ecc@ecc"), drop(d, "extraKnownMarketplaces", "ecc")].some(Boolean));
+console.log(changed ? "removed" : "absent");
+JS
+}
+
 claude_remove() {
-  if ! command -v claude &>/dev/null; then
-    claude_marketplace_plugin_remove ecc ecc
-    return 0
+  if ! quietly claude_unregister; then
+    fail "Claude Code" "Could not update the settings in ~/.claude/. Check that the JSON files there are valid."
+  elif [ "$quiet_output" = "removed" ]; then
+    rmdir "$HOME/.claude/plugins" 2>/dev/null || true
+    ok "Claude Code" "Removed the ECC plugin. Restart open sessions to unload it."
+  else
+    ok "Claude Code" "Already removed."
   fi
-  if claude mcp get "$MCP_NAME" &>/dev/null; then
+  if [ -d "$HOME/.claude/rules/ecc" ]; then
+    rm -rf "$HOME/.claude/rules/ecc"
+    rmdir "$HOME/.claude/rules" 2>/dev/null || true
+    ok "Claude Code" "Removed the rule packs in ~/.claude/rules/ecc."
+  fi
+  if command -v claude &>/dev/null && claude mcp get "$MCP_NAME" &>/dev/null; then
     if quietly claude mcp remove "$MCP_NAME" --scope user; then
       ok "Claude Code" "Removed the $MCP_NAME MCP server."
     else
       fail "Claude Code" "Could not remove the $MCP_NAME MCP server."
     fi
   fi
-  if [ -d "$HOME/.claude/rules/ecc" ]; then
-    rm -rf "$HOME/.claude/rules/ecc"
-    # install.sh may have created the parent; it goes only when nothing else is in it.
-    rmdir "$HOME/.claude/rules" 2>/dev/null || true
-    ok "Claude Code" "Removed the rule packs in ~/.claude/rules/ecc."
-  fi
-  claude_marketplace_plugin_remove ecc ecc
 }
 
-# Only ECC's entry is removed; the rest of ~/.cursor/mcp.json is left alone.
 cursor_remove() {
-  if [ ! -f "$CURSOR_MCP" ] || ! node -e '
-    const [file, name] = process.argv.slice(1);
-    process.exit((JSON.parse(require("fs").readFileSync(file, "utf8")).mcpServers || {})[name] ? 0 : 1);
-  ' "$CURSOR_MCP" "$MCP_NAME" 2>/dev/null; then
-    ok "Cursor" "Already removed."
-  elif quietly node -e '
-    const fs = require("fs"), [file, name] = process.argv.slice(1);
-    const data = JSON.parse(fs.readFileSync(file, "utf8"));
-    delete data.mcpServers[name];
-    fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
-  ' "$CURSOR_MCP" "$MCP_NAME"; then
-    ok "Cursor" "Removed the $MCP_NAME MCP server. Start a new chat to unload it."
+  if [ -d "$CURSOR_PLUGIN_DIR" ]; then
+    rm -rf "$CURSOR_PLUGIN_DIR"
+    # install.sh may have created the parents; each goes only when nothing else is in it.
+    rmdir "$HOME/.cursor/plugins/local" "$HOME/.cursor/plugins" 2>/dev/null || true
+    ok "Cursor" "Removed the ECC plugin. Run 'Developer: Reload Window' to unload it."
   else
-    fail "Cursor" "Could not remove the $MCP_NAME MCP server from ~/.cursor/mcp.json."
+    ok "Cursor" "Already removed."
   fi
 }
 
+# Codex is checked through its config file, not `codex plugin marketplace
+# list`, which fails once the plugin folder its marketplace points at is gone.
+# The trust Codex recorded for ECC's hooks goes too, along with the empty
+# folder `codex plugin remove` leaves in its cache.
 codex_remove() {
+  local config="${CODEX_HOME:-$HOME/.codex}/config.toml" removed=false
   if codex mcp get "$MCP_NAME" &>/dev/null; then
     if quietly codex mcp remove "$MCP_NAME"; then
       ok "Codex" "Removed the $MCP_NAME MCP server."
@@ -97,7 +137,42 @@ codex_remove() {
       fail "Codex" "Could not remove the $MCP_NAME MCP server."
     fi
   fi
-  codex_marketplace_plugin_remove ecc ecc
+  if grep -qxF '[plugins."ecc@ecc"]' "$config" 2>/dev/null; then
+    quietly codex plugin remove ecc@ecc || { fail "Codex" "Could not remove the ECC plugin."; return 0; }
+    removed=true
+  fi
+  if grep -qxF '[marketplaces.ecc]' "$config" 2>/dev/null; then
+    quietly codex plugin marketplace remove ecc || { fail "Codex" "Could not remove the ecc marketplace."; return 0; }
+    removed=true
+  fi
+  if grep -qF '[hooks.state."ecc@ecc:' "$config" 2>/dev/null; then
+    # Drops each [hooks.state."ecc@ecc:..."] table, up to the next table header,
+    # with the blank lines that separated it from the table before.
+    awk '
+      /^\[/ { skip = index($0, "[hooks.state.\"ecc@ecc:") == 1; if (skip) blank = "" }
+      /^[[:space:]]*$/ { blank = blank $0 "\n"; next }
+      skip { blank = ""; next }
+      { printf "%s", blank; blank = ""; print }
+    ' "$config" >"$config.tmp" \
+      && mv "$config.tmp" "$config" || { fail "Codex" "Could not update $config."; return 0; }
+    removed=true
+  fi
+  rmdir "${CODEX_HOME:-$HOME/.codex}/plugins/cache/ecc" "${CODEX_HOME:-$HOME/.codex}/plugins/cache" \
+    "${CODEX_HOME:-$HOME/.codex}/plugins" 2>/dev/null || true
+  if [ "$removed" = true ]; then
+    ok "Codex" "Removed the ECC plugin. Restart Codex to unload it."
+  else
+    ok "Codex" "Already removed."
+  fi
+}
+
+# The folder every tool installed from. With Cursor it is Cursor's plugin and
+# cursor_remove reports it; otherwise it sits in the data folder.
+plugin_remove() {
+  if [ -d "$DATA_PLUGIN_DIR" ]; then
+    rm -rf "$DATA_PLUGIN_DIR"
+    ok "Plugin" "Deleted the ECC plugin folder ${DATA_PLUGIN_DIR/#$HOME/'~'}."
+  fi
 }
 
 vault_remove() {
@@ -110,19 +185,39 @@ vault_remove() {
   fi
 }
 
+# Without --purge only data is kept: the empty folders install.sh and the vault
+# set up go, so nothing is left when ECC never stored anything.
 data_remove() {
+  # ECC's hooks keep their data in ~/.claude for Claude Code and Codex, and in
+  # ~/.cursor/ecc for Cursor.
+  local dirs=("$HOME/.ecc" "$LEARN_DIR" "$HOME/.claude/session-data" "$HOME/.claude/metrics"
+    "$HOME/.claude/skills/learned" "$HOME/.claude/ecc" "$HOME/.claude/plugins/data/ecc-ecc"
+    "$HOME/.cursor/ecc") dir kept=false
   if [ "$PURGE" = true ]; then
-    rm -rf "$HOME/.ecc" "$LEARN_DIR" "$HOME/.claude/session-data" "$HOME/.cursor/ecc"
+    # Also the state of the Chrome DevTools MCP server ECC's plugin starts.
+    rm -rf "${dirs[@]}" "${XDG_DATA_HOME:-$HOME/.local/share}/chrome-devtools-mcp"
     ok "Data" "Deleted user memories, learned instincts, and session summaries."
   else
-    note "Data" "Kept ~/.ecc/memory, ${LEARN_DIR/#$HOME/'~'}, and the session summaries. Rerun with --purge to delete them."
+    for dir in "${dirs[@]}"; do
+      [ -d "$dir" ] || continue
+      find "$dir" -depth -type d -empty -delete 2>/dev/null || true
+      [ -d "$dir" ] && kept=true
+    done
+    if [ "$kept" = true ]; then
+      note "Data" "Kept your memories, learned instincts, and session summaries. Rerun with --purge to delete them."
+    fi
   fi
+  # The data folders' parents, when install.sh created them and nothing else uses them.
+  rmdir "$HOME/.claude/skills" 2>/dev/null || true
+  rmdir "$HOME/.claude/plugins/data" "$HOME/.claude/plugins" 2>/dev/null || true
+  rmdir "$HOME/.local/share" "$HOME/.local" 2>/dev/null || true
 }
 
 learning_remove
-has_claude_code && claude_remove
+claude_code_present && claude_remove
 has_cursor && cursor_remove
 has_codex && codex_remove
+plugin_remove
 vault_remove
 data_remove
 
