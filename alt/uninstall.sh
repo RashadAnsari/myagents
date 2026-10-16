@@ -6,9 +6,19 @@
 # Usage: uninstall.sh [--purge]
 set -euo pipefail
 
-ALT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Run from a clone, the library sits next to this folder. Piped from curl there
+# is no folder, so the library is downloaded from GitHub instead.
+LIB="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd)/../scripts/install-lib.sh"
+if [ ! -f "$LIB" ]; then
+  LIB="$(mktemp)"
+  trap 'rm -f "$LIB"' EXIT
+  if ! curl -fsSL "https://raw.githubusercontent.com/RashadAnsari/myagents/master/scripts/install-lib.sh" -o "$LIB"; then
+    echo "✗ Could not download the myagents install library. Check your connection and try again."
+    exit 1
+  fi
+fi
 # shellcheck source=../scripts/install-lib.sh
-source "$ALT_DIR/../scripts/install-lib.sh"
+source "$LIB"
 
 LEARN_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/ecc-homunculus"
 CURSOR_MCP="$HOME/.cursor/mcp.json"
