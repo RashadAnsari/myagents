@@ -1,8 +1,8 @@
 ---
 name: commit-pr
 disable-model-invocation: true
-description: Create a git commit and open a pull request (creates a new branch first if on main/master)
-allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git diff:*), Bash(git branch:*), Bash(git checkout:*), Bash(git log:*), Bash(git push:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(gh pr edit:*), Bash(gh repo view:*)
+description: Squash the branch into one commit and open or update its pull request (creates a new branch first if on main/master)
+allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git diff:*), Bash(git branch:*), Bash(git checkout:*), Bash(git log:*), Bash(git fetch:*), Bash(git merge-base:*), Bash(git reset --soft:*), Bash(git commit:*), Bash(git push:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(gh pr edit:*), Bash(gh repo view:*)
 ---
 
 ## Context
@@ -17,7 +17,7 @@ The `!` prefix on each line below runs the shell command inline and injects its 
 
 ## Your task
 
-Based on the above changes, create a single git commit and create or update the pull request. Follow these steps in order:
+Based on the above changes, create or update the pull request so that it holds exactly one commit (the single-commit pull request rule). Follow these steps in order:
 
 ### Step 1: Branch check
 
@@ -29,17 +29,32 @@ If the current branch is `main` or `master`:
 
 Otherwise, stay on the current branch. Do not switch branches.
 
-### Step 2: Commit
+### Step 2: Squash into one commit
 
 Infer the commit message format from the recent commits shown above: match the exact style, prefix convention, casing, and structure used in this project. Do not impose an external convention if the project already has one.
 
-Stage all changed files and create a single commit with the inferred message style.
+Only rewrite a branch you or the user created for this pull request. If someone else has pushed to it (their commits appear in `git log origin/<current-branch>`), stop and ask the user.
+
+Stage all changed files, then fold the whole branch into one commit:
+
+```bash
+git fetch origin <default-branch>
+git reset --soft "$(git merge-base HEAD origin/<default-branch>)"
+git commit -m "<message>"
+```
+
+The message describes the whole branch, not only the latest changes.
 
 ### Step 3: Push
 
-Push the branch to origin:
+If Step 1 created the branch, or the branch has never been pushed:
 ```
 git push -u origin <current-branch>
+```
+
+Otherwise the squash rewrote pushed history, so push with a lease:
+```
+git push --force-with-lease -u origin <current-branch>
 ```
 
 ### Step 4: Build PR title and body from branch diff
@@ -83,5 +98,6 @@ gh pr create \
 ### Rules
 
 - Do not use any other tools or do anything else beyond these five steps.
+- Never use a plain `git push --force`; always use `--force-with-lease`.
 - Do not send any text besides the tool calls and, at the very end, a single short confirmation line with the PR URL.
 - If `gh` is not available or not authenticated, print the URL shown in the `git push` output and tell the user to open the PR manually.

@@ -111,7 +111,7 @@ The diagram is generated with [archify](#archify) from [docs/architecture.json](
 
 ### albino
 
-The main plugin: review agents, skills, MCP servers, and hooks.
+The main plugin: review agents, skills, MCP servers, hooks, and rules.
 
 #### Workflow skills
 
@@ -124,7 +124,7 @@ Skills you run by name. They replaced the old slash commands, which all three to
 | `/audit [reviewer] [path]` | Runs one reviewer of your choice, optionally on one path, and prints its findings |
 | `/pr-review <url>` | Reviews a GitHub pull request: picks the reviewers that fit the changed files, loads memory, checks ripple effects, lets you choose which findings to post, and submits the review with `gh` |
 | `/commit` | Stages all changes and writes a commit message in the project's existing style |
-| `/commit-pr` | Commits and opens a pull request, creating a branch first when you are on `main` or `master` |
+| `/commit-pr` | Squashes the branch into one commit and opens or updates its pull request, creating a branch first when you are on `main` or `master` |
 | `/remember <what>` | Saves something to project or user memory, or this session's learnings when given nothing |
 | `/forget <what>` | Finds and removes matching entries from project and user memory |
 | `/enrich` | Mines the 100 most recently merged pull requests for decisions, conventions, and gotchas, and saves them to project memory |
@@ -189,6 +189,16 @@ The rest load when a task calls for them:
 | `user-prompt-submit` | Every prompt | Repeats a one-line reminder of those rules, since session-start context fades in long conversations |
 | `stop` | End of every turn | Asks the agent whether it learned anything durable and, if so, to save it and tell you what it saved and why |
 
+#### Rules
+
+Instructions every agent follows on every task. Each rule is one `plugins/albino/rules/<name>.mdc` file.
+
+| Rule | What it says |
+|------|--------------|
+| `single-commit-pr` | A pull request the agent opens has exactly one commit: it squashes the branch before opening it, then amends and force-pushes with `--force-with-lease` for every later change. It never rewrites a branch someone else pushed to |
+
+Cursor loads the rules from the plugin and lists them under it. Claude Code and Codex cannot, so the installer copies them into `~/.claude/rules/albino-<name>.md`, whose prefix marks them as albino's, and into a block between `<!-- albino:rules:begin -->` and `<!-- albino:rules:end -->` markers in `~/.codex/AGENTS.md`. Edit a rule and it takes effect after the next install: restart Claude Code and Codex, and reload the Cursor window. Reinstalling rewrites only those files and that block, and uninstalling removes them; your own rules and the rest of `AGENTS.md` are left alone.
+
 ### archify
 
 [Archify](https://github.com/tt-a1i/archify) by tt-a1i turns a description, a repository, or pasted Mermaid into an interactive architecture, workflow, sequence, data-flow, or state diagram. The result is one self-contained HTML file with dark and light themes, node details, and path tracing, which you can open in any browser or send to someone, and export as PNG, SVG, or video. Ask for a diagram ("map this repository's runtime architecture", "show the checkout flow") and it activates on its own; for a repository, it can link each node to the source files behind it.
@@ -231,6 +241,7 @@ It ships seven skills: `ui-ux-pro-max`, `design`, `design-system`, `ui-styling` 
 | albino skills | ✓ | ✓ | ✓ |
 | albino hooks | ✓ | ✓ | ✓ after `/hooks` |
 | albino MCP servers | ✓ | ✓ | ✓ |
+| albino rules | ✓ | ✓ | ✓ |
 | archify | ✓ | ✓ | ✓ |
 | context7 | ✓ | ✓ | ✓ |
 | emil-skills | ✓ | ✓ | ✓ |
@@ -260,7 +271,7 @@ Each line of the output says what to do next, such as restarting a tool, signing
 
 **Updating.** Run the install command again. Every step is safe to repeat: a rerun updates what is there and never duplicates settings, hooks, or links. `~/.myagents` belongs to the installer, so a rerun resets it to the latest version and discards local edits to tracked files. Untracked files, such as the memory database, are kept.
 
-**Uninstalling.** This undoes every install step on every tool, including settings, hooks, and MCP servers, then deletes `~/.myagents`. Your own settings, hooks, skills, and agents are left alone, and so is your agent memory. Homebrew and the tools from `requirements.list` stay installed, since other software may use them; remove them with `brew uninstall` if you no longer need them.
+**Uninstalling.** This undoes every install step on every tool, including settings, hooks, and MCP servers, then deletes `~/.myagents`. Your own settings, hooks, skills, agents, and rules are left alone, including the text in `~/.codex/AGENTS.md` outside the albino block, and so is your agent memory. Homebrew and the tools from `requirements.list` stay installed, since other software may use them; remove them with `brew uninstall` if you no longer need them.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/uninstall.sh | bash

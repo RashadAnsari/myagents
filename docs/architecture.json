@@ -9,7 +9,7 @@
     "repository": {
       "url": "git@github.com:RashadAnsari/myagents.git",
       "link_mode": "local-only",
-      "revision": "2f55882fe88732e21ff4d2ec00c20a719049f860"
+      "revision": "59334ba9926dd9e46dbdd1cdf0607260284f7ea3"
     }
   },
   "components": [
@@ -22,7 +22,7 @@
     { "id": "homebrew", "type": "external", "label": "Homebrew", "sublabel": "jq, node, uv, bun", "pos": [250, 370], "size": [150, 60],
       "sources": [{ "path": "requirements.list", "line": 8, "end_line": 11 }, { "path": "install.sh", "line": 48, "end_line": 73 }] },
     { "id": "plugininstall", "type": "backend", "label": "plugins/*/install.sh", "sublabel": "albino + 6 third-party", "pos": [530, 200], "size": [170, 60],
-      "sources": [{ "path": "plugins/albino/install.sh", "line": 30, "end_line": 135 }, { "path": "scripts/install-lib.sh", "line": 186, "end_line": 199 }] },
+      "sources": [{ "path": "plugins/albino/install.sh", "line": 32, "end_line": 146 }, { "path": "scripts/install-lib.sh", "line": 186, "end_line": 199 }] },
     { "id": "thirdparty", "type": "external", "label": "Third-party sources", "sublabel": "Skills CLI, ctx7, uipro", "pos": [530, 370], "size": [170, 60],
       "sources": [{ "path": "plugins/archify/install.sh", "line": 10 }, { "path": "plugins/context7/install.sh", "line": 11, "end_line": 26 }, { "path": "plugins/ui-ux-pro-max/install.sh", "line": 14, "end_line": 30 }] },
     { "id": "hosts", "type": "frontend", "label": "Agent hosts", "sublabel": "Claude Code, Cursor, Codex", "pos": [840, 200], "size": [160, 60],
@@ -57,6 +57,6 @@
   "cards": [
     { "dot": "cyan", "title": "Install", "items": ["Root scripts only fetch the repo and run each plugins/<name>/install.sh", "Every step is idempotent; uninstall.sh mirrors install.sh"] },
     { "dot": "rose", "title": "albino hooks", "items": ["SessionStart injects mandatory skills and memory rules", "UserPromptSubmit re-injects a short reminder", "Stop blocks once to ask for project_remember / user_remember", "Cursor gets the same text from rules/session-start.mdc"] },
-    { "dot": "emerald", "title": "albino content", "items": ["14 review agents, 18 skills, no commands", "Codex: agents generated into $CODEX_HOME"] }
+    { "dot": "emerald", "title": "albino content", "items": ["14 review agents, 18 skills, no commands", "Codex: agents generated into $CODEX_HOME", "rules/*.mdc: Cursor reads them, install copies them to ~/.claude/rules and ~/.codex/AGENTS.md"] }
   ]
 }
