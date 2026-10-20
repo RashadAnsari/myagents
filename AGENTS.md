@@ -27,7 +27,7 @@ Codex needs no manual update here. `plugins/albino/scripts/gen-codex-agents.sh` 
 The mandatory skill list is injected once at session start via two mechanisms that must always stay in sync:
 
 - `plugins/albino/hooks/session-start.sh`: runs on Claude Code (`SessionStart` hook), Cursor (`sessionStart` hook), and Codex (`SessionStart` hook). Claude Code and Codex share one output schema, so both use the same branch. The Cursor branch is currently a no-op due to a platform bug where `additional_context` is silently dropped. Keep the hook in place for when Cursor fixes it.
-- `plugins/albino/rules/session-start.mdc`: active workaround for Cursor. Injected as an `alwaysApply` rule via `plugins/albino/.cursor-plugin/plugin.json`. This is the mechanism that actually delivers context to Cursor agents today.
+- `plugins/albino/rules/session-start.mdc`: active workaround for Cursor. Cursor loads it as an `alwaysApply` rule from the plugin's default `rules/` folder. This is the mechanism that actually delivers context to Cursor agents today.
 
 The skills currently injected:
 
@@ -44,6 +44,17 @@ These skills are mandatory and always active. Additional skills are available in
 If yes: add it to the skills list in BOTH `plugins/albino/hooks/session-start.sh` AND `plugins/albino/rules/session-start.mdc`. If no: leave both unchanged.
 
 Do not silently add or skip skills. Always ask. Never update one file without updating the other.
+
+---
+
+## Albino Rules Rule
+
+A rule is an instruction every agent follows, such as "pull requests have one commit". Each rule is one `plugins/albino/rules/<name>.mdc` file with a plain name and Cursor frontmatter (`description`, and `alwaysApply: true` or `globs`). That file is the single source of truth. Do not put `albino` in the file name or text: the install script adds the albino marking to every copy it writes. `session-start.mdc` is not one of these: it is the Cursor-only copy of the session-start hook text, and the script skips it.
+
+- Cursor loads the `.mdc` files straight from the plugin.
+- Claude Code and Codex cannot load rules from a plugin. `plugins/albino/scripts/sync-rules.sh` projects them at install time: one `~/.claude/rules/albino-<name>.md` per rule, with a generated-by-albino comment, (Cursor `globs` become Claude Code `paths`), and one block between `<!-- albino:rules:begin` and `<!-- albino:rules:end -->` markers in `$CODEX_HOME/AGENTS.md`, which has no path scoping.
+
+The script only touches files and text that carry its marker, prunes what it wrote for rules that no longer exist, and removes everything it wrote on uninstall. It deletes `AGENTS.md` only when the albino block was all it held. To add, change, or remove a rule, edit the `.mdc` file; no installer change is needed. Update the rules table in `README.md` in the same change, and make sure no skill contradicts the rule.
 
 ---
 

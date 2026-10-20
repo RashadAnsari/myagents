@@ -1,0 +1,14 @@
+---
+description: "Pull requests have exactly one commit: squash before opening, amend and force-push after"
+alwaysApply: true
+---
+
+# Single-commit pull requests
+
+Every pull request you open has exactly one commit on top of its base branch.
+
+- Before opening a pull request, squash every commit on the branch into one, with a message that describes the whole change: `git fetch origin <base>`, `git reset --soft "$(git merge-base HEAD origin/<base>)"`, then `git commit`.
+- After the pull request is open, fold each follow-up change (review fixes, CI fixes) into that commit with `git commit --amend`, then push with `git push --force-with-lease`.
+- To bring in the base branch, rebase onto it (`git rebase origin/<base>`) instead of merging it, so no merge commit is added.
+- Rewrite only branches you created for the pull request. Never force-push the base branch or a branch someone else has pushed to. On those, add a normal commit and tell the user why the pull request has more than one.
+- This rule takes precedence over any instruction to add follow-up commits or merge the base branch into a pull request branch you created.
