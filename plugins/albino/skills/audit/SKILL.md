@@ -2,7 +2,7 @@
 name: audit
 description: 'Run a single specialist reviewer of your choice against the codebase: pick one review agent (security, performance, unused code, and so on), optionally scope it to a path, and get its findings in the terminal'
 argument-hint: '[reviewer-name] [path]'
-allowed-tools: [Agent, Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
+allowed-tools: [Agent, Read, Glob, Grep, mcp__plugin_agent-memory_agent-memory__project_search, mcp__plugin_agent-memory_agent-memory__user_search]
 ---
 
 # Audit
@@ -44,7 +44,7 @@ If the request names a review angle no reviewer covers (for example Terraform bl
 
 ## Step 2: Load Memory
 
-Call project_search and user_search with terms specific to the chosen reviewer's domain and the path being reviewed. Use the results to brief the reviewer on active conventions, past decisions, and known gotchas.
+Call project_search and user_search with terms specific to the chosen reviewer's domain and the path being reviewed. Use the results to brief the reviewer on active conventions, past decisions, and known gotchas. Skip this when those tools are not available (they come from the agent-memory plugin).
 
 ## Step 3: Spawn the Reviewer
 

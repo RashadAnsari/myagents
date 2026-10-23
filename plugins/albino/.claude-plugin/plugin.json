@@ -1,6 +1,6 @@
 {
   "name": "albino",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Personal productivity plugin: brings Rashad's workflows to Claude Code.",
   "author": {
     "name": "Rashad Ansari",
@@ -24,17 +24,6 @@
           {
             "type": "command",
             "command": "PLATFORM=claude-code bash \"${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit.sh\"",
-            "timeout": 30
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "PLATFORM=claude-code bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop.sh\"",
             "timeout": 30
           }
         ]

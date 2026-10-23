@@ -33,7 +33,6 @@ The skills currently injected:
 
 - `dev-conventions`
 - `research-first`
-- `agent-memory`
 
 These skills are mandatory and always active. Additional skills are available in `plugins/albino/skills/` but are opt-in and not injected automatically.
 
@@ -80,7 +79,7 @@ Codex ships plugin hooks as untrusted. They are registered and enabled but do no
 
 ## Skills Only Rule
 
-The albino plugin has no `commands/` folder. Every workflow the user runs by name (`commit`, `pr-review`, `remember`, and the rest) is a skill in `plugins/albino/skills/<name>/SKILL.md`, and all three platforms load it from there:
+The albino plugin has no `commands/` folder. Every workflow the user runs by name (`commit`, `pr-review`, `audit`, and the rest) is a skill in `plugins/albino/skills/<name>/SKILL.md`, and all three platforms load it from there:
 
 - Claude Code merged custom commands into skills: a skill creates the same `/albino:<name>` command and takes `$ARGUMENTS`, `argument-hint`, `allowed-tools`, and inline shell expansion (`` !`cmd` ``).
 - Cursor runs a skill with `/<name>`. Its `/migrate-to-skills` turns commands into skills the same way.
@@ -90,13 +89,13 @@ Do not add a `commands/` folder or a command generator back. Write every new wor
 
 Only Claude Code fills in `$ARGUMENTS` and runs `` !`cmd` `` lines. A skill that uses `$ARGUMENTS` must say, right after its first use, to take the value from the user's message when the placeholder is not filled in, and a skill that uses `` !`cmd` `` must tell the agent to run the commands itself when they are not expanded.
 
-Every skill with side effects or a high cost (`commit`, `commit-pr`, `pr-review`, `forget`, `enrich`, `reviewcrew`, `statusline`) runs only when the user asks for it by name. It sets `disable-model-invocation: true` in `SKILL.md`, which Claude Code and Cursor read, and has an `agents/openai.yaml` with `policy: allow_implicit_invocation: false`, since Codex ignores that field. Give every new skill of that kind both. In Claude Code the model cannot see such a skill at all, so the user must type its `/` command. Cursor has had a bug where plugin skills with the flag vanish from the `/` menu (forum.cursor.com, March 2026); if they do, that is the cause.
+Every skill with side effects or a high cost (`commit`, `commit-pr`, `pr-review`, `reviewcrew`, `statusline`) runs only when the user asks for it by name. It sets `disable-model-invocation: true` in `SKILL.md`, which Claude Code and Cursor read, and has an `agents/openai.yaml` with `policy: allow_implicit_invocation: false`, since Codex ignores that field. Give every new skill of that kind both. In Claude Code the model cannot see such a skill at all, so the user must type its `/` command. Cursor has had a bug where plugin skills with the flag vanish from the `/` menu (forum.cursor.com, March 2026); if they do, that is the cause.
 
 ---
 
 ## Plugin Installer Rule
 
-The root `install.sh` and `uninstall.sh` only fetch the repo, run `plugins/<name>/install.sh` or `plugins/<name>/uninstall.sh` for every plugin folder that has an `install.sh`, and print a summary. `uninstall.sh` then deletes `~/.myagents`, keeping `agent-memory/` unless `--purge` is passed. Everything specific to a plugin (registration, platform setup, generated files) lives in that plugin's own scripts, never in the root scripts.
+The root `install.sh` and `uninstall.sh` only fetch the repo, run `plugins/<name>/install.sh` or `plugins/<name>/uninstall.sh` for every plugin folder that has an `install.sh`, and print a summary. `uninstall.sh` then deletes `~/.myagents`. Everything specific to a plugin (registration, platform setup, generated files) lives in that plugin's own scripts, never in the root scripts.
 
 Every plugin folder must ship both `install.sh` and `uninstall.sh`. Each one reads `MYAGENTS_DIR` and `MYAGENTS_MARKETPLACE` from the environment, sources `scripts/install-lib.sh`, checks its own prerequisites (with `need` when a missing tool should stop the whole plugin), and ends with `finish`. `uninstall.sh` must undo every step `install.sh` takes on every platform, including files the plugin writes at runtime outside its own folder, and must leave anything the user created untouched. When you add an install step, add its removal in the same change.
 
@@ -139,6 +138,20 @@ This validates and renders the diagram into `.archify/` (gitignored) and exports
 
 ---
 
+## Version Rule
+
+Every change to `plugins/albino/` bumps albino's version in the same change. Claude Code and Codex cache a plugin by the version in its manifest, so a change that keeps the old version never reaches users who update.
+
+The version appears in three places, and all of them must hold the same value:
+
+- `plugins/albino/.claude-plugin/plugin.json`
+- `plugins/albino/.codex-plugin/plugin.json`
+- `plugins/albino/.cursor-plugin/plugin.json`
+
+Follow semantic versioning: a patch bump for fixes and for changes that do not alter behavior, a minor bump for new skills, agents, hooks, rules, or changed behavior, and a major bump for breaking changes, such as a removed or renamed skill, agent, or MCP server.
+
+---
+
 ## Verify After Changes Rule
 
 After completing any change in this repository, run the following from the repository root:
@@ -147,7 +160,7 @@ After completing any change in this repository, run the following from the repos
 make local
 ```
 
-This runs plugin validation, formatting, linting, and tests in sequence. If any step fails, fix the issue and re-run until `make local` passes with no errors. Do not report a task as done until `make local` exits cleanly.
+This runs plugin validation. If any step fails, fix the issue and re-run until `make local` passes with no errors. Do not report a task as done until `make local` exits cleanly.
 
 ---
 

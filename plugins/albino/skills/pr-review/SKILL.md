@@ -3,7 +3,7 @@ name: pr-review
 disable-model-invocation: true
 description: 'Review a GitHub pull request: analyzes changed files to select relevant reviewers, loads project and user memory, runs reviewers in parallel, lets the user pick which findings to post, then submits the review on behalf of the user via gh CLI'
 argument-hint: '[github-pr-url]'
-allowed-tools: [Agent, Bash, Read, Write, Glob, Grep, AskUserQuestion, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
+allowed-tools: [Agent, Bash, Read, Write, Glob, Grep, AskUserQuestion, mcp__plugin_agent-memory_agent-memory__project_search, mcp__plugin_agent-memory_agent-memory__user_search]
 ---
 
 MANDATORY: Load the humanizer skill (`albino:humanizer`) now and keep all its rules active for the entire session. Every piece of text you write or post, including comment bodies, the review body, and any output to the user, must pass the humanizer check before it leaves your context.
@@ -88,6 +88,8 @@ Run both in parallel:
 1. Call `project_search` (agent-memory MCP server) with terms relevant to the changed files (e.g. file paths, module names, domain concepts) to load conventions, decisions, and pitfalls for this repo.
 2. Call `user_search` (agent-memory MCP server) with similar terms to load user preferences relevant to this PR.
 
+Skip both when those tools are not available (they come from the agent-memory plugin), and leave `PROJECT_CONTEXT` empty.
+
 Combine into `PROJECT_CONTEXT`: a compact summary of active conventions, known decisions, and pitfalls that reviewers must apply.
 
 ## Step 6: Select Relevant Reviewers
@@ -144,7 +146,7 @@ Each agent prompt MUST:
 - Include the full `PR_META` and `PR_DIFF` verbatim
 - Include the full `PROJECT_CONTEXT`
 - Include `REVIEW_DIR` and this instruction verbatim: "All file reads (Read, Glob, Grep) and git commands must use REVIEW_DIR as the repository root. Do not read files from any other path."
-- Include this instruction verbatim: "Before reviewing, call `project_search` and `user_search` (agent-memory MCP server) with terms specific to your reviewer domain and the files in the diff (e.g. file paths, module names, patterns you are about to analyze). Use the results to supplement PROJECT_CONTEXT with any additional conventions, decisions, or gotchas relevant to what you are reviewing."
+- Include this instruction verbatim: "Before reviewing, call `project_search` and `user_search` (agent-memory MCP server) with terms specific to your reviewer domain and the files in the diff (e.g. file paths, module names, patterns you are about to analyze). Use the results to supplement PROJECT_CONTEXT with any additional conventions, decisions, or gotchas relevant to what you are reviewing. Skip this when those tools are not available."
 - The root cause of every finding must trace back to a `+` or `-` line in the diff. Something this PR added, removed, or modified must be the source of the problem
 - The impact of a finding can extend anywhere in the codebase. Actively use Read, Glob, and Grep (all against REVIEW_DIR) to look for ripple effects: broken callers, missing imports, consumers of a changed API, queries that rely on a modified schema, components that depend on a changed contract. These cross-file impacts are the most important findings
 - Examples of valid findings that originate in the diff but affect unchanged code: changing a function signature that breaks callers elsewhere, removing a utility that other modules still import, changing an API response shape that breaks a frontend consumer, modifying a shared config that affects downstream services, deleting a guard that other code relied on

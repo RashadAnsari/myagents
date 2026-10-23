@@ -1,6 +1,6 @@
 {
   "name": "albino",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Personal productivity plugin: brings Rashad's workflows to Cursor.",
   "author": {
     "name": "Rashad Ansari",
@@ -12,12 +12,6 @@
       "sessionStart": [
         {
           "command": "PLATFORM=cursor bash \"${CURSOR_PLUGIN_ROOT}/hooks/session-start.sh\""
-        }
-      ],
-      "stop": [
-        {
-          "command": "PLATFORM=cursor bash \"${CURSOR_PLUGIN_ROOT}/hooks/stop.sh\"",
-          "loop_limit": 1
         }
       ]
     }

@@ -4,9 +4,8 @@ set -euo pipefail
 # Must stay platform-neutral: bare tool and skill names work on Claude Code,
 # Cursor, and Codex. Keep in sync with rules/session-start.mdc (intentional duplication).
 REMINDER="BEFORE YOUR FIRST RESPONSE (required, do it before answering, without commentary):
-1. Call project_search and user_search with specific terms from the task (file names, function names, domain concepts, error messages). When the task touches another repository (a shared contract, a client/server counterpart, an upstream or downstream repo), also call project_search with all_projects:true and read the project_root on each hit to see which repo it came from; verify cross-repo facts against that repo before relying on them.
-2. Read AGENTS.md if it exists and apply its rules.
-3. Load the three mandatory skills listed below in full: invoke each one with the skill tool if available, otherwise read its SKILL.md. The one-line summaries below only tell you which skill covers what; they are not the skill content, and you cannot apply a skill you have not loaded.
+1. Read AGENTS.md if it exists and apply its rules.
+2. Load the two mandatory skills listed below in full: invoke each one with the skill tool if available, otherwise read its SKILL.md. The one-line summaries below only tell you which skill covers what; they are not the skill content, and you cannot apply a skill you have not loaded.
 
 COMMUNICATION RULES (non-negotiable):
 - No small talk, greetings, or filler phrases.
@@ -21,16 +20,12 @@ COMMUNICATION RULES (non-negotiable):
 - No decorative formatting. No bullet list where two sentences work, no bold on words that are not terms, no emoji, no headings on a short answer.
 - Every sentence must carry information the user does not already have. Delete the rest rather than rephrasing it.
 
-DURING EVERY TASK, apply these skills (loaded in full in step 3 above):
+DURING EVERY TASK, apply these skills (loaded in full in step 2 above):
 - dev-conventions: Think before coding, simplicity first, eliminate duplication, surgical changes, project conventions for localization, UI, validation, and data alignment, define verifiable success criteria.
 - research-first: Never guess. Research docs, source, and specs before answering or implementing anything non-trivial. Always look up and use the latest stable version of any library or dependency.
-- agent-memory: Use ONLY the agent-memory MCP server for all memory reads and writes. Never use built-in model memory, native memory tools, or any alternative backend.
-
-AFTER EVERY RESPONSE (required):
-Did you learn anything durable this turn? Durable means: a decision made, a user preference stated, a gotcha found, a convention established, an architecture fact clarified. If yes, call project_remember or user_remember before finishing. If what you learned is about a different repository (e.g. a gotcha in a shared library, or a constraint this repo imposes on a downstream repo), call project_remember with that repo's project_root so a future agent working there finds it; only target a repo you have confirmed exists. Never save silently: for every memory you store, update, or archive, tell the user in your reply what you learned, why it matters, and whether it went to project or user memory. Skip if nothing non-obvious was learned. Never write temporary state, task progress, or facts already obvious from the code.
 
 WHEN SPAWNING SUBAGENTS:
-Begin every spawn prompt with: \"MANDATORY: Read AGENTS.md and follow its rules before doing anything.\" Then include the BEFORE and COMMUNICATION sections. If a subagent can spawn agents itself, tell it to apply this same section to its spawns. Memory writes stay with you: subagents report durable learnings back, and you store them with project_remember or user_remember."
+Begin every spawn prompt with: \"MANDATORY: Read AGENTS.md and follow its rules before doing anything.\" Then include the BEFORE and COMMUNICATION sections. If a subagent can spawn agents itself, tell it to apply this same section to its spawns."
 
 if [ "${PLATFORM:-}" = "cursor" ]; then
   # NOTE: Cursor sessionStart additional_context injection is currently broken.

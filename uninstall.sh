@@ -1,31 +1,12 @@
 #!/usr/bin/env bash
 # Removes every plugin myagents installed, then ~/.myagents itself. Safe to rerun.
-# Agent memory in ~/.myagents/agent-memory is kept unless --purge is passed.
 set -euo pipefail
 
 export MYAGENTS_DIR="$HOME/.myagents"
 export MYAGENTS_MARKETPLACE="myagents"
-MEMORY_DIR="$MYAGENTS_DIR/agent-memory"
 
-purge=false
-for arg in "$@"; do
-  case "$arg" in
-    --purge) purge=true ;;
-    *) echo "Usage: uninstall.sh [--purge]   (--purge also deletes your agent memory)"; exit 1 ;;
-  esac
-done
-
-# A folder without the shared library is either gone or holds only agent memory
-# left by an earlier uninstall.
 if [ ! -f "$MYAGENTS_DIR/scripts/install-lib.sh" ] && [ ! -d "$MYAGENTS_DIR/.git" ]; then
-  if [ "$purge" = true ] && [ -d "$MYAGENTS_DIR" ]; then
-    rm -rf "$MYAGENTS_DIR"
-    echo "✓ Removed ~/.myagents, including your agent memory."
-  elif [ -d "$MEMORY_DIR" ]; then
-    echo "✓ myagents is already uninstalled. Your agent memory is still in ~/.myagents/agent-memory; rerun with --purge to delete it."
-  else
-    echo "✓ myagents is already uninstalled."
-  fi
+  echo "✓ myagents is already uninstalled."
   exit 0
 fi
 
@@ -76,16 +57,9 @@ done
 # The files stay while anything failed, since a rerun needs the plugin scripts.
 if [ ${#failed[@]} -gt 0 ]; then
   note "Files" "Kept ~/.myagents so you can rerun the uninstaller."
-elif [ ! -d "$MEMORY_DIR" ]; then
+else
   rm -rf "$MYAGENTS_DIR"
   ok "Files" "Removed ~/.myagents."
-elif [ "$purge" = true ]; then
-  rm -rf "$MYAGENTS_DIR"
-  ok "Files" "Removed ~/.myagents, including your agent memory."
-else
-  find "$MYAGENTS_DIR" -mindepth 1 -maxdepth 1 ! -name agent-memory -exec rm -rf {} +
-  ok "Files" "Removed ~/.myagents. Your agent memory is kept in ~/.myagents/agent-memory."
-  note "Memory" "To delete it too, rerun with --purge."
 fi
 printf '\n'
 

@@ -29,6 +29,11 @@ myagents
   ✓ Requirements    All installed.
   ✓ Apps            Found Claude Code, Cursor, Codex.
 
+agent-memory
+  ✓ Claude Code     Installed. Restart open sessions to load it.
+  ✓ Cursor          Installed. Run 'Developer: Reload Window' to load it.
+  ✓ Codex           Installed. Restart Codex, then run /hooks once to trust its hooks.
+
 albino
   ✓ Claude Code     Installed. Restart open sessions to load it.
   ✓ Cursor          Installed. Run 'Developer: Reload Window' to load it.
@@ -65,6 +70,7 @@ ui-ux-pro-max
   ✓ Codex           Installed. Restart Codex to load it.
 
 Summary
+  ✓ agent-memory    Ready.
   ✓ albino          Ready.
   ✓ archify         Ready.
   ✓ context7        Ready.
@@ -98,9 +104,8 @@ The diagram is generated with [archify](#archify) from [docs/architecture.json](
 ## Contents
 
 - [Architecture](#architecture)
-- [Plugins](#plugins): [albino](#albino), [archify](#archify), [context7](#context7), [emil-skills](#emil-skills), [ponytail](#ponytail), [security-audit](#security-audit), [ui-ux-pro-max](#ui-ux-pro-max)
+- [Plugins](#plugins): [agent-memory](#agent-memory), [albino](#albino), [archify](#archify), [context7](#context7), [emil-skills](#emil-skills), [ponytail](#ponytail), [security-audit](#security-audit), [ui-ux-pro-max](#ui-ux-pro-max)
 - [Platform support](#platform-support)
-- [Agent memory](#agent-memory)
 - [Installing, updating, and uninstalling](#installing-updating-and-uninstalling)
 - [Contributing](#contributing)
 - [License](#license)
@@ -108,6 +113,12 @@ The diagram is generated with [archify](#archify) from [docs/architecture.json](
 ---
 
 ## Plugins
+
+### agent-memory
+
+[agent-memory](https://github.com/RashadAnsari/agent-memory) gives agents memory that persists across sessions. They look up project decisions and your preferences before they start, and save new ones when they finish, telling you each one in the chat. Project memory follows the repository across clones and machines; user memory applies to every project. It adds `/remember`, `/forget`, and `/enrich`, which mines recent pull requests for decisions and conventions. The albino reviewers and `/reviewcrew`, `/audit`, and `/pr-review` read from it before they review.
+
+Memory is stored in `~/.agent-memory/memory.sqlite`, and uninstalling keeps it.
 
 ### albino
 
@@ -125,12 +136,9 @@ Skills you run by name. They replaced the old slash commands, which all three to
 | `/pr-review <url>` | Reviews a GitHub pull request: picks the reviewers that fit the changed files, loads memory, checks ripple effects, lets you choose which findings to post, and submits the review with `gh` |
 | `/commit` | Stages all changes and writes a commit message in the project's existing style |
 | `/commit-pr` | Squashes the branch into one commit and opens or updates its pull request, creating a branch first when you are on `main` or `master` |
-| `/remember <what>` | Saves something to project or user memory, or this session's learnings when given nothing |
-| `/forget <what>` | Finds and removes matching entries from project and user memory |
-| `/enrich` | Mines the 100 most recently merged pull requests for decisions, conventions, and gotchas, and saves them to project memory |
 | `/statusline` | Sets the Claude Code status line: folder, git branch and dirty state, model, context usage, and time |
 
-Run one with `/<name>` in Claude Code (or `/albino:<name>` when another plugin uses the same name) and Cursor, and with `$<name>` or `/skills` in Codex. Claude Code fills in the arguments after the name; Cursor and Codex do not pass arguments to skills, so give the subject in the same message instead. `commit`, `commit-pr`, `pr-review`, `forget`, `enrich`, `reviewcrew`, and `statusline` run only when you type them, never on the agent's own initiative.
+Run one with `/<name>` in Claude Code (or `/albino:<name>` when another plugin uses the same name) and Cursor, and with `$<name>` or `/skills` in Codex. Claude Code fills in the arguments after the name; Cursor and Codex do not pass arguments to skills, so give the subject in the same message instead. `commit`, `commit-pr`, `pr-review`, `reviewcrew`, and `statusline` run only when you type them, never on the agent's own initiative.
 
 #### Review agents
 
@@ -155,13 +163,12 @@ Used by `/reviewcrew`, `/audit`, and `/pr-review`, or on their own.
 
 #### Knowledge skills
 
-Three skills are always on. The session-start hook tells the agent to load each one in full before its first answer.
+Two skills are always on. The session-start hook tells the agent to load each one in full before its first answer.
 
 | Skill | What it enforces |
 |-------|------------------|
 | `dev-conventions` | Think before coding, the simplest change that works, no duplication, surgical edits, and checkable success criteria |
 | `research-first` | Read the docs and source before answering, and use the latest stable version of every dependency |
-| `agent-memory` | Search memory before non-trivial work, and save durable learnings after it, telling you each one in the chat |
 
 The rest load when a task calls for them:
 
@@ -177,7 +184,6 @@ The rest load when a task calls for them:
 
 | Server | What it adds |
 |--------|--------------|
-| `agent-memory` | Project and user memory with semantic search. Rejects vague, duplicate, and secret-containing entries. See [Agent memory](#agent-memory) |
 | `playwright` | Browser automation: navigate, click, fill forms, take screenshots, and inspect the page. Set `PLAYWRIGHT_MCP_EXTENSION_TOKEN` to drive your real browser through the Playwright Chrome extension |
 | `markitdown` | Converts PDF, Word, PowerPoint, Excel, HTML, images (OCR), audio (transcription), EPUB, and YouTube URLs to Markdown |
 
@@ -185,9 +191,8 @@ The rest load when a task calls for them:
 
 | Hook | Runs | What it does |
 |------|------|--------------|
-| `session-start` | Start of every session | Loads the mandatory skills, the memory rules, and the communication rules: answer first, be precise, no filler |
+| `session-start` | Start of every session | Loads the mandatory skills and the communication rules: answer first, be precise, no filler |
 | `user-prompt-submit` | Every prompt | Repeats a one-line reminder of those rules, since session-start context fades in long conversations |
-| `stop` | End of every turn | Asks the agent whether it learned anything durable and, if so, to save it and tell you what it saved and why |
 
 #### Rules
 
@@ -237,6 +242,7 @@ It ships seven skills: `ui-ux-pro-max`, `design`, `design-system`, `ui-styling` 
 
 | | Claude Code | Cursor | Codex |
 |---|:---:|:---:|:---:|
+| agent-memory | ✓ | ✓ | ✓ after `/hooks` |
 | albino review agents | ✓ | ✓ | ✓ |
 | albino skills | ✓ | ✓ | ✓ |
 | albino hooks | ✓ | ✓ | ✓ after `/hooks` |
@@ -251,36 +257,18 @@ It ships seven skills: `ui-ux-pro-max`, `design`, `design-system`, `ui-styling` 
 
 ---
 
-## Agent memory
-
-Memory lives in one SQLite database at `~/.myagents/agent-memory/memory.sqlite`, outside every repository. Set `AGENT_MEMORY_DIR` to move it.
-
-- **Project memory** is tied to the repository's `origin` remote, so it follows the repo across clones and machines. Repositories without a remote fall back to their local path.
-- **User memory** holds your preferences and applies to every project.
-- `project_search` with `all_projects: true` searches every project at once, and each result says which repository it came from.
-
-Uninstalling keeps your memory unless you pass `--purge`.
-
----
-
 ## Installing, updating, and uninstalling
 
 **Installing.** Run the command from [Quick start](#quick-start). The installer downloads this repository to `~/.myagents`, installs any missing tools from [`requirements.list`](requirements.list) with Homebrew (installing Homebrew first if needed, which may ask for your password), then sets up every plugin in each of Claude Code, Cursor, and Codex that it finds. Tools you already have are left alone. `git` and `python3` come with the Xcode Command Line Tools (`xcode-select --install`).
 
 Each line of the output says what to do next, such as restarting a tool, signing in to Context7, or running `/hooks` once in Codex to trust the hooks.
 
-**Updating.** Run the install command again. Every step is safe to repeat: a rerun updates what is there and never duplicates settings, hooks, or links. `~/.myagents` belongs to the installer, so a rerun resets it to the latest version and discards local edits to tracked files. Untracked files, such as the memory database, are kept.
+**Updating.** Run the install command again. Every step is safe to repeat: a rerun updates what is there and never duplicates settings, hooks, or links. `~/.myagents` belongs to the installer, so a rerun resets it to the latest version and discards local edits to tracked files.
 
-**Uninstalling.** This undoes every install step on every tool, including settings, hooks, and MCP servers, then deletes `~/.myagents`. Your own settings, hooks, skills, agents, and rules are left alone, including the text in `~/.codex/AGENTS.md` outside the albino block, and so is your agent memory. Homebrew and the tools from `requirements.list` stay installed, since other software may use them; remove them with `brew uninstall` if you no longer need them.
+**Uninstalling.** This undoes every install step on every tool, including settings, hooks, and MCP servers, then deletes `~/.myagents`. Your own settings, hooks, skills, agents, and rules are left alone, including the text in `~/.codex/AGENTS.md` outside the albino block, and so is your memory in `~/.agent-memory`. Homebrew and the tools from `requirements.list` stay installed, since other software may use them; remove them with `brew uninstall` if you no longer need them.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/uninstall.sh | bash
-```
-
-Add `--purge` to delete your agent memory too:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/RashadAnsari/myagents/master/uninstall.sh | bash -s -- --purge
 ```
 
 Rerunning the uninstaller is safe: steps with nothing left to undo report "Already removed." If a step fails, `~/.myagents` is kept so you can fix the problem and rerun.

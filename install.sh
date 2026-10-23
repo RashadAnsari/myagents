@@ -18,9 +18,8 @@ if ! command -v git &>/dev/null; then
 fi
 
 # The folder is owned by the installer, so it is reset to the latest commit
-# rather than pulled: local edits (such as uv rewriting uv.lock) never block an
-# update. Untracked files, including the agent-memory database, are kept. This
-# also works when the folder exists but is not a clone yet.
+# rather than pulled: local edits never block an update. Untracked files are
+# kept. This also works when the folder exists but is not a clone yet.
 mkdir -p "$MYAGENTS_DIR"
 before="$(git -C "$MYAGENTS_DIR" rev-parse --short HEAD 2>/dev/null || true)"
 if ! { git -C "$MYAGENTS_DIR" init --quiet \

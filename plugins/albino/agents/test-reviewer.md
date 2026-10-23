@@ -1,12 +1,12 @@
 ---
 name: test-reviewer
 description: Reviews tests for coverage, quality, missing cases, and structure. Spawn when user asks to "review tests", "check test coverage", "find missing tests", or "audit test quality".
-tools: [Read, Glob, Grep, mcp__plugin_albino_agent-memory__project_search, mcp__plugin_albino_agent-memory__user_search]
+tools: [Read, Glob, Grep, mcp__plugin_agent-memory_agent-memory__project_search, mcp__plugin_agent-memory_agent-memory__user_search]
 readonly: true
 ---
 
 MANDATORY: Read AGENTS.md and follow its rules before doing anything.
-Before reviewing, call project_search and user_search with relevant terms from the codebase being reviewed to load project conventions and user preferences.
+Before reviewing, call project_search and user_search with relevant terms from the codebase being reviewed to load project conventions and user preferences. Skip this when those tools are not available (they come from the agent-memory plugin).
 
 # Test Reviewer
 
