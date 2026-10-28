@@ -9,7 +9,7 @@
     "repository": {
       "url": "git@github.com:RashadAnsari/myagents.git",
       "link_mode": "local-only",
-      "revision": "14817a117d465bb43655e3c639e422cebc640df8"
+      "revision": "df7d9234f4118ea3fd974fe392c20d3902bb778b"
     }
   },
   "components": [
@@ -19,8 +19,8 @@
       "sources": [{ "path": "install.sh", "line": 5 }] },
     { "id": "rootinstall", "type": "backend", "label": "install.sh", "sublabel": "root installer", "pos": [250, 200], "size": [150, 60],
       "sources": [{ "path": "install.sh", "line": 20, "end_line": 46 }, { "path": "install.sh", "line": 86, "end_line": 97 }] },
-    { "id": "homebrew", "type": "external", "label": "Homebrew", "sublabel": "jq, node, uv, bun", "pos": [250, 370], "size": [150, 60],
-      "sources": [{ "path": "requirements.list", "line": 8, "end_line": 11 }, { "path": "install.sh", "line": 48, "end_line": 73 }] },
+    { "id": "homebrew", "type": "external", "label": "Homebrew", "sublabel": "jq, node, uv", "pos": [250, 370], "size": [150, 60],
+      "sources": [{ "path": "requirements.list", "line": 8, "end_line": 10 }, { "path": "install.sh", "line": 48, "end_line": 73 }] },
     { "id": "plugininstall", "type": "backend", "label": "plugins/*/install.sh", "sublabel": "albino + 7 more", "pos": [530, 200], "size": [170, 60],
       "sources": [{ "path": "plugins/albino/install.sh", "line": 32, "end_line": 146 }, { "path": "scripts/install-lib.sh", "line": 186, "end_line": 199 }] },
     { "id": "thirdparty", "type": "external", "label": "Third-party sources", "sublabel": "Skills CLI, ctx7, uipro", "pos": [530, 370], "size": [170, 60],
@@ -28,12 +28,10 @@
     { "id": "hosts", "type": "frontend", "label": "Agent hosts", "sublabel": "Claude Code, Cursor, Codex", "pos": [840, 200], "size": [160, 60],
       "sources": [{ "path": "scripts/install-lib.sh", "line": 54, "end_line": 56 }] },
     { "id": "hooks", "type": "security", "label": "albino hooks", "sublabel": "session, prompt", "pos": [1120, 40], "size": [160, 60],
-      "sources": [{ "path": "plugins/albino/.claude-plugin/plugin.json", "line": 9, "end_line": 32 }, { "path": "plugins/albino/hooks/session-start.sh", "line": 6, "end_line": 46 }] },
-    { "id": "othermcp", "type": "backend", "label": "Playwright, MarkItDown", "sublabel": "MCP via bunx / uv", "pos": [1120, 200], "size": [160, 60],
-      "sources": [{ "path": "plugins/albino/.mcp.json", "line": 3, "end_line": 18 }] }
+      "sources": [{ "path": "plugins/albino/.claude-plugin/plugin.json", "line": 9, "end_line": 32 }, { "path": "plugins/albino/hooks/session-start.sh", "line": 6, "end_line": 46 }] }
   ],
   "boundaries": [
-    { "kind": "region", "label": "plugins/albino", "wraps": ["hooks", "othermcp"] }
+    { "kind": "region", "label": "plugins/albino", "wraps": ["hooks"] }
   ],
   "connections": [
     { "id": "dev-runs-install", "from": "dev", "to": "rootinstall", "label": "runs", "variant": "emphasis" },
@@ -42,12 +40,11 @@
     { "id": "install-plugins", "from": "rootinstall", "to": "plugininstall", "label": "each plugin", "variant": "emphasis" },
     { "id": "plugin-thirdparty", "from": "plugininstall", "to": "thirdparty", "label": "fetch + add", "fromSide": "bottom", "toSide": "top", "variant": "dashed" },
     { "id": "plugin-register", "from": "plugininstall", "to": "hosts", "label": "register in", "variant": "emphasis" },
-    { "id": "hosts-hooks", "from": "hosts", "to": "hooks", "label": "events", "variant": "security" },
-    { "id": "hosts-othermcp", "from": "hosts", "to": "othermcp", "label": "MCP stdio" }
+    { "id": "hosts-hooks", "from": "hosts", "to": "hooks", "label": "events", "variant": "security" }
   ],
   "cards": [
     { "dot": "cyan", "title": "Install", "items": ["Root scripts only fetch the repo and run each plugins/<name>/install.sh", "Every step is idempotent; uninstall.sh mirrors install.sh"] },
     { "dot": "rose", "title": "albino hooks", "items": ["SessionStart injects mandatory skills and communication rules", "UserPromptSubmit re-injects a short reminder", "Cursor gets the same text from rules/session-start.mdc"] },
-    { "dot": "emerald", "title": "albino content", "items": ["14 review agents, 14 skills, no commands", "Codex: agents generated into $CODEX_HOME", "rules/*.mdc: Cursor reads them, install copies them to ~/.claude/rules and ~/.codex/AGENTS.md"] }
+    { "dot": "emerald", "title": "albino content", "items": ["14 review agents, 13 skills, no commands", "Codex: agents generated into $CODEX_HOME", "rules/*.mdc: Cursor reads them, install copies them to ~/.claude/rules and ~/.codex/AGENTS.md"] }
   ]
 }

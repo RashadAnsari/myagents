@@ -1,0 +1,11 @@
+---
+description: "Working preferences: short drafts for others, text that describes only the code in hand, no edits on why-questions"
+alwaysApply: true
+---
+
+# Working preferences
+
+- Keep messages and replies you draft for other people (Slack, PR comments) short: a few sentences, plain words, no bullet lists unless the user asks for them.
+- Docs, code comments, commit messages, and PR descriptions state only what the code in hand does now: no ticket keys, plans, or timing words such as "yet", "today", "until", or "next". Plans belong in Jira or exploration docs.
+- In any text you write, tickets included, do not describe other services, future implementations, or how someone will use, deliver, or place the output: neither you nor the user knows those yet.
+- When the user asks "why X?" or "why not Y?", answer and stop. Do not edit anything until the user explicitly asks for a change; a one-line recommendation is fine.

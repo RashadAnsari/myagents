@@ -53,7 +53,7 @@ A rule is an instruction every agent follows, such as "pull requests have one co
 - Cursor loads the `.mdc` files straight from the plugin.
 - Claude Code and Codex cannot load rules from a plugin. `plugins/albino/scripts/sync-rules.sh` projects them at install time: one `~/.claude/rules/albino-<name>.md` per rule, with a generated-by-albino comment, (Cursor `globs` become Claude Code `paths`), and one block between `<!-- albino:rules:begin` and `<!-- albino:rules:end -->` markers in `$CODEX_HOME/AGENTS.md`, which has no path scoping.
 
-The script only touches files and text that carry its marker, prunes what it wrote for rules that no longer exist, and removes everything it wrote on uninstall. It deletes `AGENTS.md` only when the albino block was all it held. To add, change, or remove a rule, edit the `.mdc` file; no installer change is needed. Update the rules table in `README.md` in the same change, and make sure no skill contradicts the rule.
+The script only touches files and text that carry its marker, prunes what it wrote for rules that no longer exist, and removes everything it wrote on uninstall. It deletes `AGENTS.md` only when the albino block was all it held. To add, change, or remove a rule, edit the `.mdc` file; no installer change is needed. Update the rules table in `plugins/albino/README.md` in the same change, and make sure no skill contradicts the rule.
 
 ---
 
@@ -113,7 +113,7 @@ All user-facing output goes through the library's `section`, `ok`, `note`, and `
 
 ## README Sync Rule
 
-After any change that affects the public surface of this project, update `README.md` (at `README.md` in the repository root) accordingly. This includes:
+After any change that affects the public surface of this project, update `README.md` (at `README.md` in the repository root) accordingly. albino's agents, skills, hooks, rules, and MCP servers are documented in `plugins/albino/README.md`, so changes to them go there. This includes:
 
 - Adding, removing, or renaming an agent, skill, command, or hook
 - Changing what a command or agent does
