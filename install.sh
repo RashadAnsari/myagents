@@ -58,6 +58,9 @@ find_missing
 # Putting Homebrew on PATH can reveal tools it already installed.
 [ ${#missing[@]} -gt 0 ] && { ensure_homebrew || true; find_missing; }
 
+# A shim (mise, asdf) passes `command -v` but cannot run without a version set.
+ensure_node_works || { finish; exit 1; }
+
 if [ ${#missing[@]} -eq 0 ]; then
   ok "Requirements" "All installed."
 else
