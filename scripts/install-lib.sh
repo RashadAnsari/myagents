@@ -179,6 +179,34 @@ _skills_cli_report() {
   done < <(_skills_cli_agents)
 }
 
+# Explains how to fix node when it is missing or is a version-manager shim with
+# no version selected (command -v succeeds for those, but running them fails).
+node_fix_hint() {
+  if command -v node &>/dev/null; then
+    if command -v mise &>/dev/null; then
+      echo "node is on PATH but does not run (mise has no version set). Fix it with: mise use -g node@lts."
+    else
+      echo "node is on PATH but does not run. Check your version manager (asdf, nvm, ...) has a node version selected."
+    fi
+  else
+    echo "Install it with: brew install node"
+  fi
+}
+
+node_works() { node --version &>/dev/null && npx --version &>/dev/null; }
+
+# Succeeds when node is absent or runs. When node is on PATH but cannot run and
+# mise is available, selects the latest LTS globally; otherwise fails with a hint.
+ensure_node_works() {
+  command -v node &>/dev/null && ! node_works || return 0
+  if command -v mise &>/dev/null && quietly mise use -g node@lts && node_works; then
+    note "Requirements" "node had no version set in mise, so node@lts is now your global default."
+  else
+    fail "Requirements" "$(node_fix_hint) Then rerun this command."
+    return 1
+  fi
+}
+
 _skills_cli() {
   DISABLE_TELEMETRY=1 DO_NOT_TRACK=1 npx -y skills@latest "$@"
 }
@@ -189,8 +217,8 @@ _skills_cli_add() {
   shift
   while IFS='|' read -r id _; do [ -n "$id" ] && agents+=("$id"); done < <(_skills_cli_agents)
   [ ${#agents[@]} -eq 0 ] && return 0
-  if ! command -v npx &>/dev/null; then
-    fail "Requirements" "node is not installed, so $name was skipped. Install it with: brew install node"
+  if ! npx --version &>/dev/null; then
+    fail "Requirements" "npx does not run, so $name was skipped. $(node_fix_hint)"
   elif quietly _skills_cli add "$@" --global --agent "${agents[@]}" -y; then
     _skills_cli_report "Installed" "load"
   else
@@ -202,8 +230,8 @@ _skills_cli_add() {
 _skills_cli_remove() {
   local name="$1"
   shift
-  if ! command -v npx &>/dev/null; then
-    fail "Requirements" "node is not installed, so $name could not be removed. Install it with: brew install node"
+  if ! npx --version &>/dev/null; then
+    fail "Requirements" "npx does not run, so $name could not be removed. $(node_fix_hint)"
   elif quietly _skills_cli remove "$@" --global -y; then
     _skills_cli_report "Removed" "unload"
   else
